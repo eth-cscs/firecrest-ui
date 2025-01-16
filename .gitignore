@@ -1,0 +1,34 @@
+# mac os x
+.DS_Store
+
+# ide
+.idea/
+
+# cache
+.cache
+
+# logs
+logs
+logs/
+
+# ---------------------------------
+# FirecREST Web UI ignore patterns
+# ---------------------------------
+
+# build
+build
+build/
+public/build
+public/build/
+sessions/
+
+# env
+.env
+
+# frontend
+node_modules
+node_modules*
+
+# sentry
+.sentryclirc
+.env.sentry-build-plugin

@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "command": "nvm install 21 nvm use 21 && yarn run dev",
+        "name": "Run npm run dev",
+        "request": "launch",
+        "type": "node-terminal",
+        "cwd": "${workspaceFolder}/app/",
+        "sourceMaps": true
+      }
+    ]
+  }

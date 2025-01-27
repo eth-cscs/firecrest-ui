@@ -3,7 +3,7 @@ name: firecrest-ui QA
 on:
   push:
     branches:
-      - main
+      - '*'
     tags:
       - '*'
   pull_request:

@@ -1,8 +1,11 @@
 name: Publish Docker Image
 
 on:
-  release:
-    types: [prereleased, released]
+  # release:
+  #   types: [prereleased, released]
+  push:
+    branches:
+      - '*'
 
 env:
   # Use docker.io for Docker Hub if empty

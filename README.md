@@ -1,45 +1,22 @@
-# FirecREST v2 UI
+## FirecREST UI Helm Charts
 
-FirecREST UI is a web application providing the basic functionnalities to interact with a FirecREST API backend. 
+This is a repository for a Helm chart to deploy [FirecREST UI](https://github.com/eth-cscs/firecrest-ui).
 
-FirecREST provides a REST API through which developers can interact with HPC resources (Schedulers, Filesystems, etc.). In addition FirecREST provides methods to authenticate and authorize, execution of  jobs through, file-system operations, and access to accounting or status information.
+### Fetching the repository
 
-## UI software stack
-
-📖 See the [Remix docs](https://remix.run/docs) and the [Remix Vite docs](https://remix.run/docs/en/main/future/vite) for details on supported features.
-
-# Development
-
-## Local UI development with a local FirecREST environment
-
-To simplify running FirecREST locally we provide a set of local Docker environments that already contain all required dependencies. Please make sure [Docker](https://www.docker.com/) is installed and running on your machine.
-
-### Configuration
-
-Please ensure that the FirecREST Docker Compose environment is running. To connect the UI with the backend, you need to create a ```.env``` file (refer to the provided env_example file for guidance).
-
-### Authx
-
-The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
-
-### Compile and run the web application 
-
-The requirements for the web app development are node and yarn.
-```shellscript
-node --version
-yarn --version
+```bash
+helm repo add firecrest-ui https://eth-cscs.github.io/firecrest-ui
+helm repo update
 ```
 
-Once the libraries are available
-```shellscript
-yarn install
-yarn run dev
+The available versions can be listed with
+
+```bash
+helm search repo firecrest-ui --versions
 ```
 
-Open the UI on http://localhost:3000/, a login page (Keycloak) should show up.
+### Deploying the chart
 
-Authenticate with the follwing credentials:
-```credentials
-client: fireuser
-secret: password
+```bash
+helm install --create-namespace <deployment-name> -n <namespace> firecrest-ui --values values.yaml
 ```

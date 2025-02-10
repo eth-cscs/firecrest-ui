@@ -1,0 +1,147 @@
+name: FirecREST UI CI/CD Workflow
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+  pull_request:
+  release:
+    types: [prereleased, released]
+
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CHART_DIR: deploy/helm
+  GH_PAGES_BRANCH: gh-pages
+  VENV_CACHE_DIR: ${{ github.workspace }}/venv/
+
+jobs:
+  static_code_analysis:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: node:21-alpine
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn install
+      - name: Run audit
+        run: yarn run audit
+      - name: Allow failure (audit)
+        if: failure()
+        run: echo "Audit failed but continuing"
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    container:
+      image: node:21-alpine
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn install
+      - name: Run tests
+        run: yarn run test
+
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    container:
+      image: node:21-alpine
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn install
+      - name: Run linter
+        run: yarn run lint
+      - name: Allow failure (lint)
+        if: failure()
+        run: echo "Lint failed but continuing"
+
+  docker_release:
+    name: Publish Docker Image
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Log into registry
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: .
+          file: ./deploy/docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  helm_release:
+    name: Publish Helm Chart
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Configure Git User
+        run: |
+          echo "Configured user to '$GITHUB_ACTOR'"
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Package Helm chart
+        run: |
+          helm package $CHART_DIR/firecrest-ui --version=$RELEASE_VERSION --app-version=$RELEASE_VERSION
+          rm -rf $CHART_DIR/firecrest-ui/Chart.lock $CHART_DIR/firecrest-ui/charts/
+          mkdir gh_
+          mv *.tgz gh_
+
+      - name: Push to gh-pages branch (helm)
+        run: |
+          git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
+          git checkout $GH_PAGES_BRANCH
+          # Crea la cartella dedicata per i chart se non esiste
+          mkdir -p helm
+          # Sposta i pacchetti nella cartella "helm"
+          mv gh_/*tgz helm/
+          # Aggiorna l'indice del repository Helm nella cartella "helm"
+          helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm --merge helm/index.yaml
+          git add helm/*.tgz helm/index.yaml
+          git commit -m "New firecrest-ui helm chart release ($RELEASE_VERSION)"
+          git push -u origin $GH_PAGES_BRANCH

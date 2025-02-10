@@ -40,15 +40,16 @@ jobs:
         mkdir gh_
         mv *.tgz gh_
 
-    - name: Push to gh-pages branch
+    - name: Push to gh-pages branch (helm)
       run: |
         
         git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
         git checkout $GH_PAGES_BRANCH
-        mv gh_/*tgz .
+        mkdir -p helm
+        mv gh_/*tgz helm/
 
-        helm repo index . --url https://eth-cscs.github.io/firecrest-v2 --merge index.yaml
+        helm repo index . --url https://eth-cscs.github.io/firecrest-ui --merge helm/index.yaml
 
-        git add *.tgz index.yaml
-        git commit -m "New firecrest-web-ui helm chart release (${{ github.ref_name }})"
+        git add helm/*.tgz helm/index.yaml
+        git commit -m "New firecrest-ui helm chart release (${{ github.ref_name }})"
         git push -u origin $GH_PAGES_BRANCH

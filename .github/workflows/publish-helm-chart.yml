@@ -32,8 +32,8 @@ jobs:
 
     - name: Package Helm chart
       run: |
-        helm package $CHART_DIR/firecrest-ui --version=${{ github.ref_name }} --app-version=${{ github.ref_name }} 
-        rm -rf $CHART_DIR/firecrest-ui/Chart.lock $CHART_DIR/firecrest-ui/charts/
+        helm package $CHART_DIR/firecrest-web-ui --version=${{ github.ref_name }} --app-version=${{ github.ref_name }} 
+        rm -rf $CHART_DIR/firecrest-web-ui/Chart.lock $CHART_DIR/firecrest-web-ui/charts/
 
         # move the packages to a directory to avoid issues
         # when checking out to `gh-pages`
@@ -50,5 +50,5 @@ jobs:
         helm repo index . --url https://eth-cscs.github.io/firecrest-v2 --merge index.yaml
 
         git add *.tgz index.yaml
-        git commit -m "New firecrest-ui helm chart release (${{ github.ref_name }})"
+        git commit -m "New firecrest-web-ui helm chart release (${{ github.ref_name }})"
         git push -u origin $GH_PAGES_BRANCH

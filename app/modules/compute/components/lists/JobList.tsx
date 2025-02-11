@@ -93,7 +93,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps
         </div>
         <div className='flex items-center text-xs text-gray-500 mb-1'>
           <CalendarIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
-          {formatDateTimeFromTimestamp({ timestamp: job.time.submission })}
+          {formatDateTimeFromTimestamp({ timestamp: job.time.start })}
         </div>
         <div className='flex items-center text-xs text-gray-500'>
           <ClockIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
@@ -115,10 +115,10 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps
       <td className='py-3 align-top tabular-nums text-gray-700'>
         {(job.status.state === JobStateStatus.RUNNING ||
           job.status.state === JobStateStatus.COMPLETED) && (
-          <>
-            <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
-          </>
-        )}
+            <>
+              <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
+            </>
+          )}
         {job.status.state === 'PENDING' && (
           <>
             <div className='truncate text-gray-500 text-xs mb-1'>
@@ -248,7 +248,7 @@ const SystemJobList: React.FC<any> = ({ systemsJobs }) => {
         job: job,
       }))
     })
-    .sort((a: any, b: any) => b.job.time.submission - a.job.time.submission)
+    .sort((a: any, b: any) => b.job.time.start - a.job.time.start)
   return (
     <>
       <UnavailableSystemAlert unavailableSystemsJobs={unavailableSystemsJobs} className='mb-6' />

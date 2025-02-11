@@ -26,7 +26,6 @@ export interface JobExitCode {
 export interface JobTime {
   elapsed: number
   start: number
-  submission: number
   end: number
   suspended: number
   limit: number

@@ -1,4 +1,10 @@
-// types
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 import type { System } from '~/types/api-status'
 import type { PostJobPayload, PostJobResponse } from '~/types/api-compute'
 import type {

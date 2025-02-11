@@ -1,8 +1,9 @@
-/**
- * This is intended to be a basic starting point for linting in your app.
- * It relies on recommended configs out of the box for simplicity, but you can
- * and should modify this configuration to best suit your team's needs.
- */
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
 
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
@@ -56,7 +57,7 @@ module.exports = {
     // Typescript
     {
       files: ['**/*.{ts,tsx}'],
-      plugins: ['@typescript-eslint', 'import'],
+      plugins: ['@typescript-eslint', 'import', 'header'],
       parser: '@typescript-eslint/parser',
       settings: {
         'import/internal-regex': '^~/',
@@ -80,6 +81,18 @@ module.exports = {
         'react-hooks/exhaustive-deps': 'off',
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
+        'header/header': [
+          2,
+          'block',
+          [
+            '************************************************************************',
+            ' Copyright (c) 2025, ETH Zurich. All rights reserved.',
+            '',
+            '  Please, refer to the LICENSE file in the root directory.',
+            '  SPDX-License-Identifier: BSD-3-Clause',
+            '************************************************************************',
+          ],
+        ],
       },
     },
 

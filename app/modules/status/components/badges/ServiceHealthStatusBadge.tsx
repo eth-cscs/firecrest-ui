@@ -1,3 +1,10 @@
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 import { CheckCircleIcon, CheckIcon, XCircleIcon } from '@heroicons/react/24/outline'
 // types
 import { ServiceHealth } from '~/types/api-status'

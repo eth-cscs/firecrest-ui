@@ -1,3 +1,10 @@
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 const getErrorField = ({ fieldName, formErrorFields }: any) => {
   if (formErrorFields && formErrorFields.length > 0) {
     return formErrorFields.find((formErrorField: any) => formErrorField.name === fieldName)

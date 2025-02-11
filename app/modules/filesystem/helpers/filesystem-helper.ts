@@ -3,7 +3,6 @@ import _ from 'lodash'
 import { FileSystemDataType } from '~/types/api-status'
 import type { System, FileSystem } from '~/types/api-status'
 
-
 export const splitFileSystemSelection = (fileSystemSelection: string) => {
   const [systemName, fileSystemPath] = fileSystemSelection.split('#')
   return {
@@ -21,7 +20,10 @@ export const buildFileSystemSelection = (
 }
 
 export const buildFileSystemSelectionPath = (fileSystem: FileSystem, username: string) => {
-  if (fileSystem.defaultWorkDir) {
+  if (
+    fileSystem.defaultWorkDir ||
+    [FileSystemDataType.users, FileSystemDataType.scratch].includes(fileSystem.dataType)
+  ) {
     return `${fileSystem.path}/${username}`
   }
   return fileSystem.path

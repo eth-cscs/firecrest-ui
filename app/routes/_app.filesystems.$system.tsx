@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import { captureRemixErrorBoundaryError } from '@sentry/remix'
-import { useLoaderData, useActionData, useRouteError, redirect } from '@remix-run/react'
+import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // loggers
 import logger from '~/logger/logger'
 // helpers
@@ -62,9 +62,11 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   let fileSystem = null
   if (targetPath === undefined || _.isEmpty(targetPath)) {
     fileSystem = getDefaultFileSystemFromSystem(system)
-    path = fileSystem.path
-    if (fileSystem.defaultWorkDir) {
-      path = `${fileSystem.path}/${auth.user.username}`
+    if (fileSystem) {
+      path = fileSystem.path
+      if (fileSystem.defaultWorkDir) {
+        path = `${fileSystem.path}/${auth.user.username}`
+      }
     }
   } else {
     fileSystem = searchFileSystemByPath(system.fileSystems, path!, false)

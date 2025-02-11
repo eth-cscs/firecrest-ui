@@ -1,3 +1,10 @@
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 import React, { Fragment, useRef } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 // helpers

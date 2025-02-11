@@ -1,3 +1,10 @@
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 const FILE_PATH_REGEXP: string = '^(.+)/([^/]+)$'
 const DIR_PATH_REGEXP: string = '^/$|(/[a-zA-Z_0-9-]+)+$'
 const CHMOD_REGEXP: string = '^[0-7]{3}$'

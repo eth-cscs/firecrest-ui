@@ -10,19 +10,12 @@ FirecREST provides a REST API through which developers can interact with HPC res
 
 # Development
 
-## Local UI development with a local FirecREST environment
-
-To simplify running FirecREST locally we provide a set of local Docker environments that already contain all required dependencies. Please make sure [Docker](https://www.docker.com/) is installed and running on your machine.
-
-### Configuration
-
-Please ensure that the FirecREST Docker Compose environment is running. To connect the UI with the backend, you need to create a ```.env``` file (refer to the provided env_example file for guidance).
-
-### Authx
-
-The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
-
 ### Compile and run the web application 
+
+## Requirements
+- Node.js >= 21.0.0
+
+## Local UI development with a local FirecREST environment
 
 The requirements for the web app development are node and yarn.
 ```shellscript
@@ -43,6 +36,18 @@ Authenticate with the follwing credentials:
 client: fireuser
 secret: password
 ```
+
+## Docker
+
+To simplify running FirecREST locally we provide a set of local Docker environments that already contain all required dependencies. Please make sure [Docker](https://www.docker.com/) is installed and running on your machine.
+
+### Configuration
+
+Please ensure that the FirecREST Docker Compose environment is running. To connect the UI with the backend, you need to create a ```.env``` file (refer to the provided env_example file for guidance).
+
+### Authx
+
+The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
 
 ## Helm Chart Repository
 

@@ -90,6 +90,10 @@ spec:
                   key: redis-auth-password
             - name: SUPPORT_URL
               value: {{ .Values.supportUrl }}
+            - name: DOC_URL
+              value: {{ .Values.docUrl }}
+            - name: REPO_URL
+              value: {{ .Values.repoUrl }}
 ---
 apiVersion: v1
 kind: Service

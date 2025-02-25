@@ -19,6 +19,8 @@ const base = {
   companyName: getEnvVariable(env, 'COMPANY_NAME', false, 'CSCS'),
   serviceName: getEnvVariable(env, 'SERVICE_NAME', false, 'firecrest-web-ui'),
   supportUrl: getEnvVariable(env, 'SUPPORT_URL', false),
+  repoUrl: getEnvVariable(env, 'REPO_URL', false),
+  docUrl: getEnvVariable(env, 'DOC_URL', false),
 }
 
 export default base

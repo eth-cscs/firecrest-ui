@@ -38,9 +38,17 @@ interface SidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: () => void
   supportUrl: string | null
+  docUrl: string | null
+  repoUrl: string | null
 }
 
-const Sidebar: React.FC<any> = ({ sidebarOpen, setSidebarOpen, supportUrl = null }: any) => {
+const Sidebar: React.FC<any> = ({
+  sidebarOpen,
+  setSidebarOpen,
+  supportUrl = null,
+  docUrl = null,
+  repoUrl = null,
+}: any) => {
   const location = useLocation()
 
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
@@ -54,18 +62,28 @@ const Sidebar: React.FC<any> = ({ sidebarOpen, setSidebarOpen, supportUrl = null
     },
   ]
 
-  const secondaryNavigation: any = [
-    { name: 'Documentation', url: 'https://products.cscs.ch/firecrest/', icon: DocumentTextIcon },
-    {
+  const secondaryNavigation: any = []
+
+  if (docUrl && docUrl !== '') {
+    secondaryNavigation.push({
+      name: 'Documentation',
+      url: docUrl,
+      icon: DocumentTextIcon,
+    })
+  }
+
+  if (repoUrl && repoUrl !== '') {
+    secondaryNavigation.push({
       name: 'Github repo',
-      url: 'https://github.com/eth-cscs/firecrest',
+      url: repoUrl,
       icon: CubeTransparentIcon,
-    },
-  ]
+    })
+  }
+
   if (supportUrl && supportUrl !== '') {
     secondaryNavigation.push({
       name: 'Get support',
-      url: 'https://support.cscs.ch',
+      url: supportUrl,
       icon: ChatBubbleLeftEllipsisIcon,
     })
   }

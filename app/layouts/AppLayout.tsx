@@ -21,18 +21,22 @@ interface AppLayoutProps {
   environment: string
   appVersion: string
   companyName: string
-  supportUrl: string
   authUser: AuthUser
   notificationMessages: Array<NotificationMessage>
+  supportUrl: string | null
+  docUrl: string | null
+  repoUrl: string | null
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({
   environment,
   appVersion,
   companyName,
-  supportUrl,
   authUser,
   notificationMessages,
+  supportUrl,
+  docUrl,
+  repoUrl,
 }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   return (
@@ -45,6 +49,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           supportUrl={supportUrl}
+          docUrl={docUrl}
+          repoUrl={repoUrl}
         />
         <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
           <Header setSidebarOpen={setSidebarOpen} authUser={authUser} />

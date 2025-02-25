@@ -52,3 +52,5 @@ UI_HOSTNAME='localhost:3000'
 
 # URLs
 SUPPORT_URL='<support-url>'
+DOC_URL='<doc-url>'
+REPO_URL='<repo-url>'

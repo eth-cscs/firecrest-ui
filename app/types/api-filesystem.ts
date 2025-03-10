@@ -128,8 +128,9 @@ export type PostTransferMvRequest = {
 }
 
 export interface GetTransferUploadResponse {
-  uploadUrl: string
+  completeUploadUrl: string
   transferJob: TranferJob
+  partsUploadUrls: string[]
 }
 
 export interface GetTransferDownloadResponse {
@@ -140,6 +141,7 @@ export interface GetTransferDownloadResponse {
 export type PostTransferUploadRequest = {
   path: string
   fileName: string
+  fileSize: number
 }
 
 export type PostTransferDownloadRequest = {

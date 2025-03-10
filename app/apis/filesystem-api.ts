@@ -260,10 +260,11 @@ export const postTransferUpload = async (
   system: string,
   path: string,
   fileName: string,
+  fileSize: string,
 ): Promise<GetTransferUploadResponse> => {
   const apiResponse = await api.post<any, GetTransferUploadResponse>(
     `/filesystem/${system}/transfer/upload`,
-    JSON.stringify({ path, fileName }),
+    JSON.stringify({ path, fileName, fileSize }),
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -463,10 +464,12 @@ export const postLocalTransferUpload = async (
   systemName: string,
   sourcePath: string,
   targetPath: string,
+  fileSize: number,
 ): Promise<GetTransferUploadResponse> => {
   const formData = new FormData()
   formData.append('fileName', sourcePath)
   formData.append('path', targetPath)
+  formData.append('fileSize', fileSize.toString())
   const apiResponse = await api.post<any, GetTransferUploadResponse>(
     `/api/filesystems/${systemName}/transfer/upload`,
     formData,

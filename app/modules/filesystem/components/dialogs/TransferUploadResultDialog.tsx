@@ -43,16 +43,31 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
           The upload operation to the destination path &quot;{targetPath}&quot; has been
           successfully submitted.
         </p>
-        <h5 className='text-sm mb-2 font-medium'>Signed Upload URL:</h5>
+        <h5 className='text-sm mb-2 font-medium'>Complete signed Upload URL:</h5>
         <p className='text-sm mb-2'>
           Use the following signed URL to upload your local file to the S3 storage.
         </p>
-        <CodeBlock code={transferResult.uploadUrl} />
+        <CodeBlock code={transferResult.completeUploadUrl} />
         <h5 className='text-sm mb-2 mt-8 font-medium'>Usage Example:</h5>
         <p className='text-sm mb-2'>
           The following is a command line example to upload your large file using the curl command.
         </p>
-        <CodeBlock code={`curl '${transferResult.uploadUrl}' --upload-file [path to local file]`} />
+        <CodeBlock
+          code={`curl '${transferResult.completeUploadUrl}' --upload-file [path to local file]`}
+        />
+        <h5 className='text-sm mb-2 mt-8 font-medium'>Multiparts upload:</h5>
+        {transferResult.partsUploadUrls.map(
+          (partUpload: any, idx: React.Key | null | undefined) => (
+            <>
+              <p className='text-sm mb-2'>Part {(idx as number) + 1}:</p>
+              <CodeBlock
+                key={idx}
+                code={`curl '${partUpload}' --upload-file [path to local file]`}
+              />
+              <div className='mt-5 pb-2' />
+            </>
+          ),
+        )}
       </div>
     </SimpleDialog>
   )

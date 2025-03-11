@@ -774,6 +774,7 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
             systemName,
             fileName,
             targetPath,
+            fileToUploadSelected.size,
           )
           setUploadError(null)
           setFileToUploadSelected(null)

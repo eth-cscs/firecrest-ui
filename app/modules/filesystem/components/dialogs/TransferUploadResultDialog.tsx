@@ -59,7 +59,7 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
         {transferResult.partsUploadUrls.map(
           (partUpload: any, idx: React.Key | null | undefined) => (
             <>
-              <p className='text-sm mb-2'>Part {idx + 1}:</p>
+              <p className='text-sm mb-2'>Part {(idx as number) + 1}:</p>
               <CodeBlock
                 key={idx}
                 code={`curl '${partUpload}' --upload-file [path to local file]`}

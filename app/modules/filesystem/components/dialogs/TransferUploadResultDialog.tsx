@@ -64,6 +64,7 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
                 key={idx}
                 code={`curl '${partUpload}' --upload-file [path to local file]`}
               />
+              <div className='mt-5 pb-2' />
             </>
           ),
         )}

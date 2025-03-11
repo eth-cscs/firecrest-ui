@@ -60,9 +60,7 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
           ),
         )}
         <h5 className='text-sm mb-2 mt-8 font-medium'>2. Complete the upload</h5>
-        <CodeBlock
-          code={`curl '${transferResult.completeUploadUrl}' --upload-file [path to local file]`}
-        />
+        <CodeBlock code={`curl '${transferResult.completeUploadUrl}'`} />
       </div>
     </SimpleDialog>
   )

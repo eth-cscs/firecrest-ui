@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   firecrest-web-ui-v2:
   - apiVersion: v2
+    appVersion: 1.2.3
+    created: "2025-03-20T16:54:11.259945093Z"
+    description: The frontend component firecrest-web-ui
+    digest: 17722d580db3ec134af02f7c53cedefca755115db5caf9e162ca24baa41ebbcd
+    name: firecrest-web-ui-v2
+    type: application
+    urls:
+    - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-1.2.3.tgz
+    version: 1.2.3
+  - apiVersion: v2
     appVersion: 1.2.2
-    created: "2025-03-20T15:58:59.019430083Z"
+    created: "2025-03-20T16:54:11.259833133Z"
     description: The frontend component firecrest-web-ui
     digest: c378a3e05b3414744126c7204e645d65d667a5ff8eefbed0007fd050f38a9693
     name: firecrest-web-ui-v2
@@ -13,7 +23,7 @@ entries:
     version: 1.2.2
   - apiVersion: v2
     appVersion: 1.2.1
-    created: "2025-03-20T15:58:59.018990683Z"
+    created: "2025-03-20T16:54:11.259720182Z"
     description: The frontend component firecrest-web-ui
     digest: f53d4314e94d0515603593b1771dd8eadf1cf68f9466747bd3850130f9c4dd6e
     name: firecrest-web-ui-v2
@@ -23,7 +33,7 @@ entries:
     version: 1.2.1
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2025-03-20T15:58:59.018878945Z"
+    created: "2025-03-20T16:54:11.259576634Z"
     description: The frontend component firecrest-web-ui
     digest: 0d4cb230bf84a7d713e00c2028015a9f8372d0f84ca60c739e329df09e0dac3f
     name: firecrest-web-ui-v2
@@ -33,7 +43,7 @@ entries:
     version: 1.2.0
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2025-03-20T15:58:59.018765342Z"
+    created: "2025-03-20T16:54:11.259445017Z"
     description: The frontend component firecrest-web-ui
     digest: f1732489256442a7ad26e01206b2ae85e83653f7f7de57a2cb8461b5d8d6ffe6
     name: firecrest-web-ui-v2
@@ -43,7 +53,7 @@ entries:
     version: 1.1.0
   - apiVersion: v2
     appVersion: 1.0.3
-    created: "2025-03-20T15:58:59.018491692Z"
+    created: "2025-03-20T16:54:11.25933967Z"
     description: The frontend component firecrest-web-ui
     digest: 1cae49676e88fdbb719ee77bd9a9f568b69dd043696706814dc044d8dab16158
     name: firecrest-web-ui-v2
@@ -53,7 +63,7 @@ entries:
     version: 1.0.3
   - apiVersion: v2
     appVersion: 1.0.2
-    created: "2025-03-20T15:58:59.018393468Z"
+    created: "2025-03-20T16:54:11.259204177Z"
     description: The frontend component firecrest-web-ui
     digest: 891c7079ae089c7d4a04f154e4aeca1c1e824920de521a69d43accf0279c05ed
     name: firecrest-web-ui-v2
@@ -63,7 +73,7 @@ entries:
     version: 1.0.2
   - apiVersion: v2
     appVersion: 1.0.1
-    created: "2025-03-20T15:58:59.018290066Z"
+    created: "2025-03-20T16:54:11.259080966Z"
     description: The frontend component firecrest-web-ui
     digest: 033d632ab60a1e91e6a654fa6aa2ec47c2d3ffffccba6b68de12cb0db18e7db6
     name: firecrest-web-ui-v2
@@ -73,7 +83,7 @@ entries:
     version: 1.0.1
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-03-20T15:58:59.018135727Z"
+    created: "2025-03-20T16:54:11.258961974Z"
     description: The frontend component firecrest-web-ui
     digest: 78c9ae0e9d3ef4e76ec4ed5f300f249570ebe86ece8ebed7ef370e5db1d8d2ff
     name: firecrest-web-ui-v2
@@ -83,7 +93,7 @@ entries:
     version: 1.0.0
   - apiVersion: v2
     appVersion: 0.0.5
-    created: "2025-03-20T15:58:59.018024109Z"
+    created: "2025-03-20T16:54:11.258837591Z"
     description: The frontend component firecrest-web-ui
     digest: 655eac7d267405ab0f17ed109624851a9aa68482a7d3b457416a4b1e268bf2b5
     name: firecrest-web-ui-v2
@@ -93,7 +103,7 @@ entries:
     version: 0.0.5
   - apiVersion: v2
     appVersion: 0.0.4
-    created: "2025-03-20T15:58:59.017899597Z"
+    created: "2025-03-20T16:54:11.258706315Z"
     description: The frontend component firecrest-web-ui
     digest: a348c451437fb3d22319d511c02d41542bdf96b66bd10c003bc16a525dc39ec1
     name: firecrest-web-ui-v2
@@ -101,4 +111,4 @@ entries:
     urls:
     - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-0.0.4.tgz
     version: 0.0.4
-generated: "2025-03-20T15:58:59.017641706Z"
+generated: "2025-03-20T16:54:11.258471997Z"

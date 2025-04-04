@@ -35,9 +35,11 @@ jobs:
         run: |
           git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
           git checkout $GH_PAGES_BRANCH
+          mv charts .charts
           find . -mindepth 1 -maxdepth 1 ! -name '.*' -exec rm -rf {} \;
           mv  ./.site/* ./
           rm -rf .site
+          mv .charts charts
       - name: Check for changes
         run: |
           git diff --quiet || echo "CHANGES=true" >> $GITHUB_ENV

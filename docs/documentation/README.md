@@ -16,7 +16,7 @@ The Job Scheduler lists all jobs and includes functionality to schedule new jobs
 
 ### Schedule a Job
 
-The "Schedule a Job" button, located at the top-right corner of the Job Scheduler view, opens a form to schedule a new job.
+The "Submit a Job" button, located at the top-right corner of the Job Scheduler view, opens a form to schedule a new job.
 
 ![Schedule a Job Form](../screenshots/02_job-scheduler-create.png)
 

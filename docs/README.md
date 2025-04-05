@@ -1,4 +1,4 @@
-# FirecREST Documentation
+# FirecREST v2 UI Documentation
 
 Topics that will be covered in this section:
 

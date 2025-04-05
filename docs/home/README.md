@@ -1,6 +1,6 @@
 # FirecREST v2 UI
 
-FirecREST UI is a web application designed to provide essential functionalities for interacting with a FirecREST API v2 backend.
+FirecREST UI is a web application designed to provide essential functionalities for interacting with [FirecREST API v2 backend](https://eth-cscs.github.io/firecrest-v2/).
 
 FirecREST offers a REST API that enables developers to interact with HPC resources such as schedulers, filesystems, and more. Additionally, it provides methods for authentication, authorization, job execution, file-system operations, and access to accounting or status information.
 

@@ -54,6 +54,7 @@ const Header: React.FC<any> = ({ setSidebarOpen, authUser }: any) => {
                   <Link
                     to='/logout/sso'
                     className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'
+                    reloadDocument
                   >
                     Logout
                   </Link>

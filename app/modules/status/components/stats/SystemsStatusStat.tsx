@@ -13,6 +13,7 @@ import {
   XCircleIcon,
   ServerStackIcon,
   ExclamationCircleIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { SystemHealtyStatus, type System, ServiceHealth, ServiceType } from '~/types/api-status'
@@ -24,6 +25,7 @@ import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import ServiceHealthStatusBadge from '~/modules/status/components/badges/ServiceHealthStatusBadge'
 // data
 import { isSystemHealthy } from '~/helpers/system-helper'
+import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
 
 interface SystemStatusStatProps {
   system: System
@@ -74,17 +76,85 @@ const SystemHealtyStatusBadge: React.FC<SystemHealtyStatusBadgeProps> = ({
   )
 }
 
-interface SystemHealtyDetailTableProps {
+interface SystemHealtyDetailRowProps {
+  system: System
+  serviceHealth: ServiceHealth
+}
+
+const ServiceHealthItemRow: React.FC<SystemHealtyDetailRowProps> = ({
+  system,
+  serviceHealth,
+}: SystemHealtyDetailRowProps) => {
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  return (
+    <>
+      <tr key={serviceHealth.serviceType}>
+        <td className='whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0'>
+          <ServiceHealthStatusBadge serviceHealth={serviceHealth} />
+        </td>
+        <td className='whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0'>
+          <div className='flex'>
+            <div className=''>
+              <div className='font-medium text-gray-900'>{serviceHealth.serviceType}</div>
+              {serviceHealth.serviceType == ServiceType.scheduler && (
+                <div className='text-gray-500 text-xs'>
+                  available {serviceHealth.nodes?.available} of {serviceHealth.nodes?.total}
+                </div>
+              )}
+              {serviceHealth.serviceType == ServiceType.filesystem && (
+                <div className='text-gray-500 text-xs'>{serviceHealth.path}</div>
+              )}
+              {serviceHealth.serviceType == ServiceType.ssh && (
+                <div className='text-gray-500 text-xs'>port {system.ssh.port}</div>
+              )}
+            </div>
+          </div>
+        </td>
+        <td className='whitespace-nowrap px-3 py-1 text-sm text-gray-500'>
+          <div>latency {prettyMilliseconds(serviceHealth.latency * 1000)}</div>
+          <div className='text-gray-500 text-xs'>
+            last check{' '}
+            {formatDateTime({
+              dateTime: serviceHealth.lastChecked,
+              format: 'YYYY-MM-DD HH:mm:ss',
+            })}
+          </div>
+        </td>
+        <td className='whitespace-nowrap px-3 py-1 text-sm text-gray-500'>
+          {serviceHealth.message != null && (
+            <>
+              <button
+                type='button'
+                onClick={() => setDetailsDialogOpen(true)}
+                className='relative inline-flex items-center gap-x-1.5 rounded-md bg-white px-2 py-1 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+              >
+                <EyeIcon className='-ml-0.5 h-5 w-3' aria-hidden='true' />
+                <div>Inspect</div>
+              </button>
+            </>
+          )}
+          <ServiceHealthDetailsDialog
+            serviceHealthMessage={serviceHealth.message}
+            open={detailsDialogOpen}
+            onClose={() => setDetailsDialogOpen(false)}
+          />
+        </td>
+      </tr>
+    </>
+  )
+}
+
+interface SystemHealthDetailTableProps {
   system: System
   servicesHealth: ServiceHealth[]
   className?: string
 }
 
-const SystemHealtyDetailTable: React.FC<SystemHealtyDetailTableProps> = ({
+const SystemHealthDetailTable: React.FC<SystemHealthDetailTableProps> = ({
   system,
   servicesHealth,
   className = '',
-}: SystemHealtyDetailTableProps) => {
+}: SystemHealthDetailTableProps) => {
   return (
     <div className='px-4 sm:px-6 lg:px-8'>
       <div className='mt-8 flow-root'>
@@ -111,46 +181,21 @@ const SystemHealtyDetailTable: React.FC<SystemHealtyDetailTableProps> = ({
                   >
                     Health check details
                   </th>
+                  <th
+                    scope='col'
+                    className='px-3 py-3.5 text-left text-sm font-semibold text-gray-900'
+                  >
+                    System data
+                  </th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-200 bg-white'>
                 {servicesHealth.map((serviceHealth: ServiceHealth) => (
-                  <tr key={serviceHealth.serviceType}>
-                    <td className='whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0'>
-                      <ServiceHealthStatusBadge serviceHealth={serviceHealth} />
-                    </td>
-                    <td className='whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0'>
-                      <div className='flex'>
-                        <div className=''>
-                          <div className='font-medium text-gray-900'>
-                            {serviceHealth.serviceType}
-                          </div>
-                          {serviceHealth.serviceType == ServiceType.scheduler && (
-                            <div className='text-gray-500 text-xs'>
-                              available {serviceHealth.nodes?.available} of{' '}
-                              {serviceHealth.nodes?.total}
-                            </div>
-                          )}
-                          {serviceHealth.serviceType == ServiceType.filesystem && (
-                            <div className='text-gray-500 text-xs'>{serviceHealth.path}</div>
-                          )}
-                          {serviceHealth.serviceType == ServiceType.ssh && (
-                            <div className='text-gray-500 text-xs'>port {system.ssh.port}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className='whitespace-nowrap px-3 py-1 text-sm text-gray-500'>
-                      <div>latency {prettyMilliseconds(serviceHealth.latency * 1000)}</div>
-                      <div className='text-gray-500 text-xs'>
-                        last check{' '}
-                        {formatDateTime({
-                          dateTime: serviceHealth.lastChecked,
-                          format: 'YYYY-MM-DD HH:mm:ss',
-                        })}
-                      </div>
-                    </td>
-                  </tr>
+                  <ServiceHealthItemRow
+                    key={serviceHealth.serviceType}
+                    serviceHealth={serviceHealth}
+                    system={system}
+                  />
                 ))}
               </tbody>
             </table>
@@ -185,7 +230,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
           <LabelBadge color={LabelColor.BLUE}>{ssh.host}</LabelBadge>
         </div>
       </div>
-      {viewAll && <SystemHealtyDetailTable system={system} servicesHealth={servicesHealth} />}
+      {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth} />}
       <div className='absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6'>
         <div className='text-sm'>
           <button

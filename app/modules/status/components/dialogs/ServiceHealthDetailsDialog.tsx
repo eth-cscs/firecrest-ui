@@ -26,7 +26,9 @@ function parsePythonJson(pythonJsonStr: string): unknown {
     // Step 2: Parse as normal JSON
     return JSON.parse(fixedStr)
   } catch (err) {
-    console.error('Invalid Python-style JSON string:', err)
+    if (typeof pythonJsonStr === 'string') {
+      return { message: pythonJsonStr }
+    }
     return { error: 'Parsing failed' }
   }
 }

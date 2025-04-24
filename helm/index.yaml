@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   firecrest-web-ui-v2:
   - apiVersion: v2
+    appVersion: 2.2.4
+    created: "2025-04-24T09:18:04.054583059Z"
+    description: The frontend component firecrest-web-ui
+    digest: 3a7080bf5041d7c1cb1fa8403b6c6bdd797b4b85e36038fe0f0a8087bec77a45
+    name: firecrest-web-ui-v2
+    type: application
+    urls:
+    - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-2.2.4.tgz
+    version: 2.2.4
+  - apiVersion: v2
     appVersion: 2.2.3
-    created: "2025-04-23T08:28:06.743557547Z"
+    created: "2025-04-24T09:18:04.054463946Z"
     description: The frontend component firecrest-web-ui
     digest: 9c8cbad8b43db72dcbad21fc11f0aad9ac067102dee5502b26ff6f46e04d8217
     name: firecrest-web-ui-v2
@@ -13,7 +23,7 @@ entries:
     version: 2.2.3
   - apiVersion: v2
     appVersion: 2.2.2
-    created: "2025-04-23T08:28:06.743456708Z"
+    created: "2025-04-24T09:18:04.054354972Z"
     description: The frontend component firecrest-web-ui
     digest: 0c8a526ce486ae2c24f3ad9f4e77198bf5d4c3ceafc941cdf2af3808ab73de02
     name: firecrest-web-ui-v2
@@ -23,7 +33,7 @@ entries:
     version: 2.2.2
   - apiVersion: v2
     appVersion: 2.2.1
-    created: "2025-04-23T08:28:06.743344858Z"
+    created: "2025-04-24T09:18:04.054189402Z"
     description: The frontend component firecrest-web-ui
     digest: f641f323be0791c7094f1b2467ae868feb46030fc73d938fff01d0e05cb8f237
     name: firecrest-web-ui-v2
@@ -31,4 +41,4 @@ entries:
     urls:
     - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-2.2.1.tgz
     version: 2.2.1
-generated: "2025-04-23T08:28:06.743108144Z"
+generated: "2025-04-24T09:18:04.053958992Z"

@@ -111,7 +111,6 @@ const ServiceHealthItemRow: React.FC<SystemHealtyDetailRowProps> = ({
           </div>
         </td>
         <td className='whitespace-nowrap px-3 py-1 text-sm text-gray-500'>
-          <div>latency {prettyMilliseconds(serviceHealth.latency * 1000)}</div>
           <div className='text-gray-500 text-xs'>
             last check{' '}
             {formatDateTime({

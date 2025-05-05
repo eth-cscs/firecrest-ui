@@ -15,12 +15,12 @@ import SimplePanel from '~/components/panels/SimplePanel'
 // lists
 import SystemJobList from '~/modules/compute/components/lists/JobList'
 
-const DashboardView: React.FC<any> = ({ systems, runningJobs }: any) => {
+const DashboardView: React.FC<any> = ({ systems, dashboardJobs }: any) => {
   return (
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
       <SystemsStatusStat systems={systems} />
       <SimplePanel title={'List of running jobs'} className='mb-4' actionsButtons={[]}>
-        <SystemJobList systemsJobs={runningJobs} />
+        <SystemJobList systemsJobs={dashboardJobs} />
       </SimplePanel>
     </SimpleView>
   )

@@ -94,6 +94,22 @@ spec:
               value: {{ .Values.docUrl }}
             - name: REPO_URL
               value: {{ .Values.repoUrl }}
+            {{- if .Values.branding.customLogo }}
+            - name: LOGO_PATH
+              value: "{{ .Values.branding.customLogoPath }}"
+            {{- end }}
+          {{- if .Values.branding.customLogo }}
+          volumeMounts:
+            - name: logo-volume
+              mountPath: "{{ .Values.branding.customLogoPath }}"
+              subPath: logo.svg
+          {{- end }}
+      {{- if .Values.branding.customLogo }}
+      volumes:
+        - name: logo-volume
+          configMap:
+            name: firecrest-logo
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

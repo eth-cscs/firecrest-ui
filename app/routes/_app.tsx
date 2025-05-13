@@ -36,7 +36,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
       environment: base.environment,
       appVersion: base.appVersion,
       companyName: base.companyName,
-      platformName: base.platformName,
+      appName: base.appName,
       supportUrl: base.supportUrl,
       repoUrl: base.repoUrl,
       docUrl: base.docUrl,
@@ -56,7 +56,7 @@ export default function AppLayoutRoute() {
     appVersion,
     companyName,
     logoPath,
-    platformName,
+    appName,
     supportUrl,
     repoUrl,
     docUrl,
@@ -70,7 +70,7 @@ export default function AppLayoutRoute() {
       appVersion={appVersion}
       companyName={companyName}
       logoPath={logoPath}
-      platformName={platformName}
+      appName={appName}
       supportUrl={supportUrl}
       repoUrl={repoUrl}
       docUrl={docUrl}

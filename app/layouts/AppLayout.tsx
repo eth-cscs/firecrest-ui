@@ -22,7 +22,7 @@ interface AppLayoutProps {
   appVersion: string
   companyName: string
   logoPath: string | null
-  platformName: string
+  appName: string
   authUser: AuthUser
   notificationMessages: Array<NotificationMessage>
   supportUrl: string | null
@@ -35,7 +35,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   appVersion,
   companyName,
   logoPath,
-  platformName,
+  appName,
   authUser,
   notificationMessages,
   supportUrl,
@@ -52,7 +52,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
         <Sidebar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
-          platformName={platformName}
+          appName={appName}
           supportUrl={supportUrl}
           docUrl={docUrl}
           repoUrl={repoUrl}

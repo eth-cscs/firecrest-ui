@@ -88,12 +88,14 @@ spec:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
                   key: redis-auth-password
+            - name: APP_NAME
+              value: {{ .Values.branding.appName }}
             - name: SUPPORT_URL
-              value: {{ .Values.supportUrl }}
+              value: {{ .Values.branding.supportUrl }}
             - name: DOC_URL
-              value: {{ .Values.docUrl }}
+              value: {{ .Values.branding.docUrl }}
             - name: REPO_URL
-              value: {{ .Values.repoUrl }}
+              value: {{ .Values.branding.repoUrl }}
             {{- if .Values.branding.customLogo }}
             - name: LOGO_PATH
               value: "{{ .Values.branding.customLogoPath }}"

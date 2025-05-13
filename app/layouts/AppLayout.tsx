@@ -21,6 +21,8 @@ interface AppLayoutProps {
   environment: string
   appVersion: string
   companyName: string
+  logoPath: string | null
+  platformName: string
   authUser: AuthUser
   notificationMessages: Array<NotificationMessage>
   supportUrl: string | null
@@ -32,6 +34,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   environment,
   appVersion,
   companyName,
+  logoPath,
+  platformName,
   authUser,
   notificationMessages,
   supportUrl,
@@ -48,9 +52,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({
         <Sidebar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
+          platformName={platformName}
           supportUrl={supportUrl}
           docUrl={docUrl}
           repoUrl={repoUrl}
+          logoPath={logoPath}
         />
         <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
           <Header setSidebarOpen={setSidebarOpen} authUser={authUser} />

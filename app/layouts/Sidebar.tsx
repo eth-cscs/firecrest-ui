@@ -30,13 +30,15 @@ import { LABEL_COMPUTE_TITLE, LABEL_FILESYSTEM_TITLE } from '~/labels'
 // utils
 import { classNames } from '~/helpers/class-helper'
 // logos
-import LogoFirecREST from '~/logos/LogoFirecREST'
+import AppLogo from '~/logos/AppLogo'
 // mappers
 import { serviceIconMapper } from '~/mappers/icon-mapper'
 
 interface SidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: () => void
+  logoPath: string | null
+  platformName: string | null
   supportUrl: string | null
   docUrl: string | null
   repoUrl: string | null
@@ -45,6 +47,8 @@ interface SidebarProps {
 const Sidebar: React.FC<any> = ({
   sidebarOpen,
   setSidebarOpen,
+  logoPath = null,
+  platformName = null,
   supportUrl = null,
   docUrl = null,
   repoUrl = null,
@@ -144,13 +148,8 @@ const Sidebar: React.FC<any> = ({
                 </div>
               </TransitionChild>
               <div className='flex-shrink-0 flex items-center px-4'>
-                <LogoFirecREST className='h-12 w-auto' />
-                <span className='ml-2 pr-5 relative'>
-                  FirecREST Web UI{' '}
-                  <span className='absolute top-0 end-0 inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white'>
-                    v2
-                  </span>
-                </span>
+                <AppLogo className='h-12 w-auto' logoPath={logoPath} />
+                <span className='ml-2 pr-5 relative'>{platformName}</span>
               </div>
               <div className='mt-5 flex-1 h-0 overflow-y-auto'>
                 <nav className='px-2 space-y-6 divide-y'>
@@ -300,13 +299,8 @@ const Sidebar: React.FC<any> = ({
         {/* Sidebar component, swap this element with another sidebar if you like */}
         <div className='flex flex-col flex-grow border-r border-gray-200 pt-2 bg-white overflow-y-auto'>
           <div className='flex items-center flex-shrink-0 px-4'>
-            <LogoFirecREST className='h-12 w-auto' />
-            <span className='ml-2 pr-5 relative'>
-              FirecREST Web UI{' '}
-              <span className='absolute top-0 end-0 inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium transform -translate-y-1/2 translate-x-1/2 bg-blue-500 text-white'>
-                v2
-              </span>
-            </span>
+            <AppLogo className='h-12 w-auto' logoPath={logoPath} />
+            <span className='ml-2 pr-5 relative'>{platformName}</span>
           </div>
           <div className='mt-5 flex-grow flex flex-col'>
             <nav className='flex-1 px-2 pb-4 space-y-6 divide-y'>

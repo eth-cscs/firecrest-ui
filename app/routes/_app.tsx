@@ -36,9 +36,11 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
       environment: base.environment,
       appVersion: base.appVersion,
       companyName: base.companyName,
+      platformName: base.platformName,
       supportUrl: base.supportUrl,
       repoUrl: base.repoUrl,
       docUrl: base.docUrl,
+      logoPath: base.logoPath,
       authUser: auth.user,
       notificationMessages: notificationMessages,
     },
@@ -50,13 +52,25 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
 
 export default function AppLayoutRoute() {
   const data = useLoaderData()
-  const { appVersion, companyName, supportUrl, repoUrl, docUrl, environment, authUser, notificationMessages }: any =
-    data
+  const {
+    appVersion,
+    companyName,
+    logoPath,
+    platformName,
+    supportUrl,
+    repoUrl,
+    docUrl,
+    environment,
+    authUser,
+    notificationMessages,
+  }: any = data
   return (
     <AppLayout
       environment={environment}
       appVersion={appVersion}
       companyName={companyName}
+      logoPath={logoPath}
+      platformName={platformName}
       supportUrl={supportUrl}
       repoUrl={repoUrl}
       docUrl={docUrl}

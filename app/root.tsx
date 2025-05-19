@@ -29,7 +29,9 @@ import logger from './logger/logger'
 export async function loader({ context }: LoaderFunctionArgs) {
   return json({
     nonce: context.nonce as string,
+    appName: base.appName,
     ENV: {
+      APP_NAME: base.appName,
       APP_VERSION: base.appVersion,
       ENVIRONMENT: base.environment,
       SENTRY_ACTIVE: sentry.active,
@@ -40,12 +42,16 @@ export async function loader({ context }: LoaderFunctionArgs) {
   })
 }
 
-export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
+export const links: LinksFunction = () => [
+  { rel: 'stylesheet', href: stylesheet },
+  { rel: 'icon', type: 'image/svg+xml', href: base.logoPath },
+  { rel: 'icon', type: 'image/png', href: base.logoPath },
+]
 
 function Document({
   children,
-  title = 'FirecREST Web UI - v2',
   nonce,
+  title,
 }: {
   children: React.ReactNode
   title?: string
@@ -70,9 +76,9 @@ function Document({
 
 export default function App() {
   const data = useLoaderData<typeof loader>()
-  const { nonce } = data
+  const { nonce, appName } = data
   return (
-    <Document nonce={nonce}>
+    <Document nonce={nonce} title={appName}>
       <Outlet />
       <script
         nonce={nonce}

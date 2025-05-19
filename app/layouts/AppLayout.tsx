@@ -19,10 +19,10 @@ import NotificationOverlay from '~/components/overlays/NotificationOverlay'
 
 interface AppLayoutProps {
   environment: string
+  appName: string
   appVersion: string
   companyName: string
   logoPath: string | null
-  appName: string
   authUser: AuthUser
   notificationMessages: Array<NotificationMessage>
   supportUrl: string | null
@@ -32,10 +32,10 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({
   environment,
+  appName,
   appVersion,
   companyName,
   logoPath,
-  appName,
   authUser,
   notificationMessages,
   supportUrl,

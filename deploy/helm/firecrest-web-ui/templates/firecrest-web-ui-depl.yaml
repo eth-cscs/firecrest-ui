@@ -103,7 +103,7 @@ spec:
           {{- if .Values.customLogo }}
           volumeMounts:
             - name: logo-volume
-              mountPath: "{{ .Values.customLogoPath }}"
+              mountPath: "{{ .Values.customLogoVolume }}"
               subPath: logo.svg
           {{- end }}
       {{- if .Values.customLogo }}

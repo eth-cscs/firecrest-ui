@@ -50,7 +50,8 @@ loggingLevel: "info"
 fileUploadLimit: "10MB"
 
 customLogo: true
-customLogoPath: "/custom/logo.svg"
+customLogoVolume: "/usr/server/app/public/custom/logo.svg"
+customLogoPath: "./custom/logo.svg"
 
 keycloakDomain: "auth.example.com"
 keycloakRealm: "myrealm"
@@ -90,7 +91,8 @@ To enable a custom logo:
 
 ```yaml
 customLogo: true
-customLogoPath: "/custom/logo.svg"
+customLogoVolume: "/usr/server/app/public/custom/logo.svg"
+customLogoPath: "./custom/logo.svg"
 ```
 
 2. Create the ConfigMap with the custom logo:
@@ -131,7 +133,7 @@ In the `deployment.yaml`, make sure to conditionally include the volume and volu
 {{- if .Values.customLogo }}
 volumeMounts:
   - name: logo-volume
-    mountPath: {{ .Values.customLogoPath }}
+    mountPath: {{ .Values.customLogoVolume }}
     subPath: logo.svg
 {{- end }}
 

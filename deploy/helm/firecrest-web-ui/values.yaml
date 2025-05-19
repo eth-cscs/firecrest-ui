@@ -13,7 +13,8 @@ fileUploadLimit: "5242880"  # 5MB
 # Logo settings
 appName: "Firecrest Dashboard"
 customLogo: false
-customLogoPath: "/app/public/custom/logo.svg"
+customLogoVolume: "/usr/server/app/public/custom/logo.svg"
+customLogoPath: "./custom/logo.svg"
 
 # Keycloak settings
 keycloakDomain: "auth.example.com/auth"

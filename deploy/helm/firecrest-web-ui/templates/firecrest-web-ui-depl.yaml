@@ -32,6 +32,8 @@ spec:
               value: "{{ .Values.global.environment }}"
             - name: UI_HOSTNAME
               value: "{{ .Values.global.dns.webUI }}"
+            - name: APP_NAME
+              value: "{{ .Values.appName }}"
             - name: APP_VERSION
               value: "{{ .Chart.AppVersion }}"
             - name: LOGGING_LEVEL
@@ -42,7 +44,7 @@ spec:
                   name: firecrest-web-ui-v2
                   key: session-secret
             - name: FILE_UPLOAD_LIMIT
-              value: "{{ .Values.fileUploadLimit | quote }}"
+              value: "{{ .Values.fileUploadLimit }}"
             - name: KEYCLOAK_DOMAIN
               value: "{{ .Values.keycloakDomain }}"
             - name: KEYCLOAK_REALM
@@ -64,9 +66,9 @@ spec:
             - name: FIRECREST_API_BASE_URL
               value: "{{ .Values.firecrestApiBaseUrl }}"
             - name: SENTRY_ACTIVE
-              value: "{{ .Values.sentryActive | quote }}"
+              value: "{{ .Values.sentryActive }}"
             - name: SENTRY_DEBUG
-              value: "{{ .Values.sentryDebug | quote }}"
+              value: "{{ .Values.sentryDebug }}"
             - name: SENTRY_TRACES_SAMPLE_RATE
               value: "{{ .Values.sentryTracesSampleRate | quote }}"
             - name: SENTRY_DSN
@@ -80,7 +82,7 @@ spec:
                   name: firecrest-web-ui-v2
                   key: sentry-auth-token
             - name: REDIS_ACTIVE
-              value: "{{ .Values.redisActive | quote }}"
+              value: "{{ .Values.redisActive }}"
             - name: REDIS_HOST
               value: "{{ .Values.redisHost }}"
             - name: REDIS_AUTH_PASSWORD
@@ -94,17 +96,17 @@ spec:
               value: "{{ .Values.docUrl }}"
             - name: REPO_URL
               value: "{{ .Values.repoUrl }}"
-            {{- if .Values.branding.customLogo }}
+            {{- if .Values.customLogo }}
             - name: LOGO_PATH
-              value: "{{ .Values.branding.customLogoPath }}"
+              value: "{{ .Values.customLogoPath }}"
             {{- end }}
-          {{- if .Values.branding.customLogo }}
+          {{- if .Values.customLogo }}
           volumeMounts:
             - name: logo-volume
-              mountPath: "{{ .Values.branding.customLogoPath }}"
+              mountPath: "{{ .Values.customLogoPath }}"
               subPath: logo.svg
           {{- end }}
-      {{- if .Values.branding.customLogo }}
+      {{- if .Values.customLogo }}
       volumes:
         - name: logo-volume
           configMap:

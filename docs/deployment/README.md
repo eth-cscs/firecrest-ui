@@ -49,9 +49,8 @@ image: "firecrest-web-ui"
 loggingLevel: "info"
 fileUploadLimit: "10MB"
 
-branding:
-  customLogo: true
-  customLogoPath: "/custom/logo.svg"
+customLogo: true
+customLogoPath: "/custom/logo.svg"
 
 keycloakDomain: "auth.example.com"
 keycloakRealm: "myrealm"
@@ -90,9 +89,8 @@ To enable a custom logo:
 1. Update `values.yaml` to enable branding:
 
 ```yaml
-branding:
-  customLogo: true
-  customLogoPath: "/custom/logo.svg"
+customLogo: true
+customLogoPath: "/custom/logo.svg"
 ```
 
 2. Create the ConfigMap with the custom logo:
@@ -130,14 +128,14 @@ data:
 In the `deployment.yaml`, make sure to conditionally include the volume and volumeMount only when the custom logo flag is set:
 
 ```yaml
-{{- if .Values.branding.customLogo }}
+{{- if .Values.customLogo }}
 volumeMounts:
   - name: logo-volume
-    mountPath: {{ .Values.branding.customLogoPath }}
+    mountPath: {{ .Values.customLogoPath }}
     subPath: logo.svg
 {{- end }}
 
-{{- if .Values.branding.customLogo }}
+{{- if .Values.customLogo }}
 volumes:
   - name: logo-volume
     configMap:

@@ -70,7 +70,7 @@ spec:
             - name: SENTRY_DEBUG
               value: "{{ .Values.sentryDebug }}"
             - name: SENTRY_TRACES_SAMPLE_RATE
-              value: "{{ .Values.sentryTracesSampleRate | quote }}"
+              value: "{{ .Values.sentryTracesSampleRate }}"
             - name: SENTRY_DSN
               valueFrom:
                 secretKeyRef:

@@ -1,0 +1,39 @@
+# Global settings
+global:
+  environment: "local"
+  dns:
+    webUI: "firecrest-ui.example.com"
+
+# Deployment settings
+replicas: 2
+image: "ghcr.io/eth-cscs/firecrest-ui"
+loggingLevel: "info"
+fileUploadLimit: "5242880"  # 5MB
+
+# Logo settings
+appName: "Firecrest Dashboard"
+customLogo: false
+customLogoPath: "/app/public/custom/logo.svg"
+
+# Keycloak settings
+keycloakDomain: "auth.example.com/auth"
+keycloakRealm: "kcrealm"
+keycloakCallbackUrl: "https://firecrest-ui.example.com/auth/callback"
+keycloakLogoutRedirectUrl: "https://firecrest-ui.example.com/logout"
+
+# Firecrest API settings
+firecrestApiBaseUrl: "https://firecrest-api.example.com"
+
+# Sentry settings
+sentryActive: "true"
+sentryDebug: "false"
+sentryTracesSampleRate: "1.0"
+
+# Redis settings
+redisActive: "true"
+redisHost: "redis-master"
+
+# Support and documentation URLs
+supportUrl: "https://support.example.com"
+docUrl: "https://docs.example.com"
+repoUrl: "https://github.com/eth-cscs/firecrest-ui"

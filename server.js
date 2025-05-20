@@ -30,6 +30,9 @@ const viteDevServer =
       )
 
 const app = express()
+
+app.use('/public', express.static('public'))
+
 app.use(viteDevServer ? viteDevServer.middlewares : express.static('build/client'))
 
 const build = viteDevServer

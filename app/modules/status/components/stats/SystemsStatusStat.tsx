@@ -96,11 +96,6 @@ const ServiceHealthItemRow: React.FC<SystemHealtyDetailRowProps> = ({
           <div className='flex'>
             <div className=''>
               <div className='font-medium text-gray-900'>{serviceHealth.serviceType}</div>
-              {serviceHealth.serviceType == ServiceType.scheduler && (
-                <div className='text-gray-500 text-xs'>
-                  available {serviceHealth.nodes?.available} of {serviceHealth.nodes?.total}
-                </div>
-              )}
               {serviceHealth.serviceType == ServiceType.filesystem && (
                 <div className='text-gray-500 text-xs'>{serviceHealth.path}</div>
               )}

@@ -18,9 +18,9 @@ spec:
         co.elastic.logs/json.keys_under_root: "true"
         co.elastic.logs/json.add_error_key: "true"
         co.elastic.logs/processors.1.add_fields.target: "app.environment"
-        co.elastic.logs/processors.1.add_fields.fields.name: {{ .Values.global.environment }}
+        co.elastic.logs/processors.1.add_fields.fields.name: "{{ .Values.global.environment }}"
         co.elastic.logs/processors.2.add_fields.target: "app.version"
-        co.elastic.logs/processors.2.add_fields.fields.name: {{ .Chart.AppVersion }}
+        co.elastic.logs/processors.2.add_fields.fields.name: "{{ .Chart.AppVersion }}"
     spec:
       containers:
         - name: firecrest-web-ui
@@ -29,24 +29,28 @@ spec:
             - name: SERVICE_NAME
               value: "firecrest-web-ui"
             - name: ENVIRONMENT
-              value: {{ .Values.global.environment }}
+              value: "{{ .Values.global.environment }}"
             - name: UI_HOSTNAME
-              value: {{ .Values.global.dns.webUI }}
+              value: "{{ .Values.global.dns.webUI }}"
+            - name: COMPANY_NAME
+              value: "{{ .Values.companyName }}"
+            - name: APP_NAME
+              value: "{{ .Values.appName }}"
             - name: APP_VERSION
-              value: {{ .Chart.AppVersion }}
+              value: "{{ .Chart.AppVersion }}"
             - name: LOGGING_LEVEL
-              value: {{ .Values.loggingLevel }}
+              value: "{{ .Values.loggingLevel }}"
             - name: SESSION_SECRET
               valueFrom:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
                   key: session-secret
             - name: FILE_UPLOAD_LIMIT
-              value: {{ .Values.fileUploadLimit | quote }}
+              value: "{{ .Values.fileUploadLimit }}"
             - name: KEYCLOAK_DOMAIN
-              value: {{ .Values.keycloakDomain }}
+              value: "{{ .Values.keycloakDomain }}"
             - name: KEYCLOAK_REALM
-              value: {{ .Values.keycloakRealm }}
+              value: "{{ .Values.keycloakRealm }}"
             - name: KEYCLOAK_CLIENT_ID
               valueFrom:
                 secretKeyRef:
@@ -58,17 +62,17 @@ spec:
                   name: firecrest-web-ui-v2
                   key: keycloak-client-secret
             - name: KEYCLOAK_CALLBACK_URL
-              value: {{ .Values.keycloakCallbackUrl }}
+              value: "{{ .Values.keycloakCallbackUrl }}"
             - name: KEYCLOAK_LOGOUT_REDIRECT_URL
-              value: {{ .Values.keycloakLogoutRedirectUrl }}
+              value: "{{ .Values.keycloakLogoutRedirectUrl }}"
             - name: FIRECREST_API_BASE_URL
-              value: {{ .Values.firecrestApiBaseUrl }}
+              value: "{{ .Values.firecrestApiBaseUrl }}"
             - name: SENTRY_ACTIVE
-              value: {{ .Values.sentryActive | quote }}
+              value: "{{ .Values.sentryActive }}"
             - name: SENTRY_DEBUG
-              value: {{ .Values.sentryDebug | quote }}
+              value: "{{ .Values.sentryDebug }}"
             - name: SENTRY_TRACES_SAMPLE_RATE
-              value: {{ .Values.sentryTracesSampleRate | quote }}
+              value: "{{ .Values.sentryTracesSampleRate }}"
             - name: SENTRY_DSN
               valueFrom:
                 secretKeyRef:
@@ -80,20 +84,36 @@ spec:
                   name: firecrest-web-ui-v2
                   key: sentry-auth-token
             - name: REDIS_ACTIVE
-              value: {{ .Values.redisActive | quote }}
+              value: "{{ .Values.redisActive }}"
             - name: REDIS_HOST
-              value: {{ .Values.redisHost }}
+              value: "{{ .Values.redisHost }}"
             - name: REDIS_AUTH_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
                   key: redis-auth-password
             - name: SUPPORT_URL
-              value: {{ .Values.supportUrl }}
+              value: "{{ .Values.supportUrl }}"
             - name: DOC_URL
-              value: {{ .Values.docUrl }}
+              value: "{{ .Values.docUrl }}"
             - name: REPO_URL
-              value: {{ .Values.repoUrl }}
+              value: "{{ .Values.repoUrl }}"
+            {{- if .Values.customLogo }}
+            - name: LOGO_PATH
+              value: "{{ .Values.customLogoPath }}"
+            {{- end }}
+          {{- if .Values.customLogo }}
+          volumeMounts:
+            - name: logo-volume
+              mountPath: "{{ .Values.customLogoVolume }}"
+              subPath: logo.svg
+          {{- end }}
+      {{- if .Values.customLogo }}
+      volumes:
+        - name: logo-volume
+          configMap:
+            name: firecrest-logo
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

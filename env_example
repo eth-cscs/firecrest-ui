@@ -13,6 +13,8 @@ SERVICE_NAME='firecrest-web-ui'
 # Company
 
 COMPANY_NAME='MyCompany'
+APP_NAME='MyPlatform'
+LOGO_PATH='logo.svg'
 
 # Logging
 

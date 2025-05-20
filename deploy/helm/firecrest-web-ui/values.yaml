@@ -11,6 +11,7 @@ loggingLevel: "info"
 fileUploadLimit: "5242880"  # 5MB
 
 # Logo settings
+companyName: "MyCompany"
 appName: "Firecrest Dashboard"
 customLogo: false
 customLogoVolume: "/usr/server/app/public/custom/logo.svg"

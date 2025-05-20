@@ -32,6 +32,8 @@ spec:
               value: "{{ .Values.global.environment }}"
             - name: UI_HOSTNAME
               value: "{{ .Values.global.dns.webUI }}"
+            - name: COMPANY_NAME
+              value: "{{ .Values.companyName }}"
             - name: APP_NAME
               value: "{{ .Values.appName }}"
             - name: APP_VERSION

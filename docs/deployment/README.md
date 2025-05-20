@@ -45,10 +45,12 @@ Customize the deployment by editing the `values.yaml` file. Below are the most c
 
 ```yaml
 replicas: 2
-image: "firecrest-web-ui"
+image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
-fileUploadLimit: "10MB"
+fileUploadLimit: "5MB"
 
+companyName: "MyCompany"
+appName: "MyPlatform"
 customLogo: true
 customLogoVolume: "/usr/server/app/public/custom/logo.svg"
 customLogoPath: "./custom/logo.svg"

@@ -7,6 +7,7 @@
 
 export type JobDescritpion = {
   script: string
+  account?: string
   name?: string
   working_directory: string
   standard_input?: string
@@ -27,6 +28,7 @@ export type PostJobResponse = {
 export type PostJobFormPayload = {
   system: string
   file: any
+  account?: string
   name?: string
   workingDirectory: string
   standardInput?: string
@@ -43,6 +45,7 @@ export const convertPostJobFormToApiPayload = async (
     job: {
       script: script,
       working_directory: payload.workingDirectory,
+      account: payload.account,
       name: payload.name ? payload.name : payload.file.name,
       standard_input: payload.standardInput,
       standard_output: payload.standardOutput,

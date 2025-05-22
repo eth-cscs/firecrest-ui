@@ -35,11 +35,11 @@ jobs:
         run: |
           git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
           git checkout $GH_PAGES_BRANCH
-          mv charts .charts
-          find . -mindepth 1 -maxdepth 1 ! -name '.*' -exec rm -rf {} \;
+          [ -d charts ] && mv charts .charts || echo "No charts directory to preserve"
+          find . -mindepth 1 -maxdepth 1 ! -name '.*' ! -name '.git' -exec rm -rf {} \;
           mv  ./.site/* ./
           rm -rf .site
-          mv .charts charts
+          [ -d .charts ] && mv .charts charts || echo "No charts directory to restore"
       - name: Check for changes
         run: |
           git diff --quiet || echo "CHANGES=true" >> $GITHUB_ENV

@@ -156,7 +156,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitForm) =>
             <p className='mt-1 text-sm text-gray-500'>Fill the form to proceed with ...</p>
           </div> */}
           <div className='grid grid-cols-6 gap-6'>
-            <div className='col-span-6 sm:col-span-3'>
+            <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='system' className='block text-sm font-medium text-gray-700'>
                 System <span className='italic text-red-400'>*</span>
               </label>
@@ -193,7 +193,29 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitForm) =>
                 formErrorFields: formErrorFields,
               })}
             </div>
-            <div className='col-span-6 sm:col-span-3'>
+            <div className='col-span-6 sm:col-span-2'>
+              <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
+                Account
+              </label>
+              <input
+                type='text'
+                name='account'
+                className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+              />
+              {showInputValidation({
+                fieldName: 'name',
+                formErrorFields: formErrorFields,
+              })}
+              <div className='flex mt-1'>
+                <div className='flex-shrink-0'>
+                  <InformationCircleIcon className='text-blue-400 h-5 w-5' />
+                </div>
+                <div className='ml-1 text-xs text-blue-400'>
+                  Charge job resources to specified account
+                </div>
+              </div>
+            </div>
+            <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
                 Name
               </label>

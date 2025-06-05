@@ -1,55 +1,23 @@
 # FirecREST v2 UI
 
-FirecREST UI is a web application providing the basic functionnalities to interact with a FirecREST API backend. 
+FirecREST UI is a web application designed to provide essential functionalities for interacting with [FirecREST API v2 backend](https://eth-cscs.github.io/firecrest-v2/).
 
-FirecREST provides a REST API through which developers can interact with HPC resources (Schedulers, Filesystems, etc.). In addition FirecREST provides methods to authenticate and authorize, execution of  jobs through, file-system operations, and access to accounting or status information.
+FirecREST offers a REST API that enables developers to interact with HPC resources such as schedulers, filesystems, and more. Additionally, it provides methods for authentication, authorization, job execution, file-system operations, and access to accounting or status information.
 
-# Development
+## Features
 
-### Compile and run the web application 
+- A modern web interface built on FirecREST API functionalities.
+- A dashboard offering an overview of configured clusters and their statuses.
+- A dedicated view for creating and monitoring jobs.
+- A file navigator with basic file management functionalities, including upload and download features.
 
-## Requirements
-- Node.js >= 21.0.0
+While the FirecREST API empowers users to build complex workflows, a workflow manager is not included in the current web interface implementation.
 
-## Local UI development with a local FirecREST environment
+# Documentation
 
-The requirements for the web app development are node and yarn.
-```shellscript
-node --version
-yarn --version
-```
-
-Once the libraries are available
-```shellscript
-yarn install
-yarn run dev
-```
-
-Open the UI on http://localhost:3000/, a login page (Keycloak) should show up.
-
-Authenticate with the follwing credentials:
-```credentials
-client: fireuser
-secret: password
-```
-
-## Docker
-
-To simplify running FirecREST locally we provide a set of local Docker environments that already contain all required dependencies. Please make sure [Docker](https://www.docker.com/) is installed and running on your machine.
-
-### Configuration
-
-Please ensure that the FirecREST Docker Compose environment is running. To connect the UI with the backend, you need to create a ```.env``` file (refer to the provided env_example file for guidance).
-
-### Authx
-
-The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
-
-## Helm Chart Repository
-
-Our repository includes a dedicated [Helm Chart Repository](./helm) for deploying **firecrest-ui** using Helm.
-
-For detailed instructions on how to add our Helm repository and install the chart, please refer to the [Helm Chart Repository README](./helm/README.md).
+### User Guide FirecREST v2 UI: [Full Documentation](https://eth-cscs.github.io/firecrest-ui/)
+### K8s Deployment FirecREST v2 UI: [Deployment](https://eth-cscs.github.io/firecrest-ui/deployment/)
+### FirecREST API v2 backend: [Full Documentation](https://eth-cscs.github.io/firecrest-v2/)
 
 
 ## UI software stack

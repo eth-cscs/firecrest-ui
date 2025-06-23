@@ -142,6 +142,7 @@ export type PostTransferUploadRequest = {
   path: string
   fileName: string
   fileSize: number
+  account?: string
 }
 
 export type PostTransferDownloadRequest = {

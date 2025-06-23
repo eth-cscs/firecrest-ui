@@ -45,11 +45,12 @@ export const validateTransferMv = async (formData: FormData): Promise<PostTransf
 }
 
 const transferUploadSchema: Yup.ObjectSchema<PostTransferUploadRequest> = Yup.object({
-  fileName: Yup.string()
-  .required('FileName is required'),
+  fileName: Yup.string().required('FileName is required'),
   path: Yup.string()
     .required('Target path is required')
     .matches(new RegExp(FILE_PATH_REGEXP), 'Target path should be a valid PATH'),
+  fileSize: Yup.number().required('File size is required'),
+  account: Yup.string().optional(),
 })
 
 const transferDownloadSchema: Yup.ObjectSchema<PostTransferDownloadRequest> = Yup.object({

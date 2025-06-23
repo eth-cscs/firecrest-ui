@@ -4,7 +4,7 @@
   Please, refer to the LICENSE file in the root directory.
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
-
+import React from 'react'
 // dialogs
 import CodeBlock from '~/components/codes/CodeBlock'
 // types
@@ -49,14 +49,11 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
         </h5>
         {transferResult.partsUploadUrls.map(
           (partUpload: any, idx: React.Key | null | undefined) => (
-            <>
+            <React.Fragment key={idx}>
               <p className='text-sm mb-2'>Part {(idx as number) + 1}:</p>
-              <CodeBlock
-                key={idx}
-                code={`curl '${partUpload}' --upload-file [path to local file]`}
-              />
+              <CodeBlock code={`curl '${partUpload}' --upload-file [path to local file]`} />
               <div className='mt-5 pb-2' />
-            </>
+            </React.Fragment>
           ),
         )}
         <h5 className='text-sm mb-2 mt-8 font-medium'>2. Complete the upload</h5>

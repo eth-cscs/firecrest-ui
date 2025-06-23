@@ -52,40 +52,31 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
     needs: docker_release
     steps:
-      - name: Checkout repository
+      - name: Checkout source repo (release tag)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Helm
-        uses: azure/setup-helm@v4.2.0
-      - name: Configure Git User
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Package Helm chart
-        run: |
-          helm package $CHART_DIR/firecrest-web-ui --version=${{ github.ref_name }} --app-version=${{ github.ref_name }}
-          rm -rf $CHART_DIR/firecrest-web-ui/Chart.lock $CHART_DIR/firecrest-web-ui/charts/
-          mkdir gh_
-          mv *.tgz gh_
-      - name: Push to gh-pages branch (helm)
-        run: |
-          # Ensure latest branch info is fetched
-          git fetch origin
 
-          # Create a local tracking branch if not already set up
-          if ! git show-ref --verify --quiet refs/heads/$GH_PAGES_BRANCH; then
-            git checkout -b $GH_PAGES_BRANCH origin/$GH_PAGES_BRANCH
-          else
-            git checkout $GH_PAGES_BRANCH
-            git pull origin $GH_PAGES_BRANCH
-          fi
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Package Helm chart from release tag
+        run: |
+          helm package deploy/helm/firecrest-web-ui \
+            --version="${{ github.ref_name }}" \
+            --app-version="${{ github.ref_name }}"
+          mkdir helm-package
+          mv *.tgz helm-package/
+
+      - name: Checkout gh-pages branch separately
+        run: |
+          git clone --branch gh-pages https://github.com/${{ github.repository }} gh-pages
+          cd gh-pages
 
           mkdir -p helm
-          mv gh_/*.tgz helm/
+          mv ../helm-package/*.tgz helm/
 
           if [ -f helm/index.yaml ]; then
             helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm --merge helm/index.yaml
@@ -93,9 +84,12 @@ jobs:
             helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm
           fi
 
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
           git add helm
-          git commit -m "New firecrest-ui helm chart release ($RELEASE_VERSION)" || echo "No changes to commit"
-          git push origin $GH_PAGES_BRANCH
+          git commit -m "Publish Helm chart for release ${{ github.ref_name }}" || echo "No changes to commit"
+          git push origin gh-pages
 
   docs_release:
     name: Publish Documentation

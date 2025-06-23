@@ -3,8 +3,8 @@
 ## Local Development
 
 ### Requirements
-- Node.js >= 21.0.0
-- Yarn (ensure it is installed globally)
+- Node.js >= 22.0.0
+- Yarn
 
 ### Backend Configuration
 

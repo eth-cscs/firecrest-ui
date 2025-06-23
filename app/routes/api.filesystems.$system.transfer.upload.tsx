@@ -39,7 +39,8 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       system,
       payloadData.path,
       payloadData.fileName,
-      payloadData.fileSize.toString(),
+      payloadData.fileSize,
+      payloadData.account,
     )
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)

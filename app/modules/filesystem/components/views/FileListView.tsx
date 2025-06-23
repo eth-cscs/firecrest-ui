@@ -13,6 +13,7 @@ import {
   HomeIcon,
   LinkIcon,
   PlusIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { File, FileType, GetTransferUploadResponse } from '~/types/api-filesystem'
@@ -61,6 +62,7 @@ import LoadingButton from '~/components/buttons/LoadingButton'
 import SimplePanel from '~/components/panels/SimplePanel'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
+import { showInputValidation } from '~/components/forms/validations/ValidationForm'
 
 const copyToClipboard = (file: File, fileSystem: FileSystem) => {
   const path = `${fileSystem.path}/${file.name}`
@@ -628,41 +630,6 @@ const FileListTable: React.FC<FileListTableProps> = ({
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
   const localStorageKey = 'firecrest-web-ui-file-manager'
 
-  // useEffect(() => {
-  //   const localStorageData = localStorage.getItem(localStorageKey) || '{}'
-  //   const jsonData = JSON.parse(localStorageData)
-  //   const fileTableSortableColumn = FileTableSortableColumn.fromJSON(jsonData)
-  //   const currentFileTableSortableColumn =
-  //     fileTableSortableColumn !== null
-  //       ? fileTableSortableColumn
-  //       : FileTableSortableColumn.getDefault()
-  //   const currentStateSortableColumns = getUpdatedStateFileTableSortableColumns(
-  //     getFileTableSortableColumns(),
-  //     currentFileTableSortableColumn,
-  //   )
-  //   setSortableColumns(currentStateSortableColumns)
-  //   const sortedFileSystemObjects = getFileTableSortableColumn(
-  //     currentFileTableSortableColumn,
-  //     fileSystemObjects,
-  //   )
-  //   setFileSystemList(sortedFileSystemObjects)
-  // }, [])
-
-  // const changeSorting = (fileTableSortableColumn: FileTableSortableColumn) => {
-  //   const nextSortingState = new FileTableSortableColumn(
-  //     fileTableSortableColumn.columnName,
-  //     fileTableSortableColumn.columnLabel,
-  //     nextSortState(fileTableSortableColumn.columnSortable),
-  //     ColumnType.SORTABLE,
-  //   )
-  //   localStorage.setItem(localStorageKey, JSON.stringify(nextSortingState))
-  //   const nextStateSortableColumns: FileTableSortableColumn[] =
-  //     getUpdatedStateFileTableSortableColumns(sortableColumns, nextSortingState)
-  //   setSortableColumns(nextStateSortableColumns)
-  //   const sortedFileSystemObjects = getFileTableSortableColumn(nextSortingState, fileSystemObjects)
-  //   setFileSystemList(sortedFileSystemObjects)
-  // }
-
   const changeSorting = () => {}
 
   return (
@@ -728,6 +695,9 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
   const [fileTransferNeeded, setFileTransferNeeded] = useState<boolean>(false)
   const [uploadError, setUploadError] = useState<HttpErrorResponse | null>(null)
   const singleDraggableFileUploadRef = useRef<any>(null)
+  const [formValues, setFormValues] = useState({
+    account: '',
+  })
 
   const isFileSizeOk = (file: any) => {
     if (file == null) {
@@ -769,12 +739,14 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
           systemName: string,
           fileName: string,
           targetPath: string,
+          account: string,
         ) => {
           const response: GetTransferUploadResponse = await postLocalTransferUpload(
             systemName,
             fileName,
             targetPath,
             fileToUploadSelected.size,
+            account,
           )
           setUploadError(null)
           setFileToUploadSelected(null)
@@ -784,16 +756,19 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
           resetSingleDraggableFileUploadRef()
           setUploading(false)
         }
-        postFileTransferUpload(system.name, `${fileToUploadSelected.name}`, currentPath).catch(
-          (response) => {
-            setFileToUploadSelected(null)
-            setFileTransferUploadResult(null)
-            setFileTransferNeeded(false)
-            setUploadError(response?.error)
-            resetSingleDraggableFileUploadRef()
-            setUploading(false)
-          },
-        )
+        postFileTransferUpload(
+          system.name,
+          `${fileToUploadSelected.name}`,
+          currentPath,
+          formValues.account,
+        ).catch((response) => {
+          setFileToUploadSelected(null)
+          setFileTransferUploadResult(null)
+          setFileTransferNeeded(false)
+          setUploadError(response?.error)
+          resetSingleDraggableFileUploadRef()
+          setUploading(false)
+        })
       }
     }
   }
@@ -820,6 +795,32 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
       {uploadError != null ? <AlertError error={uploadError} /> : null}
       {fileTransferNeeded ? (
         <FileTransferInfo file={fileToUploadSelected} uploadLimit={fileUploadLimit} />
+      ) : null}
+      {fileTransferNeeded ? (
+        <div className='col-span-6 sm:col-span-2 pb-4 '>
+          <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
+            Account
+          </label>
+          <input
+            type='text'
+            name='account'
+            value={formValues.account}
+            onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
+            className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+          />
+          {/* {showInputValidation({
+                  fieldName: 'name',
+                  formErrorFields: formErrorFields,
+                })} */}
+          <div className='flex mt-1'>
+            <div className='flex-shrink-0'>
+              <InformationCircleIcon className='text-blue-400 h-5 w-5' />
+            </div>
+            <div className='ml-1 text-xs text-blue-400'>
+              Charge job resources to specified account
+            </div>
+          </div>
+        </div>
       ) : null}
       <div className='mb-4'>
         <LoadingButton

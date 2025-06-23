@@ -1,0 +1,142 @@
+name: FirecREST UI Release Workflow
+
+on:
+  release:
+    types: [prereleased, released]
+
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CHART_DIR: deploy/helm
+  CHART_REPO_URL: https://eth-cscs.github.io/firecrest-ui/helm
+  GH_PAGES_BRANCH: gh-pages
+
+jobs:
+  docker_release:
+    name: Publish Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+      - name: Log into registry
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: .
+          file: ./deploy/docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  helm_release:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    needs: docker_release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.2.0
+      - name: Configure Git User
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Package Helm chart
+        run: |
+          helm package $CHART_DIR/firecrest-web-ui --version=${{ env.RELEASE_VERSION }} --app-version=${{ env.RELEASE_VERSION }}
+          rm -rf $CHART_DIR/firecrest-web-ui/Chart.lock $CHART_DIR/firecrest-web-ui/charts/
+          mkdir gh_
+          mv *.tgz gh_
+      - name: Push to gh-pages branch (helm)
+        run: |
+          git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
+          git checkout $GH_PAGES_BRANCH
+
+          mkdir -p helm
+          mv gh_/*.tgz helm/
+
+          if [ -f helm/index.yaml ]; then
+            helm repo index helm --url $CHART_REPO_URL --merge helm/index.yaml
+          else
+            helm repo index helm --url $CHART_REPO_URL
+          fi
+
+          touch .nojekyll
+
+          git add .nojekyll helm
+          git commit -m "Publish Helm chart ($RELEASE_VERSION)" || echo "Nothing to commit"
+          git push origin $GH_PAGES_BRANCH
+
+  docs_release:
+    name: Publish Documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    needs: [docker_release, helm_release]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Configure Git User
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Build MkDocs
+        run: |
+          pip install --upgrade pip
+          pip install -r ./docs/requirements.txt
+          rm -rf site .site
+          mkdocs build
+          mv site .site
+      - name: Merge site with gh-pages branch
+        run: |
+          git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
+          git checkout $GH_PAGES_BRANCH
+
+          [ -d charts ] && mv charts .charts || echo "No charts directory to preserve"
+          [ -f .nojekyll ] && cp .nojekyll .nojekyll.bak || echo "No .nojekyll to preserve"
+
+          find . -mindepth 1 -maxdepth 1 ! -name '.*' ! -name '.git' ! -name 'helm' -exec rm -rf {} \;
+          mv .site/* ./
+          rm -rf .site
+
+          [ -d .charts ] && mv .charts charts || echo "No charts directory to restore"
+          [ -f .nojekyll.bak ] && mv .nojekyll.bak .nojekyll || echo "No .nojekyll to restore"
+      - name: Check for changes
+        run: |
+          git diff --quiet || echo "CHANGES=true" >> $GITHUB_ENV
+      - name: Publish MkDocs
+        if: ${{ env.CHANGES == 'true' }}
+        run: |
+          git add .
+          git commit -m "New documentation release ($RELEASE_VERSION)"
+          git push origin $GH_PAGES_BRANCH

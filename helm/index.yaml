@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  firecrest-web-ui-v2:
+  - apiVersion: v2
+    appVersion: 2.2.13
+    created: "2025-06-23T12:19:53.016005007Z"
+    description: The frontend component firecrest-web-ui
+    digest: fafa33df13d1e9295e566713844f397d2a088757af8855164d13a516b6fea65b
+    name: firecrest-web-ui-v2
+    type: application
+    urls:
+    - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-2.2.13.tgz
+    version: 2.2.13
+generated: "2025-06-23T12:19:53.015633206Z"

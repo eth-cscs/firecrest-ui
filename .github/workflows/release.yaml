@@ -73,14 +73,29 @@ jobs:
           mv *.tgz gh_
       - name: Push to gh-pages branch (helm)
         run: |
-          git fetch origin $GH_PAGES_BRANCH:$GH_PAGES_BRANCH
-          git checkout $GH_PAGES_BRANCH
+          # Ensure latest branch info is fetched
+          git fetch origin
+
+          # Create a local tracking branch if not already set up
+          if ! git show-ref --verify --quiet refs/heads/$GH_PAGES_BRANCH; then
+            git checkout -b $GH_PAGES_BRANCH origin/$GH_PAGES_BRANCH
+          else
+            git checkout $GH_PAGES_BRANCH
+            git pull origin $GH_PAGES_BRANCH
+          fi
+
           mkdir -p helm
-          mv gh_/*tgz helm/
-          helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm --merge helm/index.yaml
-          git add helm/*.tgz helm/index.yaml
-          git commit -m "New firecrest-ui helm chart release ($RELEASE_VERSION)"
-          git push -u origin $GH_PAGES_BRANCH
+          mv gh_/*.tgz helm/
+
+          if [ -f helm/index.yaml ]; then
+            helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm --merge helm/index.yaml
+          else
+            helm repo index helm --url https://eth-cscs.github.io/firecrest-ui/helm
+          fi
+
+          git add helm
+          git commit -m "New firecrest-ui helm chart release ($RELEASE_VERSION)" || echo "No changes to commit"
+          git push origin $GH_PAGES_BRANCH
 
   docs_release:
     name: Publish Documentation

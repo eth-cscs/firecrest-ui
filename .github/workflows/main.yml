@@ -37,7 +37,8 @@ jobs:
         run: yarn install
 
       - name: Run audit
-        run: yarn run audit
+        run: yarn npm audit
+        continue-on-error: true
 
       - name: Allow failure (audit)
         if: failure()

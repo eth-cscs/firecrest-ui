@@ -23,7 +23,7 @@ jobs:
     name: Static Code Analysis
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,7 +51,7 @@ jobs:
     name: Linting
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

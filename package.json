@@ -5,13 +5,21 @@
   "scripts": {
     "build": "remix vite:build",
     "dev": "node ./server.js",
-    "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "check-license": "node scripts/check-license.mjs",
     "format": "prettier --write 'app/**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "typecheck": "tsc",
     "audit": "yarn-audit-ci",
     "audit:fix": "npx yarn-audit-fix",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "node scripts/check-license.mjs"
+    ]
   },
   "dependencies": {
     "@headlessui/react": "^2.1.8",
@@ -40,6 +48,7 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.29.0",
     "@remix-run/dev": "^2.16.3",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.7",
@@ -48,17 +57,19 @@
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@types/uuid": "^9.0.8",
-    "@typescript-eslint/eslint-plugin": "^6.7.4",
-    "@typescript-eslint/parser": "^6.7.4",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
     "autoprefixer": "^10.4.19",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-header": "^3.1.1",
-    "eslint-plugin-import": "^2.28.1",
-    "eslint-plugin-jsx-a11y": "^6.7.1",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
     "tailwindcss": "^3.4.16",

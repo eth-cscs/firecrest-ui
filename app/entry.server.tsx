@@ -4,7 +4,6 @@
   Please, refer to the LICENSE file in the root directory.
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
-
 import * as Sentry from '@sentry/remix'
 import { PassThrough } from 'node:stream'
 import { isbot } from 'isbot'
@@ -40,7 +39,6 @@ export default function handleRequest(
   remixContext: EntryContext,
   // This is ignored so we can keep it in the template for visibility.  Feel
   // free to delete this parameter in your app if you're not using it!
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadContext: AppLoadContext,
 ) {
   return isbot(request.headers.get('user-agent') || '')

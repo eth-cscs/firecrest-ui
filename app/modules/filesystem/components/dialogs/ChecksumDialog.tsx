@@ -57,7 +57,6 @@ const ChecksumDialog: React.FC<ChecksumDialogProps> = ({
       setChecksum(null)
       setLocalError(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
   return (
     <SimpleDialog

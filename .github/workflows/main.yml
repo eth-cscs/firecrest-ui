@@ -88,6 +88,9 @@ jobs:
         if: failure()
         run: echo "Lint failed but continuing"
 
+      - name: Check the license headers
+        run: yarn check-license $(find app -type f \( -name '*.ts' -o -name '*.tsx' \))
+
   helm-lint:
     name: Helm Chart Validation
     runs-on: ubuntu-latest

@@ -18,13 +18,17 @@ import SimpleDialog from '~/components/dialogs/SimpleDialog'
 import DescriptionList from '~/components/lists/DescriptionList'
 import { formatTime } from '~/helpers/time-helper'
 
-interface JobDetailsDialog {
+interface JobDetailsDialogData {
   job: Job
   open: any
   onClose: any
 }
 
-const JobDetailsDialog: React.FC<JobDetailsDialog> = ({ job, open, onClose }: JobDetailsDialog) => {
+const JobDetailsDialog: React.FC<JobDetailsDialogData> = ({
+  job,
+  open,
+  onClose,
+}: JobDetailsDialogData) => {
   const data = [
     {
       label: 'Status',

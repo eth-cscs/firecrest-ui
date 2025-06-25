@@ -36,12 +36,12 @@ interface FormData {
   username: string
 }
 
-interface JobSubmitForm {
+interface JobSubmitFormData {
   formData: FormData
   formError: any
 }
 
-const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitForm) => {
+const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData) => {
   // TODO: File upload check if could be improved
   const singleDraggableFileUploadRef = useRef<any>(null)
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)

@@ -23,14 +23,23 @@ jobs:
     name: Static Code Analysis
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Enable Corepack for Yarn 4
+        run: |
+          corepack enable
+          corepack prepare yarn@4.9.2 --activate
+
       - name: Install dependencies
         run: yarn install
+
       - name: Run audit
-        run: yarn run audit
+        run: yarn npm audit
+        continue-on-error: true
+
       - name: Allow failure (audit)
         if: failure()
         run: echo "Audit failed but continuing"
@@ -39,55 +48,73 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Enable Corepack for Yarn 4
+        run: |
+          corepack enable
+          corepack prepare yarn@4.9.2 --activate
+
       - name: Install dependencies
         run: yarn install
+
       - name: Run tests
         run: yarn run test
+
   lint:
     name: Linting
     runs-on: ubuntu-latest
     container:
-      image: node:21-alpine
+      image: node:22-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Enable Corepack for Yarn 4
+        run: |
+          corepack enable
+          corepack prepare yarn@4.9.2 --activate
+
       - name: Install dependencies
         run: yarn install
+
       - name: Run linter
         run: yarn run lint
+
       - name: Allow failure (lint)
         if: failure()
         run: echo "Lint failed but continuing"
 
-  helm-lint:
-    runs-on: ubuntu-latest
+      - name: Check the license headers
+        run: yarn check-license $(find app -type f \( -name '*.ts' -o -name '*.tsx' \))
 
+  helm-lint:
+    name: Helm Chart Validation
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Helm
+      - name: Set up Helm (v3.14.3)
         uses: azure/setup-helm@v3
         with:
-          version: v3.12.0
+          version: v3.14.3
 
-      - name: Install dependencies
+      - name: Install yamllint
         run: sudo apt-get update && sudo apt-get install -y yamllint
 
       - name: Helm Lint
-        run: |
-          helm lint ./deploy/helm/firecrest-web-ui
+        run: helm lint ./deploy/helm/firecrest-web-ui
 
       - name: Template Rendering and Validation
         run: |
-          # Render Helm templates with minimal values
           helm template firecrest-ui-ci ./deploy/helm/firecrest-web-ui \
-            --namespace firecrest-ui-ci --kube-version 1.29 \
-            --values ./deploy/helm/firecrest-web-ui/values.yaml --debug --dry-run > rendered.yaml
+            --namespace firecrest-ui-ci \
+            --kube-version 1.29 \
+            --values ./deploy/helm/firecrest-web-ui/values.yaml \
+            --debug --dry-run > rendered.yaml
 
-          # Validate the rendered YAML
           yamllint rendered.yaml

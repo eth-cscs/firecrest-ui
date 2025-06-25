@@ -534,7 +534,7 @@ const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   )
 }
 
-interface FileSystemSelection {
+interface FileSystemSelectionData {
   currentPath: string
   fileSystem: FileSystem
   system: System
@@ -542,7 +542,7 @@ interface FileSystemSelection {
   username: string
 }
 
-const FileSystemSelection: React.FC<FileSystemSelection> = ({
+const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
   currentPath,
   fileSystem,
   system,

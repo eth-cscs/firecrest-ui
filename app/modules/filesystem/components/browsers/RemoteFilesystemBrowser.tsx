@@ -31,7 +31,7 @@ export enum RemoteFilesystemBrowserMode {
   DIRECTORY = 2,
 }
 
-interface FileSystemSelection {
+interface FileSystemSelectionData {
   currentPath: string
   fileSystem: FileSystem
   system: System
@@ -40,7 +40,7 @@ interface FileSystemSelection {
   onChange: (systemName: string, targetPath: string) => void
 }
 
-const FileSystemSelection: React.FC<FileSystemSelection> = ({
+const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
   currentPath,
   fileSystem,
   system,
@@ -137,7 +137,7 @@ const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   )
 }
 
-interface RemoteFilesystemBrowser {
+interface RemoteFilesystemBrowserData {
   initCurrentPath: string
   initSystemName: string
   onBrowseSelection: (systemName: string, targetPath: string) => void

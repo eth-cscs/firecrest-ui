@@ -16,19 +16,19 @@ import SimpleDialog from '~/components/dialogs/SimpleDialog'
 // buttons
 import LoadingButton from '~/components/buttons/LoadingButton'
 
-interface JobCancelDialog {
+interface JobCancelDialogData {
   job: Job
   system: System
   open: boolean
   onClose: () => void
 }
 
-const JobCancelDialog: React.FC<JobCancelDialog> = ({
+const JobCancelDialog: React.FC<JobCancelDialogData> = ({
   job,
   system,
   open,
   onClose,
-}: JobCancelDialog) => {
+}: JobCancelDialogData) => {
   const [loading, setLoading] = useState(false)
   const actionButtons = (
     <form

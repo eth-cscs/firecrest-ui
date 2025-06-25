@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   firecrest-web-ui-v2:
   - apiVersion: v2
+    appVersion: 2.2.15
+    created: "2025-06-25T13:50:22.792097566Z"
+    description: The frontend component firecrest-web-ui
+    digest: b6608aacf2be2e1b89123e95911a900dceb3317f2a82907693137c92726ca89f
+    name: firecrest-web-ui-v2
+    type: application
+    urls:
+    - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-2.2.15.tgz
+    version: 2.2.15
+  - apiVersion: v2
     appVersion: 2.2.14
-    created: "2025-06-25T13:22:59.016957816Z"
+    created: "2025-06-25T13:50:22.791888094Z"
     description: The frontend component firecrest-web-ui
     digest: 9fe45aaca4d96e7ab807a3d75bdf25836ebbc5c7cae4d4ae79426754c436e58f
     name: firecrest-web-ui-v2
@@ -13,7 +23,7 @@ entries:
     version: 2.2.14
   - apiVersion: v2
     appVersion: 2.2.14-2
-    created: "2025-06-25T13:22:59.016743381Z"
+    created: "2025-06-25T13:50:22.791615413Z"
     description: The frontend component firecrest-web-ui
     digest: c19f8b5c65920c09d106b06435895d319603840c4c7f65171c78ab10b688c0ba
     name: firecrest-web-ui-v2
@@ -23,7 +33,7 @@ entries:
     version: 2.2.14-2
   - apiVersion: v2
     appVersion: 2.2.14-1
-    created: "2025-06-25T13:22:59.016527063Z"
+    created: "2025-06-25T13:50:22.791415519Z"
     description: The frontend component firecrest-web-ui
     digest: 1c2d92d29aa8d05733f176dba5ca2cd27ac2dd018c7431ec27f9217ecbbf89cc
     name: firecrest-web-ui-v2
@@ -33,7 +43,7 @@ entries:
     version: 2.2.14-1
   - apiVersion: v2
     appVersion: 2.0.15
-    created: "2025-06-25T13:22:59.016269918Z"
+    created: "2025-06-25T13:50:22.791211367Z"
     description: The frontend component firecrest-web-ui
     digest: ae1a84333c9a524df1030782b76404583b8ac1c687fed2458fcaf96a2f1e9d06
     name: firecrest-web-ui-v2
@@ -41,4 +51,4 @@ entries:
     urls:
     - https://eth-cscs.github.io/firecrest-ui/helm/firecrest-web-ui-v2-2.0.15.tgz
     version: 2.0.15
-generated: "2025-06-25T13:22:59.015900061Z"
+generated: "2025-06-25T13:50:22.790878223Z"

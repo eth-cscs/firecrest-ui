@@ -20,7 +20,7 @@ import SimplePanel from '~/components/panels/SimplePanel'
 // lists
 import JobList from '~/modules/compute/components/lists/JobList'
 
-const JobListView: React.FC<any> = ({ systemsJobs, error }) => {
+const JobListView: React.FC<any> = ({ systems, systemsJobs, error }) => {
   const handleClickReload = () => {
     window.location.reload()
   }
@@ -48,7 +48,7 @@ const JobListView: React.FC<any> = ({ systemsJobs, error }) => {
     <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
       <SimplePanel title={'List of jobs'} className='mb-4' actionsButtons={actionsButtons}>
         <AlertError error={error} />
-        <JobList systemsJobs={systemsJobs} />
+        <JobList systems={systems} systemsJobs={systemsJobs} />
       </SimplePanel>
     </SimpleView>
   )

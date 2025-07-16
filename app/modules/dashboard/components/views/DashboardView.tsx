@@ -20,7 +20,7 @@ const DashboardView: React.FC<any> = ({ systems, dashboardJobs }: any) => {
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
       <SystemsStatusStat systems={systems} />
       <SimplePanel title={'List of active jobs'} className='mb-4' actionsButtons={[]}>
-        <SystemJobList systemsJobs={dashboardJobs} />
+        <SystemJobList systems={systems} systemsJobs={dashboardJobs} />
       </SimplePanel>
     </SimpleView>
   )

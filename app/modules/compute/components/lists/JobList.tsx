@@ -35,16 +35,16 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 
-const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystemsJobs, className = '' }) => {
-  if (!unavailableSystemsJobs || unavailableSystemsJobs.length <= 0) {
+const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className = '' }) => {
+  if (!unavailableSystems || unavailableSystems.length <= 0) {
     return null
   }
   return (
     <AlertWarning className={classNames('', className)} title='System/s NOT available'>
       <p>The following systems are currently unavailable for interaction:</p>
       <ul className='list-disc list-inside'>
-        {unavailableSystemsJobs.map((systemJobs: any, index: number) => (
-          <li key={index}>{systemJobs.system.name}</li>
+        {unavailableSystems.map((unavailableSystem: any, index: number) => (
+          <li key={index}>{unavailableSystem.name}</li>
         ))}
       </ul>
       <p className='pt-2'>
@@ -115,10 +115,10 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps
       <td className='py-3 align-top tabular-nums text-gray-700'>
         {(job.status.state === JobStateStatus.RUNNING ||
           job.status.state === JobStateStatus.COMPLETED) && (
-            <>
-              <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
-            </>
-          )}
+          <>
+            <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
+          </>
+        )}
         {job.status.state === 'PENDING' && (
           <>
             <div className='truncate text-gray-500 text-xs mb-1'>
@@ -231,10 +231,10 @@ const JobsTable: React.FC<any> = ({ systemsJobs }: any) => {
   )
 }
 
-const SystemJobList: React.FC<any> = ({ systemsJobs }) => {
-  const unavailableSystemsJobs = systemsJobs.filter((systemJob: any) => {
-    return systemJob.error !== undefined
-  })
+const SystemJobList: React.FC<any> = ({ systems, systemsJobs }) => {
+  const unavailableSystems = systems.filter((system: any) =>
+    system.servicesHealth?.some((service: any) => service.healthy === false),
+  )
   const listOfSystemJob = systemsJobs
     .filter((systemJobs: any) => {
       return !systemJobs.error || systemJobs.error === null
@@ -251,7 +251,7 @@ const SystemJobList: React.FC<any> = ({ systemsJobs }) => {
     .sort((a: any, b: any) => b.job.time.start - a.job.time.start)
   return (
     <>
-      <UnavailableSystemAlert unavailableSystemsJobs={unavailableSystemsJobs} className='mb-6' />
+      <UnavailableSystemAlert unavailableSystems={unavailableSystems} className='mb-6' />
       <JobsTable systemsJobs={listOfSystemJob} />
     </>
   )

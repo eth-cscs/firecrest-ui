@@ -49,12 +49,12 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
     })
   })
   // Return response
-  return systemsJobs
+  return { systems, systemsJobs }
 }
 
 export default function AppComputeIndexRoute() {
-  const systemsJobs: GetSystemJobsResponse[] = useLoaderData()
-  return <JobListView systemsJobs={systemsJobs} />
+  const { systems, systemsJobs }: any = useLoaderData()
+  return <JobListView systems={systems} systemsJobs={systemsJobs} />
 }
 
 export function ErrorBoundary() {

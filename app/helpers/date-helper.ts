@@ -17,11 +17,17 @@ const formatDate = ({ date, format = 'DD-MM-YYYY' }: any) => {
 }
 
 const formatDateTime = ({ dateTime, format = 'DD-MM-YYYY HH:mm:ss' }: any) => {
+  if (!dateTime) {
+    return 'N/A'
+  }
   const m = moment(dateTime)
   return m.format(format)
 }
 
 const formatDateTimeFromTimestamp = ({ timestamp, format = 'DD-MM-YYYY HH:mm:ss' }: any) => {
+  if (!timestamp) {
+    return 'N/A'
+  }
   const m = moment.unix(timestamp)
   return m.format(format)
 }

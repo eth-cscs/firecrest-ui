@@ -2158,6 +2158,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@remix-run/server-runtime@npm:^2":
+  version: 2.17.0
+  resolution: "@remix-run/server-runtime@npm:2.17.0"
+  dependencies:
+    "@remix-run/router": "npm:1.23.0"
+    "@types/cookie": "npm:^0.6.0"
+    "@web3-storage/multipart-parser": "npm:^1.0.0"
+    cookie: "npm:^0.7.2"
+    set-cookie-parser: "npm:^2.4.8"
+    source-map: "npm:^0.7.3"
+    turbo-stream: "npm:2.4.1"
+  peerDependencies:
+    typescript: ^5.1.0
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/4f319ac7a317a54602a5cfac0a54c579daff71f327d85daeafa0d2409ea38db326a36141f582b06a641c34cc8ceeb3908e51ba681ac747a51baea98daff7299f
+  languageName: node
+  linkType: hard
+
 "@remix-run/web-blob@npm:^3.1.0":
   version: 3.1.0
   resolution: "@remix-run/web-blob@npm:3.1.0"
@@ -10290,6 +10310,7 @@ __metadata:
     "@remix-run/express": "npm:^2.16.3"
     "@remix-run/node": "npm:^2.16.3"
     "@remix-run/react": "npm:^2.16.3"
+    "@remix-run/server-runtime": "npm:^2"
     "@tailwindcss/aspect-ratio": "npm:^0.4.2"
     "@tailwindcss/forms": "npm:^0.5.7"
     "@tailwindcss/typography": "npm:^0.5.12"

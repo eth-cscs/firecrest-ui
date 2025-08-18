@@ -30,10 +30,6 @@ SESSION_FILE_DIR_PATH='./sessions'
 
 REDIS_ACTIVE=false
 
-# Sentry
-
-SENTRY_ACTIVE=false
-
 # Keycloak
 
 KEYCLOAK_DOMAIN='localhost:8080/auth'

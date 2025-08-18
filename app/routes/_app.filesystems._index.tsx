@@ -7,7 +7,6 @@
 
 import { redirect } from '@remix-run/node'
 import { useRouteError } from '@remix-run/react'
-import { captureRemixErrorBoundaryError } from '@sentry/remix'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
@@ -18,9 +17,7 @@ import {
   getDefaultFileSystemFromSystem,
   getDefaultSystemFromSystems,
 } from '~/modules/status/helpers/system-helper'
-import {
-  buildFileSystemNavigationPath
-} from '~/modules/filesystem/helpers/filesystem-helper'
+import { buildFileSystemNavigationPath } from '~/modules/filesystem/helpers/filesystem-helper'
 // utils
 import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
 // apis
@@ -69,6 +66,5 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
 export function ErrorBoundary() {
   const error = useRouteError()
   logger.error(error)
-  captureRemixErrorBoundaryError(error)
   return <ErrorView error={error} />
 }

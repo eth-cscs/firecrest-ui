@@ -4,31 +4,12 @@
   Please, refer to the LICENSE file in the root directory.
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
-import * as Sentry from '@sentry/remix'
 import { PassThrough } from 'node:stream'
 import { isbot } from 'isbot'
 import { RemixServer } from '@remix-run/react'
 import { renderToPipeableStream } from 'react-dom/server'
 import { createReadableStreamFromReadable } from '@remix-run/node'
 import type { AppLoadContext, EntryContext } from '@remix-run/node'
-// configs
-import base from './configs/base.config'
-import sentry from './configs/sentry.config'
-
-export function handleError(error: any, { request }: any) {
-  Sentry.captureRemixServerException(error, 'remix.server', request)
-}
-
-// Sentry initialization
-if (sentry.active) {
-  Sentry.init({
-    dsn: sentry.dsn,
-    debug: sentry.debug,
-    environment: base.environment,
-    release: base.appVersion,
-    tracesSampleRate: parseFloat(sentry.tracesSampleRate),
-  })
-}
 
 const ABORT_DELAY = 5_000
 

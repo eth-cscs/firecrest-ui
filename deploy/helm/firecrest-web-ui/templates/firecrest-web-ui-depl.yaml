@@ -67,22 +67,6 @@ spec:
               value: "{{ .Values.keycloakLogoutRedirectUrl }}"
             - name: FIRECREST_API_BASE_URL
               value: "{{ .Values.firecrestApiBaseUrl }}"
-            - name: SENTRY_ACTIVE
-              value: "{{ .Values.sentryActive }}"
-            - name: SENTRY_DEBUG
-              value: "{{ .Values.sentryDebug }}"
-            - name: SENTRY_TRACES_SAMPLE_RATE
-              value: "{{ .Values.sentryTracesSampleRate }}"
-            - name: SENTRY_DSN
-              valueFrom:
-                secretKeyRef:
-                  name: firecrest-web-ui-v2
-                  key: sentry-dsn
-            - name: SENTRY_AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: firecrest-web-ui-v2
-                  key: sentry-auth-token
             - name: REDIS_ACTIVE
               value: "{{ .Values.redisActive }}"
             - name: REDIS_HOST

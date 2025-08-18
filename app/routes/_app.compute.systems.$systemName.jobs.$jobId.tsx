@@ -12,7 +12,6 @@ import type {
   LoaderFunctionArgs,
 } from '@remix-run/node'
 import { StatusCodes } from 'http-status-codes'
-import { captureRemixErrorBoundaryError } from '@sentry/remix'
 import { useRouteError, useLoaderData, redirect, useActionData } from '@remix-run/react'
 // types
 import { GetJobMetadataResponse, GetJobResponse } from '~/types/api-job'
@@ -128,6 +127,5 @@ export default function ComputeJobDetailsRoute() {
 export function ErrorBoundary() {
   const error = useRouteError()
   logger.error(error)
-  captureRemixErrorBoundaryError(error)
   return <ErrorView error={error} />
 }

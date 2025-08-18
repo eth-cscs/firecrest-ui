@@ -6,7 +6,6 @@
 *************************************************************************/
 
 import { useLoaderData, useRouteError } from '@remix-run/react'
-import { captureRemixErrorBoundaryError } from '@sentry/remix'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
@@ -77,6 +76,5 @@ export default function AppIndexRoute() {
 export function ErrorBoundary() {
   const error = useRouteError()
   logger.error(error)
-  captureRemixErrorBoundaryError(error)
   return <ErrorView error={error} />
 }

@@ -34,6 +34,23 @@ if (!isProd) {
   app.use(vite.middlewares)
 }
 
+if (isProd) {
+  // Serve the hashed assets exactly at /assets/*
+  app.use(
+    '/assets',
+    express.static('build/client/assets', {
+      immutable: true,
+      maxAge: '1y',
+    }),
+  )
+
+  // Serve things you ship in /public at the root
+  app.use(express.static('public', { maxAge: '1h' }))
+} else {
+  // dev: Vite middleware first
+  app.use(viteDevServer.middlewares)
+}
+
 // Remix handler
 app.all(
   '*',

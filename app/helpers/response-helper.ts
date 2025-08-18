@@ -7,7 +7,6 @@
 
 import { ValidationError } from 'yup'
 import { StatusCodes } from 'http-status-codes'
-import { captureException } from '@sentry/remix'
 import { json, MaxPartSizeExceededError } from '@remix-run/node'
 // types
 import { ErrorType } from '~/types/error'
@@ -67,8 +66,6 @@ export const handleErrorResponse = (
   error: any,
   handlingThreshold: StatusCodes | null = StatusCodes.INTERNAL_SERVER_ERROR,
 ) => {
-  // Capture exception with remix
-  captureException(error)
   // Validation http error
   if (error instanceof ValidationError) {
     return handleValidationErrorResponse(error)

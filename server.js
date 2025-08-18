@@ -5,42 +5,68 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import pino from 'pino'
 import express from 'express'
+import pino from 'pino'
 import { createRequestHandler } from '@remix-run/express'
-import { wrapExpressCreateRequestHandler } from '@sentry/remix'
 
-const getLoggingLevel = () => {
-  return process.env.LOGGING_LEVEL || 'info'
-}
+const logger = pino({ level: process.env.LOGGING_LEVEL || 'info' })
 
-pino({
-  level: getLoggingLevel(),
-})
-
-const sentryCreateRequestHandler = wrapExpressCreateRequestHandler(createRequestHandler)
-
-const viteDevServer =
-  process.env.NODE_ENV === 'production'
-    ? null
-    : await import('vite').then((vite) =>
-        vite.createServer({
-          server: { middlewareMode: true },
-        }),
-      )
+const isProd = process.env.NODE_ENV === 'production'
 
 const app = express()
+app.disable('x-powered-by')
 
-app.use('/public', express.static('public'))
+// In production, serve /assets (Remix client build) and anything in /public
+if (isProd) {
+  app.use('/assets', express.static('build/client', { immutable: true, maxAge: '1y' }))
+  app.use(express.static('public', { maxAge: '1h' }))
+}
 
-app.use(viteDevServer ? viteDevServer.middlewares : express.static('build/client'))
+let vite // only used in dev
+if (!isProd) {
+  vite = await import('vite').then(({ createServer }) =>
+    createServer({
+      server: { middlewareMode: true },
+    }),
+  )
 
-const build = viteDevServer
-  ? () => viteDevServer.ssrLoadModule('virtual:remix/server-build')
-  : await import('./build/server/index.js')
+  // Vite must be before your Remix handler
+  app.use(vite.middlewares)
+}
 
-app.all('*', sentryCreateRequestHandler({ build }))
+// Remix handler
+app.all(
+  '*',
+  isProd
+    ? createRequestHandler({
+        // built server bundle from `remix vite build`
+        build: await import('./build/server/index.js'),
+        mode: process.env.NODE_ENV,
+        getLoadContext(_req, _res) {
+          // return whatever you need in loaders/actions
+          return {}
+        },
+      })
+    : async (req, res, next) => {
+        try {
+          // fresh build on every request in dev
+          const build = await vite.ssrLoadModule('virtual:remix/server-build')
+          return createRequestHandler({
+            build,
+            mode: 'development',
+            getLoadContext(_req, _res) {
+              return {}
+            },
+          })(req, res, next)
+        } catch (err) {
+          // Let Vite fix stack traces for better DX
+          vite && vite.ssrFixStacktrace && vite.ssrFixStacktrace(err)
+          next(err)
+        }
+      },
+)
 
-app.listen(3000, () => {
-  console.log('App listening on http://localhost:3000')
+const port = Number(process.env.PORT || 3000)
+app.listen(port, () => {
+  logger.info(`App listening on http://localhost:${port}`)
 })

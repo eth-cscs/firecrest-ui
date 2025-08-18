@@ -26,11 +26,6 @@ keycloakLogoutRedirectUrl: "https://firecrest-ui.example.com/logout"
 # Firecrest API settings
 firecrestApiBaseUrl: "https://firecrest-api.example.com"
 
-# Sentry settings
-sentryActive: "true"
-sentryDebug: "false"
-sentryTracesSampleRate: "1.0"
-
 # Redis settings
 redisActive: "true"
 redisHost: "redis-master"

@@ -29,6 +29,3 @@ sessions/
 node_modules
 node_modules*
 
-# sentry
-.sentryclirc
-.env.sentry-build-plugin

@@ -9,7 +9,6 @@ import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { installGlobals } from '@remix-run/node'
 import { vitePlugin as remix } from '@remix-run/dev'
-import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 installGlobals()
 
@@ -25,11 +24,6 @@ export default defineConfig({
       },
     }),
     tsconfigPaths(),
-    sentryVitePlugin({
-      org: 'cscs-131',
-      project: 'firecrest-web-ui-v2',
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-    }),
   ],
   build: {
     sourcemap: true,

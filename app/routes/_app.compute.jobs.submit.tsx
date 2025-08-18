@@ -5,7 +5,6 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { captureRemixErrorBoundaryError } from '@sentry/remix'
 import type { LoaderFunction, ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
 import {
   redirect,
@@ -104,6 +103,5 @@ export default function AppComputeJobsNewUploadRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  captureRemixErrorBoundaryError(error)
   return <ErrorView error={error} />
 }

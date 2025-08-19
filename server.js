@@ -8,10 +8,15 @@
 import express from 'express'
 import pino from 'pino'
 import { createRequestHandler } from '@remix-run/express'
-
-const logger = pino({ level: process.env.LOGGING_LEVEL || 'info' })
+import dotenv from 'dotenv'
 
 const isProd = process.env.NODE_ENV === 'production'
+
+if (!isProd) {
+  dotenv.config({ path: `.env`, override: true })
+}
+
+const logger = pino({ level: process.env.LOGGING_LEVEL || 'info' })
 
 const app = express()
 app.disable('x-powered-by')
@@ -31,6 +36,23 @@ if (!isProd) {
   )
 
   // Vite must be before your Remix handler
+  app.use(vite.middlewares)
+}
+
+if (isProd) {
+  // Serve the hashed assets exactly at /assets/*
+  app.use(
+    '/assets',
+    express.static('build/client/assets', {
+      immutable: true,
+      maxAge: '1y',
+    }),
+  )
+
+  // Serve things you ship in /public at the root
+  app.use(express.static('public', { maxAge: '1h' }))
+} else {
+  // dev: Vite middleware first
   app.use(vite.middlewares)
 }
 

@@ -24,6 +24,7 @@ sessions/
 
 # env
 .env
+.env*
 
 # frontend
 node_modules

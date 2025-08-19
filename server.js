@@ -8,10 +8,15 @@
 import express from 'express'
 import pino from 'pino'
 import { createRequestHandler } from '@remix-run/express'
-
-const logger = pino({ level: process.env.LOGGING_LEVEL || 'info' })
+import dotenv from 'dotenv'
 
 const isProd = process.env.NODE_ENV === 'production'
+
+if (!isProd) {
+  dotenv.config({ path: `.env`, override: true })
+}
+
+const logger = pino({ level: process.env.LOGGING_LEVEL || 'info' })
 
 const app = express()
 app.disable('x-powered-by')
@@ -48,7 +53,7 @@ if (isProd) {
   app.use(express.static('public', { maxAge: '1h' }))
 } else {
   // dev: Vite middleware first
-  app.use(viteDevServer.middlewares)
+  app.use(vite.middlewares)
 }
 
 // Remix handler

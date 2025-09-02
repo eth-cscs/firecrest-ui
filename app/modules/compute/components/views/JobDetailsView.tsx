@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate } from '@remix-run/react'
 import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 // types
@@ -42,6 +42,7 @@ interface JobDetailsViewProps {
   jobsMetadata: JobMetadata[]
   system: System
   error: any
+  dashboard: string | null
 }
 
 interface ConsoleOutputProps {
@@ -74,12 +75,14 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   jobsMetadata,
   system,
   error,
+  dashboard,
 }: JobDetailsViewProps) => {
-  const [job] = jobs
-  const jobStateStatus = job.status.state
-  const [jobMetadata] = jobsMetadata
-  const [currentJob, setCurrentJob] = useState<Job>(job)
-  const [currentJobStateStatus, setCurrentJobStateStatus] = useState<JobStateStatus>(jobStateStatus)
+  const job = useMemo<Job | null>(() => (jobs && jobs.length > 0 ? jobs[0] : null), [jobs])
+  const jobMetadata = useMemo<JobMetadata | null>(
+    () => (jobsMetadata && jobsMetadata.length > 0 ? jobsMetadata[0] : null),
+    [jobsMetadata],
+  )
+  const [currentJob, setCurrentJob] = useState<Job | null>(() => job)
   const [syncStandardOut, setSyncStandardOut] = useState<boolean>(true)
   const [jobStandardOuput, setJobStandardOuput] = useState<GetOpsTailResponse | null>(null)
   const [syncStandardError, setSyncStandardError] = useState<boolean>(true)
@@ -92,7 +95,6 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
     try {
       const response: GetJobResponse = await getLocalJob(system.name, jobId)
       const [job] = response.jobs
-      setCurrentJobStateStatus(job.status.state)
       setter(job)
     } catch (error) {
       setLocalError(error)
@@ -129,25 +131,32 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   }
 
   useEffect(() => {
-    const currentJobStateStatus = currentJob.status.state
-    const fecthJobAndJobStandardFileContent = (jobStateStatus: JobStateStatus) => {
-      fetchJob(currentJob.jobId, setCurrentJob)
-      if (jobMetadata && jobMetadata !== null) {
-        // Get job standard output/s
-        if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
-          fetchJobStandardFileContent(jobMetadata)
+    setCurrentJob(job ?? null)
+    if (currentJob !== null) {
+      const currentJobStateStatus = currentJob.status.state
+      const fecthJobAndJobStandardFileContent = (jobStateStatus: JobStateStatus) => {
+        fetchJob(currentJob.jobId, setCurrentJob)
+        if (jobMetadata && jobMetadata !== null) {
+          // Get job standard output/s
+          if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
+            fetchJobStandardFileContent(jobMetadata)
+          }
         }
       }
+      fecthJobAndJobStandardFileContent(currentJobStateStatus)
+      if (![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJobStateStatus)) {
+        const intervalId = setInterval(
+          () => fecthJobAndJobStandardFileContent(currentJobStateStatus),
+          2000,
+        )
+        return () => clearInterval(intervalId)
+      }
     }
-    fecthJobAndJobStandardFileContent(currentJobStateStatus)
-    if (![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJobStateStatus)) {
-      const intervalId = setInterval(
-        () => fecthJobAndJobStandardFileContent(currentJobStateStatus),
-        2000,
-      )
-      return () => clearInterval(intervalId)
-    }
-  }, [currentJobStateStatus])
+  }, [job])
+
+  useEffect(() => {
+    setLocalError(error ?? null)
+  }, [error])
 
   const handleClickReload = () => {
     window.location.reload()
@@ -174,7 +183,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
           <ArrowPathIcon className='-ml-1 mr-2 h-5 w-5 text-green-500' aria-hidden='true' />
           Reload
         </button>
-        {jobCanBeCanceled(currentJob) && (
+        {currentJob && jobCanBeCanceled(currentJob) && (
           <button
             onClick={() => setCancelDialogOpen(true)}
             className='cursor-pointer inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
@@ -183,6 +192,14 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
             Cancel
           </button>
         )}
+      </div>
+    )
+  }
+
+  if (!currentJob) {
+    return (
+      <div className='p-4 text-sm text-gray-600'>
+        {localError ? 'Failed to load job.' : 'Loading job details…'}
       </div>
     )
   }
@@ -213,7 +230,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
                 <LabelBadge color={LabelColor.BLUE}>{currentJob.user}</LabelBadge>
               </AttributesListItem>
               <AttributesListItem label='Account'>
-                {currentJob.account !== '' ? (
+                {currentJob?.account !== '' ? (
                   <LabelBadge color={LabelColor.BLUE}>{currentJob.account}</LabelBadge>
                 ) : (
                   <LabelBadge color={LabelColor.GRAY}>undefined</LabelBadge>
@@ -256,7 +273,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
               </AttributesListItem>
             </AttributesList>
           </LeftTitleCard>
-          {jobMetadata !== undefined && (
+          {jobMetadata !== undefined && jobMetadata !== null && (
             <div className='border-t border-gray-900/10 mt-5 pt-5'>
               <UnderlineTabs>
                 <UnderlineTabPanel label='Script'>
@@ -279,6 +296,17 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
                     <ConsoleOutput output={jobStandardOuput?.output?.content || '...'} />
                   </UnderlineTabPanel>
                 )}
+                {typeof dashboard === 'string' && dashboard.trim() !== '' ? (
+                  <UnderlineTabPanel label='Observability'>
+                    <iframe
+                      src={dashboard}
+                      width='800'
+                      height='600'
+                      title='Observability'
+                      loading='lazy'
+                    />
+                  </UnderlineTabPanel>
+                ) : null}
               </UnderlineTabs>
             </div>
           )}

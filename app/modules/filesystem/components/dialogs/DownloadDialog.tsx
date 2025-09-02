@@ -8,9 +8,7 @@
 import React, { useEffect, useState } from 'react'
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
 // types
-import { File,
-         GetTransferDownloadResponse
- } from '~/types/api-filesystem'
+import { File, GetTransferDownloadResponse } from '~/types/api-filesystem'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // dialogs
@@ -49,20 +47,12 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
     }
   }, [open])
 
-
-  const postFileTransferDownload = async (
-    system: string,
-    filePath: string,
-  ) => {
+  const postFileTransferDownload = async (system: string, filePath: string) => {
     setLoading(true)
-    const response: GetTransferDownloadResponse = await postLocalTransferDownload(
-      system,
-      filePath
-    )
+    const response: GetTransferDownloadResponse = await postLocalTransferDownload(system, filePath)
     setDownloadUrl(response.downloadUrl)
     setDownloadJob(response.transferJob.jobId)
     setLoading(false)
-    console.log(response)
   }
 
   const doDownloadFile = () => {
@@ -70,26 +60,20 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${filePath}`
       onClose()
       window.location.href = downloadEndpoint
-    }else{
-      postFileTransferDownload(system,filePath).catch(
-        (response) => {
-          console.log(response)
-        })
+    } else {
+      postFileTransferDownload(system, filePath).catch((response) => {
+        console.log(response)
+      })
     }
-    
   }
-
-  
-
-
 
   const subTitle = `Donwload the file "${filePath}"`
   return (
     <SimpleDialog title='Download file' subtitle={subTitle} open={open} onClose={onClose}>
       {loading && <LoadingSpinner title='Preparing download...' className='py-10' />}
-      {!loading &&( 
-          <>
-            {!downloadUrl &&( 
+      {!loading && (
+        <>
+          {!downloadUrl && (
             <div className='flex justify-center'>
               <button
                 type='button'
@@ -100,14 +84,17 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                 Download file
               </button>
             </div>
-            )}
-           {downloadUrl && (
+          )}
+          {downloadUrl && (
             <>
-            <div className='text-sm font-medium text-gray-900 pb-2'>Please wait till job <LabelBadge color={LabelColor.BLUE}>{downloadJob}</LabelBadge> completes and used the link below to download the file.</div>
-            <CodeBlock code={downloadUrl} />
+              <div className='text-sm font-medium text-gray-900 pb-2'>
+                Please wait till job <LabelBadge color={LabelColor.BLUE}>{downloadJob}</LabelBadge>{' '}
+                completes and used the link below to download the file.
+              </div>
+              <CodeBlock code={downloadUrl} />
             </>
           )}
-          </>
+        </>
       )}
     </SimpleDialog>
   )

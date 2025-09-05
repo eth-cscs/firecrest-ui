@@ -9,7 +9,7 @@ import env from './env'
 import { getEnvVariable } from '~/helpers/env-helper'
 
 const observability = {
-  dashboard: getEnvVariable(env, 'UI_OBSERVABILITY_DASBOARD', false, '', false),
+  dashboard: getEnvVariable(env, 'UI_OBSERVABILITY_DASHBOARD', false, '', false),
 }
 
 export default observability

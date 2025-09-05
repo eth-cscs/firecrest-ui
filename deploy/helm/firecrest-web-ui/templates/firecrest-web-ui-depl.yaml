@@ -82,6 +82,10 @@ spec:
               value: "{{ .Values.docUrl }}"
             - name: REPO_URL
               value: "{{ .Values.repoUrl }}"
+            {{- if .Values.uiObservabilityDashboard }}
+            - name: UI_OBSERVABILITY_DASHBOARD
+              value: "{{ .Values.uiObservabilityDashboard }}"
+            {{- end }}
             {{- if .Values.customLogo }}
             - name: LOGO_PATH
               value: "{{ .Values.customLogoPath }}"

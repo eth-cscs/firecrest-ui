@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate } from '@remix-run/react'
 import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 // types
@@ -36,6 +36,222 @@ import LeftTitleCard from '~/components/cards/LeftTitleCard'
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
 import { getLocalJob } from '~/apis/compute-api'
 import { jobCanBeCanceled } from '../../helpers/status-helper'
+
+/**
+ * GrafanaIframeRange
+ *
+ * A self-contained React component to embed a Grafana panel in an <iframe>
+ * with interactive controls for time range (from/to) and quick presets.
+ *
+ * - Uses native <input type="datetime-local"> to avoid extra deps
+ * - Rebuilds the iframe src when you click "Apply" (key={src} forces reload)
+ * - Provides quick ranges (Last 5m, 15m, 1h, 6h, 24h)
+ * - TailwindCSS classes for a clean look (optional)
+ *
+ * Props
+ *  - baseUrl: string (Required) Grafana d-solo URL **without** query string
+ *             e.g. "https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry"
+ *  - panelId?: number (default 2)
+ *  - orgId?: string | number (default 1)
+ *  - refresh?: string (default "5s") — passed through to Grafana
+ *  - width?: number | string (default "100%") — iframe width
+ *  - height?: number | string (default 600) — iframe height
+ *  - initialMinutes?: number (default 5) — initial range (now - X minutes → now)
+ */
+function GrafanaIframeRange({
+  baseUrl,
+  panelId = 2,
+  orgId = 1,
+  refresh = '5s',
+  width = '100%',
+  height = 600,
+  initialMinutes = 5,
+}: {
+  baseUrl: string
+  panelId?: number
+  orgId?: string | number
+  refresh?: string
+  width?: number | string
+  height?: number | string
+  initialMinutes?: number
+}) {
+  const now = useMemo(() => new Date(), [])
+  const [from, setFrom] = useState<Date>(new Date(now.getTime() - initialMinutes * 60 * 1000))
+  const [to, setTo] = useState<Date>(now)
+  const [error, setError] = useState<string | null>(null)
+  const [appliedSrc, setAppliedSrc] = useState<string>(() =>
+    buildSrc({
+      baseUrl,
+      orgId,
+      panelId,
+      refresh,
+      fromMs: now.getTime() - initialMinutes * 60 * 1000,
+      toMs: now.getTime(),
+    }),
+  )
+
+  function handleQuick(minutes: number) {
+    const t = new Date()
+    const f = new Date(t.getTime() - minutes * 60 * 1000)
+    setFrom(f)
+    setTo(t)
+    setError(null)
+  }
+
+  function handleApply() {
+    if (!from || !to) return
+    if (from.getTime() >= to.getTime()) {
+      setError("'From' must be earlier than 'To'.")
+      return
+    }
+    setError(null)
+    const src = buildSrc({
+      baseUrl,
+      orgId,
+      panelId,
+      refresh,
+      fromMs: from.getTime(),
+      toMs: to.getTime(),
+    })
+    setAppliedSrc(src)
+  }
+
+  const key = appliedSrc // changing key forces iframe remount (hard reload)
+
+  return (
+    <div className='w-full space-y-4'>
+      {/* Controls */}
+      <div className='flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+          <label className='flex flex-col text-sm'>
+            <span className='mb-1 font-medium'>From</span>
+            <input
+              type='datetime-local'
+              className='rounded-xl border px-3 py-2 shadow-sm focus:outline-none focus:ring-2'
+              value={dateToLocalInput(from)}
+              onChange={(e) => setFrom(localInputToDate(e.target.value))}
+            />
+          </label>
+          <label className='flex flex-col text-sm'>
+            <span className='mb-1 font-medium'>To</span>
+            <input
+              type='datetime-local'
+              className='rounded-xl border px-3 py-2 shadow-sm focus:outline-none focus:ring-2'
+              value={dateToLocalInput(to)}
+              onChange={(e) => setTo(localInputToDate(e.target.value))}
+            />
+          </label>
+        </div>
+
+        <div className='flex flex-wrap gap-2'>
+          <QuickButton onClick={() => handleQuick(5)}>Last 5m</QuickButton>
+          <QuickButton onClick={() => handleQuick(15)}>Last 15m</QuickButton>
+          <QuickButton onClick={() => handleQuick(60)}>Last 1h</QuickButton>
+          <QuickButton onClick={() => handleQuick(360)}>Last 6h</QuickButton>
+          <QuickButton onClick={() => handleQuick(1440)}>Last 24h</QuickButton>
+          <button
+            className='rounded-xl px-4 py-2 font-medium shadow-sm border hover:shadow transition'
+            onClick={handleApply}
+            title='Reload the iframe with the selected time range'
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+
+      {error && <div className='text-sm text-red-600'>{error}</div>}
+
+      {/* Iframe */}
+      <div className='rounded-2xl overflow-hidden border'>
+        <iframe
+          title={`Grafana panel ${panelId}`}
+          key={key}
+          src={appliedSrc}
+          width={typeof width === 'number' ? String(width) : width}
+          height={typeof height === 'number' ? String(height) : height}
+          style={{ border: 0, width: typeof width === 'number' ? `${width}px` : width }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function QuickButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      className='rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium border hover:bg-gray-100 shadow-sm'
+      onClick={onClick}
+      type='button'
+    >
+      {children}
+    </button>
+  )
+}
+
+function buildSrc({
+  baseUrl,
+  orgId,
+  panelId,
+  refresh,
+  fromMs,
+  toMs,
+}: {
+  baseUrl: string
+  orgId: string | number
+  panelId: number
+  refresh: string
+  fromMs: number
+  toMs: number
+}) {
+  const qs = new URLSearchParams({
+    orgId: String(orgId),
+    from: String(fromMs), // Grafana expects epoch ms
+    to: String(toMs),
+    timezone: 'browser',
+    refresh,
+    panelId: String(panelId),
+  })
+  // Explicit solo scene flag used in your sample URL
+  qs.append('__feature.dashboardSceneSolo', 'true')
+  return `${baseUrl}?${qs.toString()}`
+}
+
+/** Convert a Date to a value acceptable by <input type="datetime-local"> */
+function dateToLocalInput(d: Date): string {
+  // toISOString gives Z (UTC). datetime-local expects local without timezone.
+  // Build manually using local parts and zero-pad.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const MM = pad(d.getMonth() + 1)
+  const dd = pad(d.getDate())
+  const hh = pad(d.getHours())
+  const mm = pad(d.getMinutes())
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`
+}
+
+/** Parse the <input type="datetime-local"> string (local time) back to a Date */
+function localInputToDate(v: string): Date {
+  // v like "2025-09-01T17:00"
+  const [datePart, timePart] = v.split('T')
+  const [y, m, d] = datePart.split('-').map((n) => parseInt(n, 10))
+  const [hh, mm] = timePart.split(':').map((n) => parseInt(n, 10))
+  return new Date(y, m - 1, d, hh, mm, 0, 0) // local time
+}
+
+/*
+Usage example:
+
+<GrafanaIframeRange
+  baseUrl="https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry"
+  panelId={2}
+  orgId={1}
+  refresh="5s"
+  width="100%"
+  height={600}
+  initialMinutes={5}
+/>
+
+*/
 
 interface JobDetailsViewProps {
   jobs: Job[]
@@ -279,6 +495,17 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
                     <ConsoleOutput output={jobStandardOuput?.output?.content || '...'} />
                   </UnderlineTabPanel>
                 )}
+                <UnderlineTabPanel label='CPU usage'>
+                  <GrafanaIframeRange
+                    baseUrl='https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry'
+                    panelId={2}
+                    orgId={1}
+                    refresh='5s'
+                    width='100%'
+                    height={600}
+                    initialMinutes={5}
+                  />
+                </UnderlineTabPanel>
               </UnderlineTabs>
             </div>
           )}

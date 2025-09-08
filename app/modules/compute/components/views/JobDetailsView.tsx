@@ -15,6 +15,7 @@ import { GetJobResponse, Job, JobMetadata, JobStateStatus } from '~/types/api-jo
 // helpers
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
+import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // panels
@@ -29,13 +30,12 @@ import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 // dialogs
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
 // apis
+import { getLocalJob } from '~/apis/compute-api'
 import { getLocalOpsTail } from '~/apis/filesystem-api'
 // cards
 import LeftTitleCard from '~/components/cards/LeftTitleCard'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
-import { getLocalJob } from '~/apis/compute-api'
-import { jobCanBeCanceled } from '../../helpers/status-helper'
 
 /**
  * GrafanaIframeRange
@@ -61,6 +61,8 @@ import { jobCanBeCanceled } from '../../helpers/status-helper'
 function GrafanaIframeRange({
   baseUrl,
   jobId,
+  jobStartMs,
+  jobEndMs,
   panelId = 2,
   orgId = 1,
   refresh = '5s',
@@ -70,6 +72,8 @@ function GrafanaIframeRange({
 }: {
   baseUrl: string
   jobId: string | number
+  jobStartMs: number
+  jobEndMs: number
   panelId?: number
   orgId?: string | number
   refresh?: string
@@ -77,9 +81,17 @@ function GrafanaIframeRange({
   height?: number | string
   initialMinutes?: number
 }) {
-  const now = useMemo(() => new Date(), [])
-  const [from, setFrom] = useState<Date>(new Date(now.getTime() - initialMinutes * 60 * 1000))
-  const [to, setTo] = useState<Date>(now)
+  const [minMs, maxMs] = useMemo(() => {
+    const min = Number.isFinite(jobStartMs) ? jobStartMs : Date.now()
+    const rawEnd = Number.isFinite(jobEndMs) ? jobEndMs : Date.now()
+    let end = Math.max(rawEnd, min)
+    if (end === min) end = min + 1_000
+    return [min, end] as const
+  }, [jobStartMs, jobEndMs])
+
+  const durationMs = maxMs - minMs
+  const [from, setFrom] = useState<Date>(() => new Date(minMs))
+  const [to, setTo] = useState<Date>(() => new Date(maxMs))
   const [error, setError] = useState<string | null>(null)
   const [appliedSrc, setAppliedSrc] = useState<string>(() =>
     buildSrc({
@@ -88,37 +100,72 @@ function GrafanaIframeRange({
       orgId,
       panelId,
       refresh,
-      fromMs: now.getTime() - initialMinutes * 60 * 1000,
-      toMs: now.getTime(),
+      fromMs: minMs,
+      toMs: maxMs,
     }),
   )
 
-  function handleQuick(minutes: number) {
-    const t = new Date()
-    const f = new Date(t.getTime() - minutes * 60 * 1000)
+  const clampMs = (t: number) => Math.min(Math.max(t, minMs), maxMs)
+  const clampDate = (d: Date) => new Date(clampMs(d.getTime()))
+
+  useEffect(() => {
+    const f = new Date(minMs)
+    const t = new Date(maxMs)
     setFrom(f)
     setTo(t)
+    setAppliedSrc(
+      buildSrc({
+        baseUrl,
+        jobId,
+        orgId,
+        panelId,
+        refresh,
+        fromMs: minMs,
+        toMs: maxMs,
+      }),
+    )
+    setError(null)
+  }, [minMs, maxMs, baseUrl, jobId, orgId, panelId, refresh])
+
+  const presets = [
+    { label: 'Last 5m', minutes: 5 },
+    { label: 'Last 15m', minutes: 15 },
+    { label: 'Last 1h', minutes: 60 },
+    { label: 'Last 6h', minutes: 360 },
+    { label: 'Last 24h', minutes: 1440 },
+  ]
+
+  function handleQuick(minutes: number) {
+    const toT = new Date(clampMs(maxMs))
+    const fromT = new Date(clampMs(maxMs - minutes * 60_000))
+    setFrom(fromT)
+    setTo(toT)
     setError(null)
   }
 
   function handleApply() {
-    if (!from || !to) return
-    if (from.getTime() >= to.getTime()) {
+    const f = clampDate(from)
+    const t = clampDate(to)
+    if (f.getTime() >= t.getTime()) {
       setError("'From' must be earlier than 'To'.")
       return
     }
     setError(null)
-    const src = buildSrc({
-      baseUrl,
-      jobId,
-      orgId,
-      panelId,
-      refresh,
-      fromMs: from.getTime(),
-      toMs: to.getTime(),
-    })
-    setAppliedSrc(src)
+    setAppliedSrc(
+      buildSrc({
+        baseUrl,
+        jobId,
+        orgId,
+        panelId,
+        refresh,
+        fromMs: f.getTime(),
+        toMs: t.getTime(),
+      }),
+    )
   }
+
+  const minInput = dateToLocalInput(new Date(minMs))
+  const maxInput = dateToLocalInput(new Date(maxMs))
 
   const key = appliedSrc // changing key forces iframe remount (hard reload)
 
@@ -131,28 +178,41 @@ function GrafanaIframeRange({
             <span className='mb-1 font-medium'>From</span>
             <input
               type='datetime-local'
+              step='1'
               className='rounded-xl border px-3 py-2 shadow-sm focus:outline-none focus:ring-2'
               value={dateToLocalInput(from)}
-              onChange={(e) => setFrom(localInputToDate(e.target.value))}
+              min={minInput}
+              max={maxInput}
+              onChange={(e) => setFrom(clampDate(localInputToDate(e.target.value)))}
             />
           </label>
           <label className='flex flex-col text-sm'>
             <span className='mb-1 font-medium'>To</span>
             <input
               type='datetime-local'
+              step='1'
               className='rounded-xl border px-3 py-2 shadow-sm focus:outline-none focus:ring-2'
               value={dateToLocalInput(to)}
-              onChange={(e) => setTo(localInputToDate(e.target.value))}
+              min={minInput}
+              max={maxInput}
+              onChange={(e) => setTo(clampDate(localInputToDate(e.target.value)))}
             />
           </label>
         </div>
 
         <div className='flex flex-wrap gap-2'>
-          <QuickButton onClick={() => handleQuick(5)}>Last 5m</QuickButton>
-          <QuickButton onClick={() => handleQuick(15)}>Last 15m</QuickButton>
-          <QuickButton onClick={() => handleQuick(60)}>Last 1h</QuickButton>
-          <QuickButton onClick={() => handleQuick(360)}>Last 6h</QuickButton>
-          <QuickButton onClick={() => handleQuick(1440)}>Last 24h</QuickButton>
+          {presets.map((p) => {
+            const disabled = durationMs < p.minutes * 60_000
+            return (
+              <QuickButton
+                key={p.minutes}
+                onClick={() => handleQuick(p.minutes)}
+                disabled={disabled}
+              >
+                {p.label}
+              </QuickButton>
+            )
+          })}
           <button
             className='rounded-xl px-4 py-2 font-medium shadow-sm border hover:shadow transition'
             onClick={handleApply}
@@ -191,12 +251,17 @@ const JobObservabilityPanel: React.FC<JobObserbabilityProps> = ({
 }: JobObserbabilityProps) => {
   if (typeof dashboard !== 'string' || dashboard.trim() === '') return null
 
+  const startMs = currentJob.time.start ? currentJob.time.start * 1000 : Date.now() - 5 * 60 * 1000
+  const endMs = currentJob.time.end ? currentJob.time.end * 1000 : Date.now()
+
   return (
     <SimplePanel title='Job observability' className='mb-4'>
       <UnderlineTabPanel label='Observability'>
         <GrafanaIframeRange
           baseUrl={dashboard}
           jobId={currentJob.jobId}
+          jobStartMs={startMs}
+          jobEndMs={endMs}
           panelId={2}
           orgId={1}
           refresh='5s'
@@ -209,12 +274,24 @@ const JobObservabilityPanel: React.FC<JobObserbabilityProps> = ({
   )
 }
 
-function QuickButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function QuickButton({
+  onClick,
+  disabled,
+  children,
+}: {
+  onClick: () => void
+  disabled?: boolean
+  children: React.ReactNode
+}) {
   return (
     <button
-      className='rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium border hover:bg-gray-100 shadow-sm'
-      onClick={onClick}
       type='button'
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        'rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium border shadow-sm',
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer',
+      ].join(' ')}
     >
       {children}
     </button>
@@ -238,20 +315,33 @@ function buildSrc({
   fromMs: number
   toMs: number
 }) {
-  const qs = new URLSearchParams({
-    orgId: String(orgId),
-    jobId: String(jobId),
-    from: String(fromMs), // Grafana expects epoch ms
-    to: String(toMs),
-    timezone: 'browser',
-    refresh,
-    panelId: String(panelId),
-  })
-  // Explicit solo scene flag used in your sample URL
-  qs.append('__feature.dashboardSceneSolo', 'true')
-  const fullPath = `${baseUrl}?${qs.toString()}`
-  console.log('Grafana iframe src:', fullPath)
-  return fullPath
+  const u = new URL(
+    baseUrl,
+    typeof window !== 'undefined' ? window.location.origin : 'http://localhost',
+  )
+  const toStrip = [
+    'from',
+    'to',
+    'timezone',
+    'refresh',
+    'orgId',
+    'panelId',
+    'jobId',
+    '__feature.dashboardSceneSolo',
+  ]
+  toStrip.forEach((k) => u.searchParams.delete(k))
+  u.searchParams.set('orgId', String(orgId))
+  u.searchParams.set('panelId', String(panelId))
+  u.searchParams.set('jobId', String(jobId))
+  u.searchParams.set('refresh', refresh)
+  u.searchParams.set('timezone', 'browser')
+  u.searchParams.set('from', String(fromMs)) // epoch ms
+  u.searchParams.set('to', String(toMs))
+  u.searchParams.set('__feature.dashboardSceneSolo', 'true')
+
+  const full = u.toString()
+  console.log('Grafana iframe src:', full)
+  return full
 }
 
 /** Convert a Date to a value acceptable by <input type="datetime-local"> */
@@ -264,7 +354,8 @@ function dateToLocalInput(d: Date): string {
   const dd = pad(d.getDate())
   const hh = pad(d.getHours())
   const mm = pad(d.getMinutes())
-  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`
+  const ss = pad(d.getSeconds())
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}:${ss}`
 }
 
 /** Parse the <input type="datetime-local"> string (local time) back to a Date */
@@ -272,8 +363,8 @@ function localInputToDate(v: string): Date {
   // v like "2025-09-01T17:00"
   const [datePart, timePart] = v.split('T')
   const [y, m, d] = datePart.split('-').map((n) => parseInt(n, 10))
-  const [hh, mm] = timePart.split(':').map((n) => parseInt(n, 10))
-  return new Date(y, m - 1, d, hh, mm, 0, 0) // local time
+  const [hh, mm, ss] = timePart.split(':').map((n) => parseInt(n, 10))
+  return new Date(y, m - 1, d, hh, mm, ss || 0, 0) // local time
 }
 
 interface JobDetailsViewProps {

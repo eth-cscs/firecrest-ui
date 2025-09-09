@@ -12,6 +12,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
 import importPlugin from 'eslint-plugin-import'
 import headerPlugin from 'eslint-plugin-header'
+import globals from 'globals'
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
@@ -131,7 +132,14 @@ export default [
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
-
+  {
+    files: ['**/*.test.{js,ts,jsx,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
   {
     files: ['.eslintrc.cjs'],
     languageOptions: {

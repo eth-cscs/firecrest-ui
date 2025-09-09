@@ -36,6 +36,8 @@ import { getLocalOpsTail } from '~/apis/filesystem-api'
 import LeftTitleCard from '~/components/cards/LeftTitleCard'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
+// helpers
+import { nidStringToArray } from '~/helpers/nid-parser'
 
 /**
  * GrafanaIframeRange
@@ -61,6 +63,8 @@ import { AttributesList, AttributesListItem } from '~/components/lists/Attribute
 function GrafanaIframeRange({
   baseUrl,
   jobId,
+  cluster,
+  nodes,
   jobStartMs,
   jobEndMs,
   panelId = 2,
@@ -72,6 +76,8 @@ function GrafanaIframeRange({
 }: {
   baseUrl: string
   jobId: string | number
+  cluster: string
+  nodes: string[]
   jobStartMs: number
   jobEndMs: number
   panelId?: number
@@ -97,6 +103,8 @@ function GrafanaIframeRange({
     buildSrc({
       baseUrl,
       jobId,
+      cluster,
+      nodes,
       orgId,
       panelId,
       refresh,
@@ -117,6 +125,8 @@ function GrafanaIframeRange({
       buildSrc({
         baseUrl,
         jobId,
+        cluster,
+        nodes,
         orgId,
         panelId,
         refresh,
@@ -155,6 +165,8 @@ function GrafanaIframeRange({
       buildSrc({
         baseUrl,
         jobId,
+        cluster,
+        nodes,
         orgId,
         panelId,
         refresh,
@@ -253,6 +265,8 @@ const JobObservabilityPanel: React.FC<JobObserbabilityProps> = ({
 
   const startMs = currentJob.time.start ? currentJob.time.start * 1000 : Date.now() - 5 * 60 * 1000
   const endMs = currentJob.time.end ? currentJob.time.end * 1000 : Date.now()
+  const nodes = nidStringToArray(currentJob.nodes || '')
+  const cluster = currentJob.cluster || 'unknown'
 
   return (
     <SimplePanel title='Job observability' className='mb-4'>
@@ -260,6 +274,8 @@ const JobObservabilityPanel: React.FC<JobObserbabilityProps> = ({
         <GrafanaIframeRange
           baseUrl={dashboard}
           jobId={currentJob.jobId}
+          nodes={nodes}
+          cluster={cluster}
           jobStartMs={startMs}
           jobEndMs={endMs}
           panelId={2}
@@ -301,6 +317,8 @@ function QuickButton({
 function buildSrc({
   baseUrl,
   jobId,
+  cluster,
+  nodes,
   orgId,
   panelId,
   refresh,
@@ -309,6 +327,8 @@ function buildSrc({
 }: {
   baseUrl: string
   jobId: string | number
+  cluster: string
+  nodes: string[]
   orgId: string | number
   panelId: number
   refresh: string
@@ -327,12 +347,18 @@ function buildSrc({
     'orgId',
     'panelId',
     'jobId',
+    'var-nid',
+    'var-vcluster',
     '__feature.dashboardSceneSolo',
   ]
   toStrip.forEach((k) => u.searchParams.delete(k))
   u.searchParams.set('orgId', String(orgId))
   u.searchParams.set('panelId', String(panelId))
   u.searchParams.set('jobId', String(jobId))
+  u.searchParams.set('var-vcluster', cluster)
+  nodes.forEach((node) => {
+    u.searchParams.append('var-nid', node)
+  })
   u.searchParams.set('refresh', refresh)
   u.searchParams.set('timezone', 'browser')
   u.searchParams.set('from', String(fromMs)) // epoch ms

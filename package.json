@@ -6,6 +6,7 @@
     "build": "remix vite:build",
     "dev": "cross-env NODE_ENV=development node ./server.js",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint \"app/**/*.{js,jsx,ts,tsx}\" \"jest.config.cjs\" \"tailwind.config.ts\"",
+    "check-licence": "node scripts/check-license.mjs",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "typecheck": "tsc",
     "audit": "yarn-audit-ci",

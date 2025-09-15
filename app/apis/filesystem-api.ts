@@ -485,9 +485,11 @@ export const postLocalTransferUpload = async (
 export const postLocalTransferDownload = async (
   systemName: string,
   sourcePath: string,
+  account: string,
 ): Promise<GetTransferDownloadResponse> => {
   const formData = new FormData()
   formData.append('path', sourcePath)
+  formData.append('account', account)
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/api/filesystems/${systemName}/transfer/download`,
     formData,

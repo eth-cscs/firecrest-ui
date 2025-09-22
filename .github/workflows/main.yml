@@ -34,7 +34,7 @@ jobs:
           corepack prepare yarn@4.9.2 --activate
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --no-immutable
 
       - name: Run audit
         run: yarn npm audit
@@ -59,7 +59,7 @@ jobs:
           corepack prepare yarn@4.9.2 --activate
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --no-immutable
 
       - name: Run tests
         run: yarn run test
@@ -79,7 +79,7 @@ jobs:
           corepack prepare yarn@4.9.2 --activate
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --no-immutable
 
       - name: Run linter
         run: yarn run lint
@@ -89,7 +89,7 @@ jobs:
         run: echo "Lint failed but continuing"
 
       - name: Check the license headers
-        run: yarn check-license $(find app -type f \( -name '*.ts' -o -name '*.tsx' \))
+        run: yarn run check-licence
 
   helm-lint:
     name: Helm Chart Validation

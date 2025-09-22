@@ -33,6 +33,8 @@ import { getSystems } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobDetailsView from '~/modules/compute/components/views/JobDetailsView'
+// observability
+import observability from '~/configs/observability.config'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -68,6 +70,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     jobs: jobResponse.jobs,
     jobsMetadata: jobMetadataResponse.jobs,
     system: system,
+    dashboard: observability.dashboard || null,
   }
 }
 
@@ -113,13 +116,14 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
 
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
-  const { jobs, jobsMetadata, system }: any = useLoaderData()
+  const { jobs, jobsMetadata, system, dashboard }: any = useLoaderData()
   return (
     <JobDetailsView
       jobs={jobs}
       jobsMetadata={jobsMetadata}
       system={system}
       error={getErrorFromData(data)}
+      dashboard={dashboard}
     />
   )
 }

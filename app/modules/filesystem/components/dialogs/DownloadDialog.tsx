@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react'
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
 // types
 import { File, GetTransferDownloadResponse } from '~/types/api-filesystem'
-import { File, GetTransferDownloadResponse } from '~/types/api-filesystem'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // dialogs
@@ -113,8 +112,6 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
             </div>
           )}
           {downloadUrl && (
-          )}
-          {downloadUrl && (
             <>
               <div className='text-sm font-medium text-gray-900 pb-2'>
                 Please wait till job <LabelBadge color={LabelColor.BLUE}>{downloadJob}</LabelBadge>{' '}
@@ -128,7 +125,6 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
               <CodeBlock code={downloadUrl} />
             </>
           )}
-        </>
         </>
       )}
     </SimpleDialog>

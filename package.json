@@ -77,14 +77,15 @@
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8",
-    "vite": "^6.3.5",
+    "vite": "^7.1.5",
     "vite-tsconfig-paths": "^5.1.4",
     "yarn-audit-ci": "^1.2.0",
     "yarn-audit-fix": "^10.0.7"
   },
   "resolutions": {
-    "esbuild": "^0.25.0",
-    "estree-util-value-to-estree": "^3.3.3"
+    "esbuild": "^0.25.10",
+    "estree-util-value-to-estree": "^3.4.0",
+    "tar-fs": "^3.1.1"
   },
   "engines": {
     "node": ">=21.0.0"

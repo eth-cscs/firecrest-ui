@@ -1,0 +1,61 @@
+# Template software to be used to upload a large file
+parts_upload_urls={{partsUploadUrls}}
+complete_upload_url={{completeUploadUrl}}
+max_part_size={{maxPartSize}}
+
+
+# Upload parts and get Etags
+part_id=1
+upload_error=false
+etags_xml=""
+skip=""
+# Define the part size, depending on the block size
+part_blocks=$(( max_part_size / BLOCK_SIZE ))
+while read -r part_url; do    
+    # Generate temporary part file    
+    if ! dd if="${DATA_FILE}" of="${PART_FILE}" bs=${BLOCK_SIZE} count=${part_blocks} ${skip} status=none ; then
+        >&2 echo "Error generating part file for part ${part_id}"
+        upload_error=true
+    else
+        ls -hl
+        echo "Uploading part ${part_id}: ${PART_FILE}"
+        # Upload data with curl and extract ETag
+        if line=$(curl -f --show-error -D - --upload-file "$PART_FILE" "$part_url" | grep -i "^ETag: " ) ;
+        then
+            etag=$(echo $line | awk -F'"' '{print $2}')
+            etags_xml="${etags_xml}<Part><PartNumber>${part_id}</PartNumber><ETag>\"${etag%|*}\"</ETag></Part>"
+        else
+            >&2 echo "Error uploading part ${part_id}"
+            upload_error=true
+        fi
+        # Cleanup
+        rm "${PART_FILE}"
+    fi
+    # Increase part index
+    part_id=$(( part_id + 1 ))
+    # Offset for next chunk
+    skip="skip=$((( part_id - 1 ) * part_blocks))"
+
+done <<< "$(echo "$parts_upload_urls" | jq -r '.[]')"
+
+if $upload_error; 
+then
+    >&2 echo "Upload failed."
+    cleanup
+    exit 2
+fi
+
+echo "Completing upload"
+complete_upload_xml="<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">${etags_xml}</CompleteMultipartUpload>"
+
+# Complete multipart upload
+status=$(curl -f --show-error -i -o /dev/null -w "%{http_code}" -H "Content-Type: application/xml" -d "$complete_upload_xml" -X POST $complete_upload_url)
+if [[ "$status" == "200" ]]
+then
+    echo "File upload successfully completed"
+else
+    >&2 echo "File upload failed with status: $status"
+    exit 3
+fi
+
+cleanup

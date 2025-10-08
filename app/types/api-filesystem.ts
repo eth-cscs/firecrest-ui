@@ -131,6 +131,7 @@ export interface GetTransferUploadResponse {
   completeUploadUrl: string
   transferJob: TranferJob
   partsUploadUrls: string[]
+  maxPartSize: number
 }
 
 export interface GetTransferDownloadResponse {

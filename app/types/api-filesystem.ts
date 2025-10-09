@@ -128,7 +128,7 @@ export type PostTransferMvRequest = {
 }
 
 // TODO response need to be fixed according to the backend implementation
-export interface TransferDirectives {
+export interface TransferUploadDirectives {
   // completeUploadUrl: string
   complete_upload_url?: string
   // partsUploadUrls: string[]
@@ -140,11 +140,16 @@ export interface TransferDirectives {
 }
 
 export interface GetTransferUploadResponse {
-  transferDirectives: TransferDirectives
+  transferDirectives: TransferUploadDirectives
+}
+
+export interface TransferDownloadDirectives {
+  download_url: string
+  downloadUrl: string
 }
 
 export interface GetTransferDownloadResponse {
-  downloadUrl: string
+  transferDirectives: TransferDownloadDirectives
   transferJob: TranferJob
 }
 

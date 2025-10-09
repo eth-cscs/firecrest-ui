@@ -29,6 +29,19 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
   const [scriptTemplate, setScriptTemplate] = useState<string>('')
   const [envTemplate, setEnvTemplate] = useState<string>('')
 
+  const getTransferDirectives = () => {
+    const { transferDirectives } = transferResult
+    // const { partsUploadUrls, completeUploadUrl, maxPartSize } = transferDirectives
+    const { parts_upload_urls, complete_upload_url, max_part_size } = transferDirectives
+
+    const data = {
+      partsUploadUrls: JSON.stringify(parts_upload_urls, null, 2),
+      completeUploadUrl: JSON.stringify(complete_upload_url, null, 2),
+      maxPartSize: String(max_part_size),
+    }
+    return data
+  }
+
   useEffect(() => {
     const loadScriptTemplate = async () => {
       try {
@@ -36,15 +49,8 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
         const templateScriptResponse = await fetch('/public/file_upload_script_template.txt')
         const templateScriptText = await templateScriptResponse.text()
 
-        const { transferDirectives } = transferResult
-        // const { partsUploadUrls, completeUploadUrl, maxPartSize } = transferDirectives
-        const { parts_upload_urls, complete_upload_url, max_part_size } = transferDirectives
+        const data = getTransferDirectives()
 
-        const data = {
-          partsUploadUrls: JSON.stringify(parts_upload_urls, null, 2),
-          completeUploadUrl: JSON.stringify(complete_upload_url, null, 2),
-          maxPartSize: String(max_part_size),
-        }
         const filled = templateScriptText.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] ?? '')
         setScriptTemplate(filled)
       } catch (error) {
@@ -55,19 +61,19 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
     loadScriptTemplate()
   }, [transferResult])
 
-  useEffect(() => {
-    const loadEnvTemplate = async () => {
-      try {
-        const templateEvnResponse = await fetch('/public/file_upload_env_template.txt')
-        const templateEnvText = await templateEvnResponse.text()
-        setEnvTemplate(templateEnvText)
-      } catch (error) {
-        console.error('Failed to load template:', error)
-      }
-    }
+  // useEffect(() => {
+  //   const loadEnvTemplate = async () => {
+  //     try {
+  //       const templateEvnResponse = await fetch('/public/file_upload_env_template.txt')
+  //       const templateEnvText = await templateEvnResponse.text()
+  //       setEnvTemplate(templateEnvText)
+  //     } catch (error) {
+  //       console.error('Failed to load template:', error)
+  //     }
+  //   }
 
-    loadEnvTemplate()
-  }, [transferResult])
+  //   loadEnvTemplate()
+  // }, [transferResult])
 
   if (!transferResult || transferResult === null) {
     return null
@@ -126,7 +132,7 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
           </div>
         </section>
 
-        <section>
+        {/* <section>
           <h3 className='text-base font-semibold text-gray-900 mb-3'>
             1. Set up the environment file
           </h3>
@@ -137,15 +143,24 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
             file.
           </p>
           <TemplatedCodeBlock code={envTemplate} />
+        </section> */}
+
+        <section>
+          <h3 className='text-base font-semibold text-gray-900 mb-3'>File upload result</h3>
+          <p className='leading-relaxed mb-4'>
+            The following snippet is the result of the upload request, containing the transfer
+            directives with the upload URLs and other relevant information.
+          </p>
+          <TemplatedCodeBlock code={JSON.stringify(getTransferDirectives(), null, 2)} />
         </section>
 
         <section>
           <h3 className='text-base font-semibold text-gray-900 mb-3'>
-            2. Script example (using <code>dd</code>)
+            Usage example (using <code>dd</code>)
           </h3>
           <p className='leading-relaxed mb-4'>
-            The script example below uses <code>dd</code> and reads the environment variables
-            defined above.
+            The script example below uses <code>dd</code> and has the part upload URLs and the
+            complete URL defined in the header.
           </p>
           <TemplatedCodeBlock code={scriptTemplate} />
         </section>

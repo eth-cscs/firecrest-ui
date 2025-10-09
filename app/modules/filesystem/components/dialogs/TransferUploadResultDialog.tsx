@@ -12,6 +12,7 @@ import TemplatedCodeBlock from '~/components/codes/TemplatedCodeBlock'
 import { GetTransferUploadResponse } from '~/types/api-filesystem'
 // dialogs
 import SimpleDialog, { SimpleDialogSize } from '~/components/dialogs/SimpleDialog'
+import { formatArray } from '~/helpers/code-helper'
 
 interface TransferUploadResultDialogProps {
   targetPath: string
@@ -35,9 +36,10 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
     const { parts_upload_urls, complete_upload_url, max_part_size } = transferDirectives
 
     const data = {
-      partsUploadUrls: JSON.stringify(parts_upload_urls, null, 2),
+      partsUploadUrls: formatArray(parts_upload_urls),
       completeUploadUrl: JSON.stringify(complete_upload_url, null, 2),
       maxPartSize: String(max_part_size),
+      bloc_size: '1048576', // 1MB
     }
     return data
   }
@@ -61,25 +63,9 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
     loadScriptTemplate()
   }, [transferResult])
 
-  // useEffect(() => {
-  //   const loadEnvTemplate = async () => {
-  //     try {
-  //       const templateEvnResponse = await fetch('/public/file_upload_env_template.txt')
-  //       const templateEnvText = await templateEvnResponse.text()
-  //       setEnvTemplate(templateEnvText)
-  //     } catch (error) {
-  //       console.error('Failed to load template:', error)
-  //     }
-  //   }
-
-  //   loadEnvTemplate()
-  // }, [transferResult])
-
   if (!transferResult || transferResult === null) {
     return null
   }
-
-  console.log(JSON.stringify(transferResult, null, 2))
 
   return (
     <SimpleDialog
@@ -131,19 +117,6 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
             </p>
           </div>
         </section>
-
-        {/* <section>
-          <h3 className='text-base font-semibold text-gray-900 mb-3'>
-            1. Set up the environment file
-          </h3>
-          <p className='leading-relaxed mb-4'>
-            To run the example, first set up the environment file using the provided
-            <span className='font-medium'> env-template </span> file. Fill in the fields as
-            described in the user guide to match your deployment, and save the template as a new
-            file.
-          </p>
-          <TemplatedCodeBlock code={envTemplate} />
-        </section> */}
 
         <section>
           <h3 className='text-base font-semibold text-gray-900 mb-3'>File upload result</h3>

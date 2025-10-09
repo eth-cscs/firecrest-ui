@@ -264,7 +264,7 @@ export const postTransferUpload = async (
   account: string | null = null,
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
-    path: path,
+    path: `${path}/${fileName}`,
     transfer_directives: {
       account: account,
       file_size: fileSize,

@@ -57,8 +57,9 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       filePath,
       account,
     )
-    setDownloadUrl(response.downloadUrl)
-    setDownloadJob(response.transferJob.jobId)
+    // TODO  download_url (not camelized) might be adjusted according to the backend implementation
+    setDownloadUrl(response?.transferDirectives?.download_url)
+    setDownloadJob(response?.transferJob?.jobId)
     setLoading(false)
   }
 
@@ -113,11 +114,6 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
           )}
           {downloadUrl && (
             <>
-              <div className='text-sm font-medium text-gray-900 pb-2'>
-                Please wait till job <LabelBadge color={LabelColor.BLUE}>{downloadJob}</LabelBadge>{' '}
-                completes and used the link below to download the file.
-              </div>
-              <CodeBlock code={downloadUrl} />
               <div className='text-sm font-medium text-gray-900 pb-2'>
                 Please wait till job <LabelBadge color={LabelColor.BLUE}>{downloadJob}</LabelBadge>{' '}
                 completes and used the link below to download the file.

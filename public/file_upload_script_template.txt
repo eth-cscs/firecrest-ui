@@ -1,61 +1,97 @@
+#!/bin/bash
+set -E
+# -----------------------------------------------------------------------------
+
 # Template software to be used to upload a large file
+data_file="/path/to/local/file"       # set the path to your local file
+part_file="/path/to/local/file.part"  # set the path to the part file
 parts_upload_urls={{partsUploadUrls}}
 complete_upload_url={{completeUploadUrl}}
 max_part_size={{maxPartSize}}
+bloc_size={{bloc_size}}
 
+
+# --- helpers -----------------------------------------------------------------
+cleanup() {
+  rm -f "$part_file" || true
+}
+trap cleanup EXIT
 
 # Upload parts and get Etags
 part_id=1
 upload_error=false
 etags_xml=""
-skip=""
+
 # Define the part size, depending on the block size
-part_blocks=$(( max_part_size / BLOCK_SIZE ))
-while read -r part_url; do    
-    # Generate temporary part file    
-    if ! dd if="${DATA_FILE}" of="${PART_FILE}" bs=${BLOCK_SIZE} count=${part_blocks} ${skip} status=none ; then
-        >&2 echo "Error generating part file for part ${part_id}"
+part_blocks=$(( max_part_size / bloc_size ))
+
+# Compute file size on macOS (use stat -f%z) and total blocks
+file_size="$(stat -f %z "$data_file")"
+total_blocks=$(( (file_size + bloc_size - 1) / bloc_size ))   # ceil(file_size/bloc_size)
+
+skip_blocks=0
+
+for part_url in "${parts_upload_urls[@]}"; do
+  # Remaining blocks for this part
+  remain_blocks=$(( total_blocks - skip_blocks ))
+  if (( remain_blocks <= 0 )); then
+    break
+  fi
+  # Actual count we will read for this part (last part may be smaller)
+  count_blocks=$(( remain_blocks < part_blocks ? remain_blocks : part_blocks ))
+
+  # Generate temporary part file
+  if ! dd if="$data_file" of="$part_file" bs="$bloc_size" count="$count_blocks" skip="$skip_blocks" status=none ; then
+    >&2 echo "Error generating part file for part ${part_id}"
+    upload_error=true
+  else
+    echo "Uploading part ${part_id}: ${part_file}"
+
+    # Upload data with curl and extract ETag (capture only headers)
+    # -sS: silent but show errors; -D -: dump headers to stdout; -o /dev/null: discard body
+    headers="$(curl -sS -f -D - -o /dev/null --upload-file "$part_file" "$part_url")" || {
+      >&2 echo "Error uploading part ${part_id}"
+      upload_error=true
+    }
+
+    if [[ $upload_error == false ]]; then
+      # ETag header usually looks like: ETag: "abcd1234..."
+      # use tr -d to be robust to CR/LF, then awk to extract the quoted value
+      etag_line="$(printf '%s\n' "$headers" | tr -d '\r' | grep -i '^ETag: ')"
+      if [[ -z "${etag_line:-}" ]]; then
+        >&2 echo "No ETag returned for part ${part_id}"
         upload_error=true
-    else
-        ls -hl
-        echo "Uploading part ${part_id}: ${PART_FILE}"
-        # Upload data with curl and extract ETag
-        if line=$(curl -f --show-error -D - --upload-file "$PART_FILE" "$part_url" | grep -i "^ETag: " ) ;
-        then
-            etag=$(echo $line | awk -F'"' '{print $2}')
-            etags_xml="${etags_xml}<Part><PartNumber>${part_id}</PartNumber><ETag>\"${etag%|*}\"</ETag></Part>"
-        else
-            >&2 echo "Error uploading part ${part_id}"
-            upload_error=true
-        fi
-        # Cleanup
-        rm "${PART_FILE}"
+      else
+        etag="$(printf '%s\n' "$etag_line" | awk -F'"' '{print $2}')"
+        # Some gateways append metadata after a pipe; strip it if present
+        etag="${etag%%|*}"
+        etags_xml+=$'<Part><PartNumber>'"$part_id"$'</PartNumber><ETag>"'"$etag"$'"</ETag></Part>'
+      fi
     fi
-    # Increase part index
-    part_id=$(( part_id + 1 ))
-    # Offset for next chunk
-    skip="skip=$((( part_id - 1 ) * part_blocks))"
 
-done <<< "$(echo "$parts_upload_urls" | jq -r '.[]')"
+    # Cleanup chunk
+    rm -f "$part_file"
+  fi
 
-if $upload_error; 
-then
-    >&2 echo "Upload failed."
-    cleanup
-    exit 2
+  # Next part
+  part_id=$(( part_id + 1 ))
+  skip_blocks=$(( skip_blocks + count_blocks ))
+done
+
+if $upload_error; then
+  >&2 echo "Upload failed."
+  exit 2
 fi
 
 echo "Completing upload"
-complete_upload_xml="<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">${etags_xml}</CompleteMultipartUpload>"
+complete_upload_xml=$'<CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'$etags_xml$'</CompleteMultipartUpload>'
 
 # Complete multipart upload
-status=$(curl -f --show-error -i -o /dev/null -w "%{http_code}" -H "Content-Type: application/xml" -d "$complete_upload_xml" -X POST $complete_upload_url)
-if [[ "$status" == "200" ]]
-then
-    echo "File upload successfully completed"
-else
-    >&2 echo "File upload failed with status: $status"
-    exit 3
-fi
+status="$(curl -sS -f -i -o /dev/null -w "%{http_code}" -H "Content-Type: application/xml" -d "$complete_upload_xml" -X POST "$complete_upload_url" || true)"
 
-cleanup
+if [[ "$status" == "200" ]]; then
+  echo "File upload successfully completed"
+else
+  >&2 echo "File upload failed with status: $status"
+  exit 3
+fi

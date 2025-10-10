@@ -263,9 +263,17 @@ export const postTransferUpload = async (
   fileSize: number,
   account: string | null = null,
 ): Promise<GetTransferUploadResponse> => {
+  const payload = {
+    path: `${path}/${fileName}`,
+    transfer_directives: {
+      account: account,
+      file_size: fileSize,
+      transfer_method: 's3',
+    },
+  }
   const apiResponse = await api.post<any, GetTransferUploadResponse>(
     `/filesystem/${system}/transfer/upload`,
-    JSON.stringify({ path, fileName, fileSize, account }),
+    JSON.stringify(payload),
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

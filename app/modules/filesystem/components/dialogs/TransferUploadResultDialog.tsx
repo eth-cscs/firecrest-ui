@@ -46,6 +46,9 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
 
   useEffect(() => {
     const loadScriptTemplate = async () => {
+      if (!transferResult || transferResult === null) {
+        return
+      }
       try {
         // Load the file from the public folder
         const templateScriptResponse = await fetch('/file_upload_script_template.txt')

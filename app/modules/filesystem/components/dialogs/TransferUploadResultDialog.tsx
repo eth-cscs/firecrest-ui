@@ -13,6 +13,8 @@ import { GetTransferUploadResponse } from '~/types/api-filesystem'
 // dialogs
 import SimpleDialog, { SimpleDialogSize } from '~/components/dialogs/SimpleDialog'
 import { formatArray } from '~/helpers/code-helper'
+// types
+import { LanguegeType } from '~/types/language'
 
 interface TransferUploadResultDialogProps {
   targetPath: string
@@ -28,7 +30,6 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
   onClose,
 }: TransferUploadResultDialogProps) => {
   const [scriptTemplate, setScriptTemplate] = useState<string>('')
-  const [envTemplate, setEnvTemplate] = useState<string>('')
 
   const getTransferDirectives = () => {
     const { transferDirectives } = transferResult
@@ -36,10 +37,10 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
     const { parts_upload_urls, complete_upload_url, max_part_size } = transferDirectives
 
     const data = {
-      partsUploadUrls: formatArray(parts_upload_urls),
-      completeUploadUrl: JSON.stringify(complete_upload_url, null, 2),
-      maxPartSize: String(max_part_size),
-      bloc_size: '1048576', // 1MB
+      partsUploadUrls: parts_upload_urls,
+      completeUploadUrl: complete_upload_url,
+      maxPartSize: max_part_size,
+      blocSize: '1048576', // 1MB
     }
     return data
   }
@@ -56,7 +57,19 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
 
         const data = getTransferDirectives()
 
-        const filled = templateScriptText.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] ?? '')
+        const { partsUploadUrls, completeUploadUrl, maxPartSize, blocSize } = data
+
+        const bashData = {
+          partsUploadUrls: formatArray(partsUploadUrls, LanguegeType.bash),
+          completeUploadUrl: JSON.stringify(completeUploadUrl, null, 2),
+          maxPartSize: String(maxPartSize),
+          blocSize: '1048576', // 1MB
+        }
+
+        const filled = templateScriptText.replace(
+          /{{(.*?)}}/g,
+          (_, key) => bashData[key.trim()] ?? '',
+        )
         setScriptTemplate(filled)
       } catch (error) {
         console.error('Failed to load template:', error)

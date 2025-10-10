@@ -926,7 +926,9 @@ const FileListView: React.FC<FileListViewProps> = ({
               />
             )}
 
-            {remoteFsError != null && <AlertError error={remoteFsError} className='my-4' />}
+            {remoteFsError != null && fileList.length == 0 && (
+              <AlertError error={remoteFsError} className='my-4' />
+            )}
             {fileList && fileList.length > 0 && (
               <FileListTable
                 files={fileList}

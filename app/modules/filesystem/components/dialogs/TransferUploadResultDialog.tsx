@@ -113,13 +113,6 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
               protocol. The number of URLs depends on the file size and the FirecREST settings.
             </p>
             <p>
-              You must split the file accordingly and upload each part to its assigned URL. Once all
-              parts have been uploaded, call the provided
-              <span className='font-medium'> complete upload URL</span> to finalize the transfer.
-              After completion, a remote job moves the file from the staging storage to its final
-              destination.
-            </p>
-            <p>
               📘 Learn more in the{' '}
               <a
                 href='https://eth-cscs.github.io/firecrest-v2/user_guide/file_transfer_bash/'
@@ -132,15 +125,6 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
               .
             </p>
           </div>
-        </section>
-
-        <section>
-          <h3 className='text-base font-semibold text-gray-900 mb-3'>File upload result</h3>
-          <p className='leading-relaxed mb-4'>
-            The following snippet is the result of the upload request, containing the transfer
-            directives with the upload URLs and other relevant information.
-          </p>
-          <TemplatedCodeBlock code={JSON.stringify(getTransferDirectives(), null, 2)} />
         </section>
 
         <section>

@@ -265,9 +265,10 @@ export const postTransferUpload = async (
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
     path: `${path}/${fileName}`,
-    transfer_directives: {
-      account: account,
-      file_size: fileSize,
+    account: account,
+    transferDirectives: {
+      fileSize: fileSize,
+      fileName: fileName,
       transfer_method: 's3',
     },
   }

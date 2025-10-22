@@ -855,6 +855,7 @@ interface FileListViewProps {
   username: string
   fileUploadLimit: number
   error: any
+  remoteFsError: any
 }
 
 const FileListView: React.FC<FileListViewProps> = ({
@@ -866,6 +867,7 @@ const FileListView: React.FC<FileListViewProps> = ({
   username,
   fileUploadLimit,
   error,
+  remoteFsError,
 }: FileListViewProps) => {
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState<any | null>(error)
@@ -915,12 +917,18 @@ const FileListView: React.FC<FileListViewProps> = ({
               system={system}
               fileSystem={fileSystem}
             />
-            <FileUpload
-              system={system}
-              currentPath={currentPath}
-              setLocalError={setLocalError}
-              fileUploadLimit={fileUploadLimit}
-            />
+            {remoteFsError == null && (
+              <FileUpload
+                system={system}
+                currentPath={currentPath}
+                setLocalError={setLocalError}
+                fileUploadLimit={fileUploadLimit}
+              />
+            )}
+
+            {remoteFsError != null && fileList.length == 0 && (
+              <AlertError error={remoteFsError} className='my-4' />
+            )}
             {fileList && fileList.length > 0 && (
               <FileListTable
                 files={fileList}
@@ -930,7 +938,7 @@ const FileListView: React.FC<FileListViewProps> = ({
               />
             )}
             {!fileList ||
-              (fileList.length == 0 && (
+              (fileList.length == 0 && remoteFsError == null && (
                 <div className='text-center p-3'>
                   <p className='mt-1 text-sm text-gray-500'>
                     No files found in this directory. Get started by uploading a file or by creating

@@ -3,12 +3,12 @@ set -E
 # -----------------------------------------------------------------------------
 
 # Template software to be used to upload a large file
-data_file="/path/to/local/file"       # set the path to your local file
-part_file="/path/to/local/file.part"  # set the path to the part file
+data_file={{outputFilePath}}       # set the path to your local file
+part_file={{outputFilePath}}.part  # set the path to the part file
 parts_upload_urls={{partsUploadUrls}}
 complete_upload_url={{completeUploadUrl}}
 max_part_size={{maxPartSize}}
-bloc_size={{bloc_size}}
+bloc_size={{blocSize}}
 
 
 # --- helpers -----------------------------------------------------------------

@@ -4,14 +4,15 @@
   Please, refer to the LICENSE file in the root directory.
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
+import { LanguegeType } from '~/types/language'
 
-function formatArray(values: string[], lang: 'bash' | 'python' = 'bash'): string {
+function formatArray(values: string[], lang: LanguegeType = LanguegeType.bash): string {
   if (!Array.isArray(values) || values.length === 0) {
     return lang === 'python' ? '[]' : '()'
   }
 
   switch (lang) {
-    case 'python':
+    case LanguegeType.python:
       // Example:
       // [
       //   "https://example.com/part1",
@@ -19,7 +20,7 @@ function formatArray(values: string[], lang: 'bash' | 'python' = 'bash'): string
       // ]
       return `[\n${values.map((v) => `  "${v}"`).join(',\n')}\n]`
 
-    case 'bash':
+    case LanguegeType.bash:
     default:
       // Example:
       // (

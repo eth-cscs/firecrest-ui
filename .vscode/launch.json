@@ -2,8 +2,8 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "command": "nvm install 21 nvm use 21 && yarn run dev",
-        "name": "Run npm run dev",
+        "command": "nvm install 22 nvm use 22 && yarn run dev",
+        "name": "Run yarn run dev",
         "request": "launch",
         "type": "node-terminal",
         "cwd": "${workspaceFolder}/app/",

@@ -31,6 +31,8 @@ import ErrorView from '~/components/views/ErrorView'
 import FileListView from '~/modules/filesystem/components/views/FileListView'
 // config
 import uiConfig from '~/configs/ui.config'
+// types
+import type { File } from '~/types/api-filesystem'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
@@ -82,23 +84,44 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     throw new Error('Filesystem(s) configuration error')
   }
   // Call api/s and fetch data
-  const { output } = await getOpsLs(accessToken, systemName, path!, request)
+  let files: File[] = []
+  let remoteFsError: any = null
+  try {
+    const { output } = await getOpsLs(accessToken, systemName, path!, request)
+    files = output || []
+  } catch (err) {
+    logger.error('Error fetching filesystem data', { error: err })
+    if (err?.status === 404) {
+      remoteFsError = { message: "The filesystem path doesn't exist", status: 404 }
+    } else {
+      throw err
+    }
+  }
   // Return response
   return {
-    files: output,
+    files,
     currentPath: path,
     system: system,
     fileSystem: fileSystem,
     systems: systems,
     username: auth.user.username,
     fileUploadLimit: uiConfig.fileUploadLimit,
+    remoteFsError: remoteFsError,
   }
 }
 
 export default function AppComputeIndexRoute() {
   const data = useActionData()
-  const { files, currentPath, system, fileSystem, systems, username, fileUploadLimit }: any =
-    useLoaderData()
+  const {
+    files,
+    currentPath,
+    system,
+    fileSystem,
+    systems,
+    username,
+    fileUploadLimit,
+    remoteFsError,
+  }: any = useLoaderData()
   return (
     <FileListView
       files={files}
@@ -109,6 +132,7 @@ export default function AppComputeIndexRoute() {
       username={username}
       fileUploadLimit={fileUploadLimit}
       error={getErrorFromData(data)}
+      remoteFsError={remoteFsError}
     />
   )
 }

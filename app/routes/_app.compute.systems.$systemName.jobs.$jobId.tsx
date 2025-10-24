@@ -119,7 +119,7 @@ export const handle = { layoutMode: 'fixed-right' as const }
 
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
-  const { jobs, jobsMetadata, system, dashboard }: any = useLoaderData()
+  const { jobs, jobsMetadata, dashboard, system }: any = useLoaderData()
   return (
     <JobDetailsConsoleView
       jobs={jobs}

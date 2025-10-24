@@ -7,12 +7,16 @@
 
 import React, { useEffect, useRef, useMemo, useState } from 'react'
 // types
+import type { System } from '~/types/api-status'
 import { Job, JobMetadata } from '~/types/api-job'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
+// helpers
+import { formatTime } from '~/helpers/time-helper'
+import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 
 const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null) => void } | null>(
   null,
@@ -37,9 +41,10 @@ function useRegisterActiveScroller(ref: React.RefObject<HTMLElement>) {
 interface JobDetailsPanelProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
 }
 
-const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata }) => {
+const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system }) => {
   return (
     <>
       <h3 className='text-sm font-semibold mb-3'>Job details</h3>
@@ -60,6 +65,32 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata }) =
           )}
         </AttributesListItem>
       </AttributesList>
+      <div className='mt-3 mb-3 border-b border-gray-900/10' />
+      <h3 className='text-sm font-semibold mb-3'>Execution times</h3>
+      <AttributesList>
+        <AttributesListItem label='Start time'>
+          {formatDateTimeFromTimestamp({ timestamp: job?.time.start })}
+        </AttributesListItem>
+        <AttributesListItem label='Start time'>
+          {formatDateTimeFromTimestamp({ timestamp: job?.time.end })}
+        </AttributesListItem>
+        <AttributesListItem label='Execution time'>
+          {formatTime({ time: job?.time.elapsed })}
+        </AttributesListItem>
+      </AttributesList>
+      <div className='mt-3 mb-3 border-b border-gray-900/10' />
+      <h3 className='text-sm font-semibold mb-3'>System and resource details</h3>
+      <AttributesList>
+        <AttributesListItem label='System name'>
+          <LabelBadge color={LabelColor.YELLOW}>{system?.name}</LabelBadge>
+        </AttributesListItem>
+        <AttributesListItem label='Cluster'>
+          <LabelBadge color={LabelColor.YELLOW}>{job?.cluster}</LabelBadge>
+        </AttributesListItem>
+        <AttributesListItem label='Nodes'>{job?.nodes}</AttributesListItem>
+        <AttributesListItem label='Partition'>{job?.partition}</AttributesListItem>
+        <AttributesListItem label='Working directory'>{job?.workingDirectory}</AttributesListItem>
+      </AttributesList>
       <div className='mt-4'>
         <button className='w-full rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50'>
           Cancel job
@@ -72,6 +103,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata }) =
 interface JobDetailCenterProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
   activeTab: OutputTabId
   stdout: string[]
   stderr: string[]
@@ -82,6 +114,7 @@ interface JobDetailCenterProps {
 const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   job,
   jobMetadata,
+  system,
   activeTab,
   stdout,
   stderr,
@@ -120,7 +153,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
       <aside className='w-120 shrink-0 border-l bg-white sticky top-14 self-start max-h-[calc(100vh-56px)] overflow-y-auto'>
         <RightTabs active={activeTab} onChange={onChangeTab} />
         <div className='p-4'>
-          <JobDetailsPanel job={job} jobMetadata={jobMetadata} />
+          <JobDetailsPanel job={job} jobMetadata={jobMetadata} system={system} />
         </div>
       </aside>
     </div>
@@ -356,6 +389,7 @@ const RightTabs: React.FC<RightTabsProps> = ({ active, onChange }) => {
 interface JobDetailsLayoutProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
   activeTab: OutputTabId
   stdout: string[]
   stderr: string[]
@@ -366,6 +400,7 @@ interface JobDetailsLayoutProps {
 const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   job,
   jobMetadata,
+  system,
   activeTab,
   stdout,
   stderr,
@@ -384,6 +419,7 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
         <JobDetailCenter
           job={job}
           jobMetadata={jobMetadata}
+          system={system}
           activeTab={activeTab}
           stdout={stdout}
           stderr={stderr}
@@ -398,7 +434,7 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
 interface JobDetailsConsoleViewProps {
   jobs: Job[]
   jobsMetadata: JobMetadata[]
-  system: any
+  system: System
   error: any
   dashboard: any
 }
@@ -468,6 +504,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     <ActiveScrollCtx.Provider value={ctxValue}>
       <JobDetailsLayout
         job={currentJob || undefined}
+        system={system}
         jobMetadata={jobMetadata || undefined}
         activeTab={activeTab}
         stdout={stdout}

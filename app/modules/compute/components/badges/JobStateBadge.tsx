@@ -12,7 +12,7 @@ import {
   XCircleIcon,
 } from '@heroicons/react/24/outline'
 // types
-import { JobState, JobStateStatus, JobStatus } from '~/types/api-job'
+import { JobStateStatus, JobStatus } from '~/types/api-job'
 // helpers
 import { classNames } from '~/helpers/class-helper'
 

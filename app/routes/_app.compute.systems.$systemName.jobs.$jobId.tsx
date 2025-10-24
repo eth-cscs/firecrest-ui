@@ -33,6 +33,7 @@ import { getSystems } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobDetailsView from '~/modules/compute/components/views/JobDetailsView'
+import JobDetailsConsoleView from '~/modules/compute/components/views/JobDetailsConsoleView'
 // observability
 import observability from '~/configs/observability.config'
 
@@ -114,17 +115,26 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   }
 }
 
+export const handle = { layoutMode: 'fixed-right' as const }
+
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
   const { jobs, jobsMetadata, system, dashboard }: any = useLoaderData()
   return (
-    <JobDetailsView
+    <JobDetailsConsoleView
       jobs={jobs}
       jobsMetadata={jobsMetadata}
       system={system}
       error={getErrorFromData(data)}
       dashboard={dashboard}
     />
+    // <JobDetailsView
+    //   jobs={jobs}
+    //   jobsMetadata={jobsMetadata}
+    //   system={system}
+    //   error={getErrorFromData(data)}
+    //   dashboard={dashboard}
+    // />
   )
 }
 

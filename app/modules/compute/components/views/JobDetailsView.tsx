@@ -38,6 +38,8 @@ import LeftTitleCard from '~/components/cards/LeftTitleCard'
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
 // helpers
 import { nidStringToArray } from '~/helpers/nid-parser'
+import base from '~/configs/base.config'
+import { pad } from 'lodash'
 
 /**
  * GrafanaIframeRange
@@ -182,7 +184,7 @@ function GrafanaIframeRange({
   const key = appliedSrc // changing key forces iframe remount (hard reload)
 
   return (
-    <div className='w-full space-y-4'>
+    <div className='w-full space-y-4'> 
       {/* Controls */}
       <div className='flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
@@ -269,7 +271,7 @@ const JobObservabilityPanel: React.FC<JobObserbabilityProps> = ({
   const cluster = currentJob.cluster || 'unknown'
 
   return (
-    <SimplePanel title='Job observability' className='mb-4'>
+    <SimplePanel title='Job observability' className='mb-4' >
       <UnderlineTabPanel label='Observability'>
         <GrafanaIframeRange
           baseUrl={dashboard}
@@ -562,7 +564,9 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
 
   return (
     <SimpleView size={SimpleViewSize.FULL} className='mb-4'>
-      <SimplePanel title='Job details' className='mb-4' actionsButtons={getActionButtons()}>
+      <div className="bg-white shadow" style={{position: 'fixed', backgroundColor:"white",  right: 0 , top:0, width:200, height:'100%', paddingTop:80}}>test</div>
+      <div style={{marginRight:210}}>
+      <SimplePanel title='Job details'  actionsButtons={getActionButtons()} >
         <>
           <AlertError error={localError} />
           <JobCancelDialog
@@ -658,6 +662,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
         </>
       </SimplePanel>
       <JobObservabilityPanel dashboard={dashboard} currentJob={currentJob} />
+      </div>
     </SimpleView>
   )
 }

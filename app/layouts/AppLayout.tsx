@@ -22,9 +22,12 @@ type LayoutMode = 'standard' | 'fixed-right'
 function useAppLayoutMode(): LayoutMode {
   const matches = useMatches()
   // First match down the tree that declares a layoutMode handle wins
-  for (const m of matches) {
-    const mode = (m as any)?.handle?.layoutMode as LayoutMode | undefined
-    if (mode) return mode
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i] as any
+    const fromData = m?.data?.layoutMode as LayoutMode | null | undefined
+    if (fromData === 'fixed-right' || fromData === 'standard') return fromData
+    const fromHandle = m?.handle?.layoutMode as LayoutMode | undefined
+    if (fromHandle === 'fixed-right' || fromHandle === 'standard') return fromHandle
   }
   return 'standard'
 }
@@ -95,11 +98,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             logoPath={logoPath}
           />
           <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
-            <Header setSidebarOpen={setSidebarOpen} authUser={authUser} />
-            <main className='min-h-0 flex-1 pr-[30rem]'>
+            <Header setSidebarOpen={setSidebarOpen} authUser={authUser} fixed={true} />
+            <main className='min-h-0 flex flex-1 flex-col pr-[30rem] mt-[4rem]'>
               <Outlet />
             </main>
-            <Footer environment={environment} appVersion={appVersion} companyName={companyName} />
+            <Footer
+              environment={environment}
+              appVersion={appVersion}
+              companyName={companyName}
+              fixed={true}
+            />
           </div>
         </div> */}
       </>

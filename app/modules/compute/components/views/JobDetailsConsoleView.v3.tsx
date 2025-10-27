@@ -75,7 +75,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   onChangeTab,
 }) => {
   return (
-    <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm min-h-0 h-full'>
+    <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
       <div className='flex-1 min-w-0 h-full min-h-0'>
         {activeTab === 'stdout' && <ConsolePane title='Job output – STDOUT' lines={stdout} />}
         {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' lines={stderr} />}
@@ -348,14 +348,14 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   onChangeTab,
 }) => {
   return (
-    <div className='flex h-full flex-col gap-4 py-6 px-8'>
+    <div className='flex flex-1 flex-col gap-4 pt-6 pb-20 px-8'>
       <div className='flex items-center justify-between'>
         <div className='text-sm text-neutral-500'>
           Clariden / Jobs / <span className='text-neutral-800'>my-job-123</span>
         </div>
         <div className='text-xs text-neutral-500'>Last update: just now</div>
       </div>
-      <div className='min-h-0 flex-1 h-full'>
+      <div className='flex flex-1 h-full'>
         <JobDetailCenter
           job={job}
           jobMetadata={jobMetadata}
@@ -416,7 +416,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
             : [...prev, `[${now}] ERROR: retrying op`],
         )
       }
-    }, 1200)
+    }, 600)
     return () => clearInterval(id)
   }, [])
 

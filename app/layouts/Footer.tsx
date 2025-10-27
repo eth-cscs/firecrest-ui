@@ -13,13 +13,21 @@ interface FooterProps {
   environment: string
   appVersion: string
   companyName: string
+  fixed?: boolean
 }
 
-const Footer: React.FC<FooterProps> = ({ environment, appVersion, companyName }: FooterProps) => {
+const Footer: React.FC<FooterProps> = ({
+  environment,
+  appVersion,
+  companyName,
+  fixed = false,
+}: FooterProps) => {
   const version = appVersion ? appVersion : 'unknown'
 
   return (
-    <footer className='sticky bottom-0 z-10 h-12 bg-white shadow'>
+    <footer
+      className={`bottom-0 z-10 h-12 bg-white shadow ${fixed ? 'fixed left-64 right-0' : 'sticky'}`}
+    >
       <div className='flex items-center justify-between'>
         <div className='pl-3 pt-3'>
           <p className='text-xs text-xs text-gray-400'>

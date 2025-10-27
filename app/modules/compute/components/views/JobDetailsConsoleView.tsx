@@ -441,7 +441,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
             : [...prev, `[${now}] ERROR: retrying op`],
         )
       }
-    }, 1200)
+    }, 600)
     return () => clearInterval(id)
   }, [])
 

@@ -5,23 +5,31 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { Link } from '@remix-run/react'
 import React, { useEffect, useRef, useMemo, useState } from 'react'
 import { ArrowDownCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // types
 import type { System } from '~/types/api-status'
-import { Job, JobMetadata } from '~/types/api-job'
+import { GetOpsTailResponse } from '~/types/api-filesystem'
+import { GetJobResponse, Job, JobMetadata, JobStateStatus } from '~/types/api-job'
 // helpers
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
+import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
+// dialogs
+import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
+// apis
+import { getLocalJob } from '~/apis/compute-api'
+import { getLocalOpsTail } from '~/apis/filesystem-api'
 
-const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null) => void } | null>(
-  null,
-)
+// const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null) => void } | null>(
+//   null,
+// )
 
 interface JobDetailsPanelProps {
   job?: Job
@@ -30,14 +38,26 @@ interface JobDetailsPanelProps {
 }
 
 const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system }) => {
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   return (
     <>
-      <div className='mt-2 mb-4 flex justify-end gap-2"'>
-        <button className='flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'>
-          <XMarkIcon className='w-4 h-4' />
-          Cancel job
-        </button>
-      </div>
+      <JobCancelDialog
+        job={job!}
+        system={system!}
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+      />
+      {job && jobCanBeCanceled(job) && (
+        <div className='mt-2 mb-4 flex justify-end gap-2"'>
+          <button
+            className='flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
+            onClick={() => setCancelDialogOpen(true)}
+          >
+            <XMarkIcon className='w-4 h-4' />
+            Cancel job
+          </button>
+        </div>
+      )}
       <h3 className='text-sm font-semibold mb-3'>Job details</h3>
       <AttributesList>
         <AttributesListItem label='Job ID'>#{job?.jobId}</AttributesListItem>
@@ -86,16 +106,16 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
   )
 }
 
-// const Tabs
-
 interface JobDetailCenterProps {
   job?: Job
   jobMetadata?: JobMetadata
   system?: System
   activeTab: OutputTabId
-  stdout: string[]
-  stderr: string[]
+  stdout: string
+  stdin: string
+  stderr: string
   script?: string
+  dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
 }
 
@@ -105,37 +125,21 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   system,
   activeTab,
   stdout,
+  stdin,
   stderr,
   script,
+  dashboards,
   onChangeTab,
 }) => {
   return (
     <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
       <div className='flex-1 min-w-0 h-full min-h-0'>
-        {activeTab === 'stdout' && <ConsolePane title='Job output – STDOUT' lines={stdout} />}
-        {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' lines={stderr} />}
+        {activeTab === 'stdout' && <ConsolePane title='Job output – STDOUT' content={stdout} />}
+        {activeTab === 'stdin' && <ConsolePane title='Job input – STDIN' content={stdin} />}
+        {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' content={stderr} />}
         {activeTab === 'script' && <ScriptPane script={script} />}
-        {activeTab === 'resources' && (
-          <ResourcesPaneMulti
-            dashboards={[
-              {
-                id: '1',
-                label: 'CPU usage (%) per node',
-                src: 'https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry?orgId=1&from=1761049637906&to=1761051437906&timezone=browser&refresh=5s&panelId=1&__feature.dashboardSceneSolo=true',
-              },
-              {
-                id: '2',
-                label: 'Node temperature (°C)',
-                src: 'https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry?orgId=1&from=1761050389412&to=1761052189412&timezone=browser&refresh=5s&panelId=2&__feature.dashboardSceneSolo=true',
-              },
-              {
-                id: '3',
-                label: 'Memory RSS (GB)',
-                src: 'https://firecrest.grafana.tds.cscs.ch/d-solo/job-fake-telemetry/firecrest-e28094-job-fake-telemetry?orgId=1&from=1761050369403&to=1761052169403&timezone=browser&refresh=5s&panelId=3&__feature.dashboardSceneSolo=true',
-              },
-            ]}
-            title='Resources'
-          />
+        {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
+          <ResourcesPaneMulti dashboards={dashboards} title='Resources' />
         )}
       </div>
       <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
@@ -150,10 +154,10 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
 
 interface ConsolePaneProps {
   title: string
-  lines: string[]
+  content: string
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -161,7 +165,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
     if (!el) return
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
-  }, [lines])
+  }, [content])
 
   const handleDownload = () => {}
 
@@ -180,15 +184,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
         </div>
       </div>
       <div className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5'>
-        <pre className='px-3 py-2 whitespace-pre-wrap'>
-          {`$ tail -f job.log
-`}
-          {lines.map((l, i) => (
-            <span key={i} className='block'>
-              {l}
-            </span>
-          ))}
-        </pre>
+        <pre className='px-3 py-2 whitespace-pre-wrap'>{content}</pre>
       </div>
     </section>
   )
@@ -250,12 +246,11 @@ interface ResourcesPaneMultiProps {
 
 const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, title }) => {
   const [activeId, setActiveId] = React.useState<string>(dashboards?.[0]?.id ?? '')
-  const [showAll, setShowAll] = React.useState(true)
+  const [showAll, setShowAll] = React.useState(dashboards.length > 1)
   const active = React.useMemo(
     () => dashboards.find((d) => d.id === activeId) ?? dashboards[0],
     [dashboards, activeId],
   )
-
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white px-3 py-2 shrink-0'>
@@ -279,15 +274,17 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, tit
           </div>
         </div>
         <div className='flex items-center gap-2'>
-          <label className='flex items-center gap-1 text-xs text-neutral-600'>
-            <input
-              type='checkbox'
-              className='accent-neutral-800'
-              checked={showAll}
-              onChange={(e) => setShowAll(e.target.checked)}
-            />
-            Show all
-          </label>
+          {dashboards.length > 1 && (
+            <label className='flex items-center gap-1 text-xs text-neutral-600'>
+              <input
+                type='checkbox'
+                className='accent-neutral-800'
+                checked={showAll}
+                onChange={(e) => setShowAll(e.target.checked)}
+              />
+              Show all
+            </label>
+          )}
           <select
             className='md:hidden text-xs border rounded px-2 py-1 bg-white'
             value={activeId}
@@ -340,6 +337,7 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, tit
 
 const OUTPUT_TABS = [
   { id: 'stdout', label: 'STD OUT' },
+  { id: 'stdin', label: 'STD IN' },
   { id: 'stderr', label: 'STD ERR' },
   { id: 'script', label: 'SCRIPT' },
   { id: 'resources', label: 'RESOURCES' },
@@ -378,9 +376,11 @@ interface JobDetailsLayoutProps {
   jobMetadata?: JobMetadata
   system?: System
   activeTab: OutputTabId
-  stdout: string[]
-  stderr: string[]
+  stdout: string
+  stdin: string
+  stderr: string
   script?: string
+  dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
 }
 
@@ -390,18 +390,24 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   system,
   activeTab,
   stdout,
+  stdin,
   stderr,
   script,
+  dashboards,
   onChangeTab,
 }) => {
   return (
     <div className='flex flex-1 flex-col gap-4 pt-6 pb-20 px-8'>
-      {/* <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between'>
         <div className='text-sm text-neutral-500'>
-          Clariden / Jobs / <span className='text-neutral-800'>my-job-123</span>
+          Clariden /{' '}
+          <Link to={`/compute`} className='hover:text-gray-900'>
+            Jobs
+          </Link>{' '}
+          / <span className='text-neutral-800'>{job?.jobId}</span>
         </div>
-        <div className='text-xs text-neutral-500'>Last update: just now</div>
-      </div> */}
+        {/* <div className='text-xs text-neutral-500'>Last update: just now</div> */}
+      </div>
       <div className='flex flex-1 h-full'>
         <JobDetailCenter
           job={job}
@@ -409,8 +415,10 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
           system={system}
           activeTab={activeTab}
           stdout={stdout}
+          stdin={stdin}
           stderr={stderr}
           script={script}
+          dashboards={dashboards}
           onChangeTab={onChangeTab}
         />
       </div>
@@ -439,67 +447,91 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     [jobsMetadata],
   )
   const [currentJob, setCurrentJob] = useState<Job | null>(() => job)
-  const [stdout, setStdout] = React.useState<string[]>([
-    '[09:01:00] Job started...',
-    '[09:01:01] Allocating nodes...',
-    '[09:01:02] Pulling container image...',
-  ])
-  const [stderr, setStderr] = React.useState<string[]>(['[09:01:05] WARN: minor network jitter'])
+  const [jobStandardOuput, setJobStandardOuput] = useState<GetOpsTailResponse | null>(null)
+  const [jobStandardError, setJobStandardError] = useState<GetOpsTailResponse | null>(null)
+  const [localError, setLocalError] = useState<any>(error)
   const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
-  const script = '#!/bin/bash\nsrun --pty bash\n'
-  const activeRef = useRef<HTMLElement | null>(null)
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      const now = new Date().toLocaleTimeString()
-      setStdout((prev) =>
-        prev.length > 300
-          ? [...prev.slice(-250), `[${now}] run: step ok`]
-          : [...prev, `[${now}] run: step ok`],
-      )
-      if (Math.random() < 0.35) {
-        setStderr((prev) =>
-          prev.length > 200
-            ? [...prev.slice(-150), `[${now}] ERROR: retrying op`]
-            : [...prev, `[${now}] ERROR: retrying op`],
-        )
-      }
-    }, 600)
-    return () => clearInterval(id)
-  }, [])
-
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      if (!activeRef.current) return
-      activeRef.current.scrollBy({ top: e.deltaY, behavior: 'auto' })
-      e.preventDefault()
+  const fetchJob = async (jobId: number, setter: React.Dispatch<React.SetStateAction<Job>>) => {
+    try {
+      const response: GetJobResponse = await getLocalJob(system.name, jobId)
+      const [job] = response.jobs
+      setter(job)
+    } catch (error) {
+      setLocalError(error)
     }
-    window.addEventListener('wheel', onWheel, { passive: false })
-    return () => window.removeEventListener('wheel', onWheel as any)
-  }, [])
+  }
 
-  const ctxValue = useMemo(
-    () => ({
-      setActive: (el: HTMLElement | null) => {
-        activeRef.current = el
-      },
-    }),
-    [],
-  )
+  const fetchJobFileContent = async (
+    filePath: string,
+    setter: React.Dispatch<React.SetStateAction<GetOpsTailResponse | null>>,
+  ) => {
+    try {
+      const response: GetOpsTailResponse = await getLocalOpsTail(system.name, filePath, '100')
+      setter(response)
+    } catch (error) {
+      setLocalError(error)
+    }
+  }
+
+  const fetchJobStandardFileContent = (jobMetadata: JobMetadata) => {
+    if (jobMetadata.standardOutput !== null && jobMetadata.standardOutput !== '') {
+      fetchJobFileContent(jobMetadata.standardOutput, setJobStandardOuput)
+    }
+    if (jobMetadata.standardError !== null && jobMetadata.standardError !== '') {
+      fetchJobFileContent(jobMetadata.standardError, setJobStandardError)
+    }
+  }
+
+  useEffect(() => {
+    setCurrentJob(job ?? null)
+    if (currentJob !== null) {
+      const currentJobStateStatus = currentJob.status.state
+      const fecthJobAndJobStandardFileContent = (jobStateStatus: JobStateStatus) => {
+        fetchJob(currentJob.jobId, setCurrentJob)
+        if (jobMetadata && jobMetadata !== null) {
+          // Get job standard output/s
+          if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
+            fetchJobStandardFileContent(jobMetadata)
+          }
+        }
+      }
+      fecthJobAndJobStandardFileContent(currentJobStateStatus)
+      if (![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJobStateStatus)) {
+        const intervalId = setInterval(
+          () => fecthJobAndJobStandardFileContent(currentJobStateStatus),
+          2000,
+        )
+        return () => clearInterval(intervalId)
+      }
+    }
+  }, [job])
+
+  useEffect(() => {
+    setLocalError(error ?? null)
+  }, [error])
 
   return (
-    <ActiveScrollCtx.Provider value={ctxValue}>
-      <JobDetailsLayout
-        job={currentJob || undefined}
-        jobMetadata={jobMetadata || undefined}
-        system={system}
-        activeTab={activeTab}
-        stdout={stdout}
-        stderr={stderr}
-        script={script}
-        onChangeTab={setActiveTab}
-      />
-    </ActiveScrollCtx.Provider>
+    // <ActiveScrollCtx.Provider value={ctxValue}>
+    <JobDetailsLayout
+      job={currentJob || undefined}
+      jobMetadata={jobMetadata || undefined}
+      system={system}
+      activeTab={activeTab}
+      stdout={jobStandardOuput?.output?.content || '...'}
+      stdin={jobMetadata?.standardInput || ''}
+      stderr={jobStandardError?.output?.content || '...'}
+      script={jobMetadata?.script || undefined}
+      dashboards={[
+        {
+          id: '1',
+          label: 'CPU usage (%) per node',
+          src: dashboard,
+        },
+      ]}
+      onChangeTab={setActiveTab}
+    />
+    // </ActiveScrollCtx.Provider>
   )
 }
 

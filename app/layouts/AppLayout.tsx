@@ -63,27 +63,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   if (isFixedRight) {
     return (
       <>
-        {/* <div className='h-screen bg-gray-100'>
-          <div className='stacked-notifications'>
-            <NotificationOverlay messages={notificationMessages} />
-          </div>
-          <Sidebar
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
-            appName={appName}
-            supportUrl={supportUrl}
-            docUrl={docUrl}
-            repoUrl={repoUrl}
-            logoPath={logoPath}
-          />
-          <div className='md:pl-64 flex flex-col h-full min-h-0'>
-            <Header setSidebarOpen={setSidebarOpen} authUser={authUser} />
-            <main className='min-h-0 flex-1 overflow-hidden'>
-              <Outlet />
-            </main>
-            <Footer environment={environment} appVersion={appVersion} companyName={companyName} />
-          </div>
-        </div> */}
         <div className='min-h-full bg-gray-100'>
           <div className='stacked-notifications'>
             <NotificationOverlay messages={notificationMessages} />

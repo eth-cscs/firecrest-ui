@@ -69,7 +69,6 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const system: System | undefined = systems.find((system: System) => {
     return system.name === systemName
   })
-  // const layoutMode = fromQuery ?? cookieLayout ?? fromBackend ?? null;
   if (jobs && jobs.length !== 0) {
     const job = jobs[0]
     if (job.script && job.script !== 'NONE') {
@@ -82,7 +81,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     jobsMetadata: jobMetadataResponse.jobs,
     system: system,
     dashboard: observability.dashboard || null,
-    // layoutMode: layoutMode,
+    layoutMode: layoutMode,
   }
 }
 
@@ -131,9 +130,19 @@ export const handle = { layoutMode: 'fixed-right' as const }
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
   const { jobs, jobsMetadata, system, dashboard, layoutMode }: any = useLoaderData()
-  // if (layoutMode === 'fixed-right') {
+  if (layoutMode === 'fixed-right') {
+    return (
+      <JobDetailsConsoleView
+        jobs={jobs}
+        jobsMetadata={jobsMetadata}
+        system={system}
+        error={getErrorFromData(data)}
+        dashboard={dashboard}
+      />
+    )
+  }
   return (
-    <JobDetailsConsoleView
+    <JobDetailsView
       jobs={jobs}
       jobsMetadata={jobsMetadata}
       system={system}
@@ -141,16 +150,6 @@ export default function ComputeJobDetailsRoute() {
       dashboard={dashboard}
     />
   )
-  // }
-  // return (
-  //   <JobDetailsView
-  //     jobs={jobs}
-  //     jobsMetadata={jobsMetadata}
-  //     system={system}
-  //     error={getErrorFromData(data)}
-  //     dashboard={dashboard}
-  //   />
-  // )
 }
 
 export function ErrorBoundary() {

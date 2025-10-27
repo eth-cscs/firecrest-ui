@@ -439,76 +439,9 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
     [jobsMetadata],
   )
   const [currentJob, setCurrentJob] = useState<Job | null>(() => job)
-  const [syncStandardOut, setSyncStandardOut] = useState<boolean>(true)
-  const [jobStandardOuput, setJobStandardOuput] = useState<GetOpsTailResponse | null>(null)
-  const [syncStandardError, setSyncStandardError] = useState<boolean>(true)
-  const [jobStandardError, setJobStandardError] = useState<GetOpsTailResponse | null>(null)
   const [localError, setLocalError] = useState<any>(error)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const navigate = useNavigate()
-
-  const fetchJob = async (jobId: number, setter: React.Dispatch<React.SetStateAction<Job>>) => {
-    try {
-      const response: GetJobResponse = await getLocalJob(system.name, jobId)
-      const [job] = response.jobs
-      setter(job)
-    } catch (error) {
-      setLocalError(error)
-    }
-  }
-
-  const fetchJobFileContent = async (
-    filePath: string,
-    setter: React.Dispatch<React.SetStateAction<GetOpsTailResponse | null>>,
-  ) => {
-    try {
-      const response: GetOpsTailResponse = await getLocalOpsTail(system.name, filePath, '100')
-      setter(response)
-    } catch (error) {
-      setLocalError(error)
-    }
-  }
-
-  const fetchJobStandardFileContent = (jobMetadata: JobMetadata) => {
-    if (
-      // syncStandardOut &&
-      jobMetadata.standardOutput !== null &&
-      jobMetadata.standardOutput !== ''
-    ) {
-      fetchJobFileContent(jobMetadata.standardOutput, setJobStandardOuput)
-    }
-    if (
-      // syncStandardError &&
-      jobMetadata.standardError !== null &&
-      jobMetadata.standardError !== ''
-    ) {
-      fetchJobFileContent(jobMetadata.standardError, setJobStandardError)
-    }
-  }
-
-  useEffect(() => {
-    setCurrentJob(job ?? null)
-    if (currentJob !== null) {
-      const currentJobStateStatus = currentJob.status.state
-      const fecthJobAndJobStandardFileContent = (jobStateStatus: JobStateStatus) => {
-        fetchJob(currentJob.jobId, setCurrentJob)
-        if (jobMetadata && jobMetadata !== null) {
-          // Get job standard output/s
-          if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
-            fetchJobStandardFileContent(jobMetadata)
-          }
-        }
-      }
-      fecthJobAndJobStandardFileContent(currentJobStateStatus)
-      if (![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJobStateStatus)) {
-        const intervalId = setInterval(
-          () => fecthJobAndJobStandardFileContent(currentJobStateStatus),
-          2000,
-        )
-        return () => clearInterval(intervalId)
-      }
-    }
-  }, [job])
 
   useEffect(() => {
     setLocalError(error ?? null)
@@ -629,35 +562,8 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
               </AttributesListItem>
             </AttributesList>
           </LeftTitleCard>
-          {jobMetadata !== undefined && jobMetadata !== null && (
-            <div className='border-t border-gray-900/10 mt-5 pt-5'>
-              <UnderlineTabs>
-                <UnderlineTabPanel label='Script'>
-                  <ConsoleOutput output={jobMetadata.script || ''} />
-                </UnderlineTabPanel>
-                <UnderlineTabPanel label='Standard input'>
-                  <ConsoleOutput output={jobMetadata.standardInput || ''} />
-                </UnderlineTabPanel>
-                {jobMetadata.standardOutput !== jobMetadata.standardError ? (
-                  <>
-                    <UnderlineTabPanel label='Standard output'>
-                      <ConsoleOutput output={jobStandardOuput?.output?.content || '...'} />
-                    </UnderlineTabPanel>
-                    <UnderlineTabPanel label='Standard error'>
-                      <ConsoleOutput output={jobStandardError?.output?.content || '...'} />
-                    </UnderlineTabPanel>
-                  </>
-                ) : (
-                  <UnderlineTabPanel label='Standard output'>
-                    <ConsoleOutput output={jobStandardOuput?.output?.content || '...'} />
-                  </UnderlineTabPanel>
-                )}
-              </UnderlineTabs>
-            </div>
-          )}
         </>
       </SimplePanel>
-      <JobObservabilityPanel dashboard={dashboard} currentJob={currentJob} />
     </SimpleView>
   )
 }

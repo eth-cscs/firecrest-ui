@@ -63,7 +63,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   if (isFixedRight) {
     return (
       <>
-        <div className='h-screen bg-gray-100'>
+        {/* <div className='h-screen bg-gray-100'>
           <div className='stacked-notifications'>
             <NotificationOverlay messages={notificationMessages} />
           </div>
@@ -83,8 +83,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             </main>
             <Footer environment={environment} appVersion={appVersion} companyName={companyName} />
           </div>
-        </div>
-        {/* <div className='min-h-full bg-gray-100'>
+        </div> */}
+        <div className='min-h-full bg-gray-100'>
           <div className='stacked-notifications'>
             <NotificationOverlay messages={notificationMessages} />
           </div>
@@ -109,7 +109,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
               fixed={true}
             />
           </div>
-        </div> */}
+        </div>
       </>
     )
   }

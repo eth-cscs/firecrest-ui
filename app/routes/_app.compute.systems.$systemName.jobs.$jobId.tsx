@@ -82,7 +82,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     jobsMetadata: jobMetadataResponse.jobs,
     system: system,
     dashboard: observability.dashboard || null,
-    layoutMode: layoutMode,
+    // layoutMode: layoutMode,
   }
 }
 
@@ -131,19 +131,9 @@ export const handle = { layoutMode: 'fixed-right' as const }
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
   const { jobs, jobsMetadata, system, dashboard, layoutMode }: any = useLoaderData()
-  if (layoutMode === 'fixed-right') {
-    return (
-      <JobDetailsConsoleView
-        jobs={jobs}
-        jobsMetadata={jobsMetadata}
-        system={system}
-        error={getErrorFromData(data)}
-        dashboard={dashboard}
-      />
-    )
-  }
+  // if (layoutMode === 'fixed-right') {
   return (
-    <JobDetailsView
+    <JobDetailsConsoleView
       jobs={jobs}
       jobsMetadata={jobsMetadata}
       system={system}
@@ -151,6 +141,16 @@ export default function ComputeJobDetailsRoute() {
       dashboard={dashboard}
     />
   )
+  // }
+  // return (
+  //   <JobDetailsView
+  //     jobs={jobs}
+  //     jobsMetadata={jobsMetadata}
+  //     system={system}
+  //     error={getErrorFromData(data)}
+  //     dashboard={dashboard}
+  //   />
+  // )
 }
 
 export function ErrorBoundary() {

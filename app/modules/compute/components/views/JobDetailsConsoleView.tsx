@@ -6,8 +6,13 @@
 *************************************************************************/
 
 import React, { useEffect, useRef, useMemo, useState } from 'react'
+import { ArrowDownCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // types
+import type { System } from '~/types/api-status'
 import { Job, JobMetadata } from '~/types/api-job'
+// helpers
+import { formatTime } from '~/helpers/time-helper'
+import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -18,30 +23,21 @@ const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null
   null,
 )
 
-function useRegisterActiveScroller(ref: React.RefObject<HTMLElement>) {
-  const ctx = React.useContext(ActiveScrollCtx)
-  React.useEffect(() => {
-    if (!ctx) return
-    if (ref.current) ctx.setActive(ref.current)
-    const el = ref.current
-    const onEnter = () => ctx.setActive(ref.current)
-    el?.addEventListener('mouseenter', onEnter)
-    el?.addEventListener('touchstart', onEnter, { passive: true })
-    return () => {
-      el?.removeEventListener('mouseenter', onEnter)
-      el?.removeEventListener('touchstart', onEnter)
-    }
-  }, [ctx, ref])
-}
-
 interface JobDetailsPanelProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
 }
 
-const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata }) => {
+const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system }) => {
   return (
     <>
+      <div className='mt-2 mb-4 flex justify-end gap-2"'>
+        <button className='flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'>
+          <XMarkIcon className='w-4 h-4' />
+          Cancel job
+        </button>
+      </div>
       <h3 className='text-sm font-semibold mb-3'>Job details</h3>
       <AttributesList>
         <AttributesListItem label='Job ID'>#{job?.jobId}</AttributesListItem>
@@ -60,18 +56,42 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata }) =
           )}
         </AttributesListItem>
       </AttributesList>
-      <div className='mt-4'>
-        <button className='w-full rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50'>
-          Cancel job
-        </button>
-      </div>
+      <div className='mt-4 mb-6 border-b border-gray-900/10' />
+      <h3 className='text-sm font-semibold mb-3'>Execution times</h3>
+      <AttributesList>
+        <AttributesListItem label='Start time'>
+          {formatDateTimeFromTimestamp({ timestamp: job?.time.start })}
+        </AttributesListItem>
+        <AttributesListItem label='Start time'>
+          {formatDateTimeFromTimestamp({ timestamp: job?.time.end })}
+        </AttributesListItem>
+        <AttributesListItem label='Execution time'>
+          {formatTime({ time: job?.time.elapsed })}
+        </AttributesListItem>
+      </AttributesList>
+      <div className='mt-4 mb-6 border-b border-gray-900/10' />
+      <h3 className='text-sm font-semibold mb-3'>System and resource details</h3>
+      <AttributesList>
+        <AttributesListItem label='System name'>
+          <LabelBadge color={LabelColor.YELLOW}>{system?.name}</LabelBadge>
+        </AttributesListItem>
+        <AttributesListItem label='Cluster'>
+          <LabelBadge color={LabelColor.YELLOW}>{job?.cluster}</LabelBadge>
+        </AttributesListItem>
+        <AttributesListItem label='Nodes'>{job?.nodes}</AttributesListItem>
+        <AttributesListItem label='Partition'>{job?.partition}</AttributesListItem>
+        <AttributesListItem label='Working directory'>{job?.workingDirectory}</AttributesListItem>
+      </AttributesList>
     </>
   )
 }
 
+// const Tabs
+
 interface JobDetailCenterProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
   activeTab: OutputTabId
   stdout: string[]
   stderr: string[]
@@ -82,6 +102,7 @@ interface JobDetailCenterProps {
 const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   job,
   jobMetadata,
+  system,
   activeTab,
   stdout,
   stderr,
@@ -89,7 +110,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   onChangeTab,
 }) => {
   return (
-    <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm min-h-0 h-full'>
+    <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
       <div className='flex-1 min-w-0 h-full min-h-0'>
         {activeTab === 'stdout' && <ConsolePane title='Job output – STDOUT' lines={stdout} />}
         {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' lines={stderr} />}
@@ -117,10 +138,10 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           />
         )}
       </div>
-      <aside className='w-120 shrink-0 border-l bg-white sticky top-14 self-start max-h-[calc(100vh-56px)] overflow-y-auto'>
+      <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
         <RightTabs active={activeTab} onChange={onChangeTab} />
         <div className='p-4'>
-          <JobDetailsPanel job={job} jobMetadata={jobMetadata} />
+          <JobDetailsPanel job={job} jobMetadata={jobMetadata} system={system} />
         </div>
       </aside>
     </div>
@@ -134,7 +155,6 @@ interface ConsolePaneProps {
 
 const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
-  useRegisterActiveScroller(scrollerRef as React.RefObject<HTMLElement>)
 
   useEffect(() => {
     const el = scrollerRef.current
@@ -143,16 +163,23 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [lines])
 
+  const handleDownload = () => {}
+
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>{title}</div>
-        <div className='flex items-center gap-2 text-xs'></div>
+        <div className='flex items-center gap-2 text-xs'>
+          {/* <button
+            onClick={handleDownload}
+            title='Download STDOUT log'
+            className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+          >
+            <ArrowDownCircleIcon className='w-4 h-4' />
+          </button> */}
+        </div>
       </div>
-      <div
-        ref={scrollerRef}
-        className='flex-1 overflow-y-auto bg-black text-neutral-100 font-mono text-[12px] leading-5'
-      >
+      <div className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5'>
         <pre className='px-3 py-2 whitespace-pre-wrap'>
           {`$ tail -f job.log
 `}
@@ -172,14 +199,12 @@ interface ScriptPaneProps {
 }
 
 const ScriptPane: React.FC<ScriptPaneProps> = ({ script }) => {
-  const scrollerRef = useRef<HTMLDivElement | null>(null)
-  useRegisterActiveScroller(scrollerRef as React.RefObject<HTMLElement>)
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>Script</div>
       </div>
-      <div ref={scrollerRef} className='flex-1 overflow-y-auto bg-neutral-50 text-neutral-800'>
+      <div className='flex-1 bg-neutral-50 text-neutral-800'>
         <pre className='px-4 py-3 text-xs leading-5 font-mono whitespace-pre'>
           {script || '# No script available'}
         </pre>
@@ -194,14 +219,12 @@ interface ResourcesPaneProps {
 }
 
 const ResourcesPane: React.FC<ResourcesPaneProps> = ({ src, title }) => {
-  const scrollerRef = useRef<HTMLDivElement | null>(null)
-  useRegisterActiveScroller(scrollerRef as React.RefObject<HTMLElement>)
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>{title || 'Resources'}</div>
       </div>
-      <div ref={scrollerRef} className='flex-1 overflow-y-auto bg-white'>
+      <div className='flex-1 bg-white'>
         {src ? (
           <iframe
             src={src}
@@ -232,9 +255,6 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, tit
     () => dashboards.find((d) => d.id === activeId) ?? dashboards[0],
     [dashboards, activeId],
   )
-
-  const scrollerRef = useRef<HTMLDivElement | null>(null)
-  useRegisterActiveScroller(scrollerRef as React.RefObject<HTMLElement>)
 
   return (
     <section className='h-full min-h-0 flex flex-col'>
@@ -285,7 +305,7 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, tit
         </div>
       </div>
 
-      <div ref={scrollerRef} className='flex-1 overflow-y-auto bg-white'>
+      <div className='flex-1 bg-white'>
         {!dashboards?.length ? (
           <div className='p-6 text-sm text-neutral-500'>No Grafana dashboards configured.</div>
         ) : showAll ? (
@@ -356,6 +376,7 @@ const RightTabs: React.FC<RightTabsProps> = ({ active, onChange }) => {
 interface JobDetailsLayoutProps {
   job?: Job
   jobMetadata?: JobMetadata
+  system?: System
   activeTab: OutputTabId
   stdout: string[]
   stderr: string[]
@@ -366,6 +387,7 @@ interface JobDetailsLayoutProps {
 const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   job,
   jobMetadata,
+  system,
   activeTab,
   stdout,
   stderr,
@@ -373,17 +395,18 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   onChangeTab,
 }) => {
   return (
-    <div className='flex h-full flex-col gap-4 py-6 px-8'>
-      <div className='flex items-center justify-between'>
+    <div className='flex flex-1 flex-col gap-4 pt-6 pb-20 px-8'>
+      {/* <div className='flex items-center justify-between'>
         <div className='text-sm text-neutral-500'>
           Clariden / Jobs / <span className='text-neutral-800'>my-job-123</span>
         </div>
         <div className='text-xs text-neutral-500'>Last update: just now</div>
-      </div>
-      <div className='min-h-0 flex-1 h-full'>
+      </div> */}
+      <div className='flex flex-1 h-full'>
         <JobDetailCenter
           job={job}
           jobMetadata={jobMetadata}
+          system={system}
           activeTab={activeTab}
           stdout={stdout}
           stderr={stderr}
@@ -469,6 +492,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       <JobDetailsLayout
         job={currentJob || undefined}
         jobMetadata={jobMetadata || undefined}
+        system={system}
         activeTab={activeTab}
         stdout={stdout}
         stderr={stderr}

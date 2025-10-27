@@ -13,6 +13,7 @@ import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
 import JobStateBadge from '../badges/JobStateBadge'
+import { ArrowDownCircleIcon } from '@heroicons/react/24/outline'
 
 interface JobDetailsPanelProps {
   job?: Job
@@ -116,11 +117,21 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, lines }) => {
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [lines])
 
+  const handleDownload = () => {}
+
   return (
     <div className='min-h-0 flex-1 overflow-hidden h-full'>
       <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2'>
         <div className='text-sm font-medium'>{title}</div>
-        <div className='flex items-center gap-2 text-xs'></div>
+        <div className='flex items-center gap-2 text-xs'>
+          <button
+            onClick={handleDownload}
+            title='Download STDOUT log'
+            className='p-1.5 rounded hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800'
+          >
+            <ArrowDownCircleIcon className='w-4 h-4' />
+          </button>
+        </div>
       </div>
       <div
         ref={scrollerRef}

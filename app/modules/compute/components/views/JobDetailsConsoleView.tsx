@@ -14,6 +14,7 @@ import { GetOpsTailResponse } from '~/types/api-filesystem'
 import { GetJobResponse, Job, JobMetadata, JobStateStatus } from '~/types/api-job'
 // helpers
 import { formatTime } from '~/helpers/time-helper'
+import { nidStringToArray } from '~/helpers/nid-parser'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 // badges
@@ -26,6 +27,8 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 // apis
 import { getLocalJob } from '~/apis/compute-api'
 import { getLocalOpsTail } from '~/apis/filesystem-api'
+// grafana
+import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
 
 // const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null) => void } | null>(
 //   null,
@@ -139,7 +142,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
         {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' content={stderr} />}
         {activeTab === 'script' && <ScriptPane script={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
-          <ResourcesPaneMulti dashboards={dashboards} title='Resources' />
+          <ResourcesPaneMulti job={job} dashboards={dashboards} title='Resources' />
         )}
       </div>
       <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
@@ -209,12 +212,12 @@ const ScriptPane: React.FC<ScriptPaneProps> = ({ script }) => {
   )
 }
 
-interface ResourcesPaneProps {
+interface ResourcePaneProps {
   src?: string
   title?: string
 }
 
-const ResourcesPane: React.FC<ResourcesPaneProps> = ({ src, title }) => {
+const ResourcePane: React.FC<ResourcePaneProps> = ({ src, title }) => {
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white px-3 py-2 shrink-0'>
@@ -239,12 +242,43 @@ const ResourcesPane: React.FC<ResourcesPaneProps> = ({ src, title }) => {
 
 type GrafanaDashboard = { id: string; label: string; src: string }
 
+interface ResourceGrafanaPaneProps {
+  job: Job
+  dashboard: GrafanaDashboard
+}
+
+const ResourceGrafanaPane: React.FC<ResourceGrafanaPaneProps> = ({ job, dashboard }) => {
+  const startMs = job.time.start ? job.time.start * 1000 : Date.now() - 5 * 60 * 1000
+  const endMs = job.time.end ? job.time.end * 1000 : Date.now()
+  const nodes = nidStringToArray(job.nodes || '')
+  const cluster = job.cluster || 'unknown'
+  return (
+    <div className='p-4'>
+      <EmbedPanelGrafana
+        baseUrl={dashboard.src}
+        jobId={job.jobId}
+        nodes={nodes}
+        cluster={cluster}
+        jobStartMs={startMs}
+        jobEndMs={endMs}
+        panelId={2}
+        orgId={1}
+        refresh='5s'
+        width='100%'
+        height={600}
+        initialMinutes={5}
+      />
+    </div>
+  )
+}
+
 interface ResourcesPaneMultiProps {
+  job: Job
   dashboards: GrafanaDashboard[]
   title?: string
 }
 
-const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, title }) => {
+const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ job, dashboards, title }) => {
   const [activeId, setActiveId] = React.useState<string>(dashboards?.[0]?.id ?? '')
   const [showAll, setShowAll] = React.useState(dashboards.length > 1)
   const active = React.useMemo(
@@ -310,25 +344,27 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ dashboards, tit
             {dashboards.map((d) => (
               <div key={d.id} className='rounded-lg border overflow-hidden'>
                 <div className='px-3 py-2 text-xs font-semibold border-b bg-white'>{d.label}</div>
-                <iframe
+                {/* <iframe
                   src={d.src}
                   className='w-full h-[600px] border-0'
                   title={d.label}
                   loading='lazy'
                   referrerPolicy='no-referrer'
-                />
+                /> */}
+                <ResourceGrafanaPane job={job} dashboard={d} />
               </div>
             ))}
           </div>
         ) : (
-          <iframe
-            key={active?.id}
-            src={active?.src}
-            className='w-full h-full min-h-[600px] border-0'
-            title={active?.label || 'Grafana dashboard'}
-            loading='lazy'
-            referrerPolicy='no-referrer'
-          />
+          // <iframe
+          //   key={active?.id}
+          //   src={active?.src}
+          //   className='w-full h-full min-h-[600px] border-0'
+          //   title={active?.label || 'Grafana dashboard'}
+          //   loading='lazy'
+          //   referrerPolicy='no-referrer'
+          // />
+          <ResourceGrafanaPane job={job} dashboard={active} />
         )}
       </div>
     </section>
@@ -525,9 +561,14 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       dashboards={[
         {
           id: '1',
-          label: 'CPU usage (%) per node',
+          label: 'Grafana Dashboard',
           src: dashboard,
         },
+        // {
+        //   id: '2',
+        //   label: 'Grafana Dashboard',
+        //   src: dashboard,
+        // },
       ]}
       onChangeTab={setActiveTab}
     />

@@ -37,6 +37,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   const filePath = `${currentPath}/${file.name}`
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [downloadJob, setDownloadJob] = useState<number | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [formValues, setFormValues] = useState({
     account: '',
@@ -44,6 +45,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      setDownloadError(null)
       setDownloadUrl(null)
       setDownloadJob(null)
       setLoading(false)
@@ -52,19 +54,28 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
 
   const postFileTransferDownload = async (system: string, filePath: string, account: string) => {
     setLoading(true)
-    const response: GetTransferDownloadResponse = await postLocalTransferDownload(
-      system,
-      filePath,
-      account,
-    )
-    // TODO  download_url (not camelized) might be adjusted according to the backend implementation
-    setDownloadUrl(response?.transferDirectives?.download_url)
-    setDownloadJob(response?.transferJob?.jobId)
-    setLoading(false)
+    try {
+      const response: GetTransferDownloadResponse = await postLocalTransferDownload(
+        system,
+        filePath,
+        account,
+      )
+      // TODO  download_url (not camelized) might be adjusted according to the backend implementation
+      setDownloadUrl(response?.transferDirectives?.download_url)
+      setDownloadJob(response?.transferJob?.jobId)
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+      setDownloadError('An error occurred while initiating the download transfer.')
+    }
+  }
+
+  const needTransferDownload = () => {
+    return file.size > uiConfig.fileDownloadLimit
   }
 
   const doDownloadFile = () => {
-    if (file.size <= uiConfig.fileDownloadLimit) {
+    if (!needTransferDownload()) {
       const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${filePath}`
       onClose()
       window.location.href = downloadEndpoint
@@ -83,21 +94,22 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
         <>
           {!downloadUrl && (
             <div className='flex flex-col w-full space-y-4'>
-              {/* Label + input inline */}
-              <div className='flex items-center space-x-3 w-full'>
-                <label
-                  htmlFor='account'
-                  className='text-sm font-medium text-gray-700 whitespace-nowrap'
-                >
-                  Account
-                </label>
-                <input
-                  type='text'
-                  name='account'
-                  onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
-                  className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-                />
-              </div>
+              {needTransferDownload() && (
+                <div className='flex items-center space-x-3 w-full'>
+                  <label
+                    htmlFor='account'
+                    className='text-sm font-medium text-gray-700 whitespace-nowrap'
+                  >
+                    Account
+                  </label>
+                  <input
+                    type='text'
+                    name='account'
+                    onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
+                    className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+                  />
+                </div>
+              )}
 
               {/* Centered button */}
               <div className='flex justify-center'>

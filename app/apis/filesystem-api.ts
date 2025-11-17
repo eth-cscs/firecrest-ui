@@ -264,12 +264,11 @@ export const postTransferUpload = async (
   account: string | null = null,
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
-    path: `${path}/${fileName}`,
+    sourcePath: `${path}/${fileName}`,
     account: account,
     transferDirectives: {
       fileSize: fileSize,
-      fileName: fileName,
-      transfer_method: 's3',
+      transferMethod: 's3',
     },
   }
   const apiResponse = await api.post<any, GetTransferUploadResponse>(
@@ -290,9 +289,10 @@ export const postTransferDownload = async (
   system: string,
   path: string,
 ): Promise<GetTransferDownloadResponse> => {
+  console.log('postTransferDownload called with:', { system, path })
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
-    JSON.stringify({ path }),
+    JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -300,6 +300,7 @@ export const postTransferDownload = async (
       },
     },
   )
+  console.log('postTransferDownload response:', apiResponse)
   return apiResponse
 }
 

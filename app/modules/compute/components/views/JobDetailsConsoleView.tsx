@@ -140,9 +140,27 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   return (
     <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
       <div className='flex-1 min-w-0 h-full min-h-0'>
-        {activeTab === 'stdout' && <ConsolePane title='Job output – STDOUT' content={stdout} />}
-        {activeTab === 'stdin' && <ConsolePane title='Job input – STDIN' content={stdin} />}
-        {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' content={stderr} />}
+        {activeTab === 'stdout' && (
+          <ConsolePane
+            title='Job output – STDOUT'
+            content={stdout}
+            filePath={jobMetadata?.standardOutput}
+          />
+        )}
+        {activeTab === 'stdin' && (
+          <ConsolePane
+            title='Job input – STDIN'
+            content={stdin}
+            filePath={jobMetadata?.standardInput}
+          />
+        )}
+        {activeTab === 'stderr' && (
+          <ConsolePane
+            title='Job output – STDERR'
+            content={stderr}
+            filePath={jobMetadata?.standardError}
+          />
+        )}
         {activeTab === 'script' && <ScriptPane script={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
           <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
@@ -161,9 +179,10 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
 interface ConsolePaneProps {
   title: string
   content: string
+  filePath?: string | null
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content }) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, filePath }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -173,20 +192,28 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content }) => {
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [content])
 
-  const handleDownload = () => {}
+  const stdFileDownloadable = (filePath?: string | null) => {
+    return filePath && filePath !== '' && filePath !== '/dev/null'
+  }
+
+  const handleDownload = () => {
+    console.log('Downloading file:', filePath)
+  }
 
   return (
     <section className='h-full min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>{title}</div>
         <div className='flex items-center gap-2 text-xs'>
-          {/* <button
-            onClick={handleDownload}
-            title='Download STDOUT log'
-            className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
-          >
-            <ArrowDownCircleIcon className='w-4 h-4' />
-          </button> */}
+          {stdFileDownloadable(filePath) && (
+            <button
+              onClick={handleDownload}
+              title='Download STDOUT log'
+              className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+            >
+              <ArrowDownCircleIcon className='w-4 h-4' />
+            </button>
+          )}
         </div>
       </div>
       <div className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5'>

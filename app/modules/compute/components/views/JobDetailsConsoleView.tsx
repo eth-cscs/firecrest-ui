@@ -134,6 +134,9 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   dashboards,
   onChangeTab,
 }) => {
+  if (!dashboards || dashboards.length === 0) {
+    OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
+  }
   return (
     <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
       <div className='flex-1 min-w-0 h-full min-h-0'>
@@ -142,7 +145,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
         {activeTab === 'stderr' && <ConsolePane title='Job output – STDERR' content={stderr} />}
         {activeTab === 'script' && <ScriptPane script={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
-          <ResourcesPaneMulti job={job} dashboards={dashboards} title='Resources' />
+          <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
         )}
       </div>
       <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
@@ -371,13 +374,13 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ job, dashboards
   )
 }
 
-const OUTPUT_TABS = [
-  { id: 'stdout', label: 'STD OUT' },
-  { id: 'stdin', label: 'STD IN' },
-  { id: 'stderr', label: 'STD ERR' },
-  { id: 'script', label: 'SCRIPT' },
-  { id: 'resources', label: 'RESOURCES' },
-] as const
+let OUTPUT_TABS = [
+  { id: 'stdout', label: 'STD OUT', enabled: true },
+  { id: 'stdin', label: 'STD IN', enabled: true },
+  { id: 'stderr', label: 'STD ERR', enabled: true },
+  { id: 'script', label: 'SCRIPT', enabled: true },
+  { id: 'resources', label: 'RESOURCES', enabled: true },
+]
 
 type OutputTabId = (typeof OUTPUT_TABS)[number]['id']
 
@@ -391,16 +394,20 @@ const RightTabs: React.FC<RightTabsProps> = ({ active, onChange }) => {
     <div className='border-b bg-white/70 backdrop-blur p-4 sticky top-0 z-10'>
       <div className='flex flex-col w-full items-stretch gap-2'>
         {OUTPUT_TABS.map((t) => (
-          <button
-            key={t.id}
-            type='button'
-            onClick={() => onChange(t.id)}
-            data-active={active === t.id}
-            className='text-xs rounded-md border px-2.5 py-1.5 data-[active=true]:bg-neutral-900 data-[active=true]:text-white data-[active=true]:border-neutral-900 data-[active=false]:bg-white data-[active=false]:text-neutral-700 hover:bg-neutral-50'
-            aria-pressed={active === t.id}
-          >
-            {t.label}
-          </button>
+          <React.Fragment key={t.id}>
+            {t.enabled && (
+              <button
+                key={t.id}
+                type='button'
+                onClick={() => onChange(t.id)}
+                data-active={active === t.id}
+                className='text-xs rounded-md border px-2.5 py-1.5 data-[active=true]:bg-neutral-900 data-[active=true]:text-white data-[active=true]:border-neutral-900 data-[active=false]:bg-white data-[active=false]:text-neutral-700 hover:bg-neutral-50'
+                aria-pressed={active === t.id}
+              >
+                {t.label}
+              </button>
+            )}
+          </React.Fragment>
         ))}
       </div>
     </div>
@@ -547,6 +554,17 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     setLocalError(error ?? null)
   }, [error])
 
+  let dashboards: GrafanaDashboard[] = []
+  if (dashboard && dashboard !== null && dashboard !== '') {
+    dashboards = [
+      {
+        id: '1',
+        label: 'Grafana Dashboard',
+        src: dashboard,
+      },
+    ]
+  }
+
   return (
     // <ActiveScrollCtx.Provider value={ctxValue}>
     <JobDetailsLayout
@@ -558,18 +576,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       stdin={jobMetadata?.standardInput || ''}
       stderr={jobStandardError?.output?.content || '...'}
       script={jobMetadata?.script || undefined}
-      dashboards={[
-        {
-          id: '1',
-          label: 'Grafana Dashboard',
-          src: dashboard,
-        },
-        // {
-        //   id: '2',
-        //   label: 'Grafana Dashboard',
-        //   src: dashboard,
-        // },
-      ]}
+      dashboards={dashboards}
       onChangeTab={setActiveTab}
     />
     // </ActiveScrollCtx.Provider>

@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState } from 'react'
-import { Outlet } from '@remix-run/react'
+import { Outlet, useMatches } from '@remix-run/react'
 // types
 import type { AuthUser } from '~/types/auth'
 import type { NotificationMessage } from '~/types/notification'
@@ -16,6 +16,21 @@ import Sidebar from './Sidebar'
 import Footer from './Footer'
 // overlays
 import NotificationOverlay from '~/components/overlays/NotificationOverlay'
+
+type LayoutMode = 'standard' | 'fixed-right'
+
+function useAppLayoutMode(): LayoutMode {
+  const matches = useMatches()
+  // First match down the tree that declares a layoutMode handle wins
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i] as any
+    const fromData = m?.data?.layoutMode as LayoutMode | null | undefined
+    if (fromData === 'fixed-right' || fromData === 'standard') return fromData
+    const fromHandle = m?.handle?.layoutMode as LayoutMode | undefined
+    if (fromHandle === 'fixed-right' || fromHandle === 'standard') return fromHandle
+  }
+  return 'standard'
+}
 
 interface AppLayoutProps {
   environment: string
@@ -43,9 +58,43 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   repoUrl,
 }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
+  const layoutMode = useAppLayoutMode()
+  const isFixedRight = layoutMode === 'fixed-right'
+  if (isFixedRight) {
+    return (
+      <>
+        <div className='min-h-full bg-gray-100'>
+          <div className='stacked-notifications'>
+            <NotificationOverlay messages={notificationMessages} />
+          </div>
+          <Sidebar
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            appName={appName}
+            supportUrl={supportUrl}
+            docUrl={docUrl}
+            repoUrl={repoUrl}
+            logoPath={logoPath}
+          />
+          <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
+            <Header setSidebarOpen={setSidebarOpen} authUser={authUser} fixed={true} />
+            <main className='min-h-0 flex flex-1 flex-col pr-[30rem] mt-[4rem]'>
+              <Outlet />
+            </main>
+            <Footer
+              environment={environment}
+              appVersion={appVersion}
+              companyName={companyName}
+              fixed={true}
+            />
+          </div>
+        </div>
+      </>
+    )
+  }
   return (
     <>
-      <div className='min-h-full bg-gray-100'>
+      <div className='h-screen bg-gray-100'>
         <div className='stacked-notifications'>
           <NotificationOverlay messages={notificationMessages} />
         </div>
@@ -58,9 +107,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           repoUrl={repoUrl}
           logoPath={logoPath}
         />
-        <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
+        <div className='md:pl-64 flex flex-col h-full min-h-0'>
           <Header setSidebarOpen={setSidebarOpen} authUser={authUser} />
-          <main className='flex-1'>
+          <main className='flex-1 min-h-0 overflow-y-auto'>
             <Outlet />
           </main>
           <Footer environment={environment} appVersion={appVersion} companyName={companyName} />

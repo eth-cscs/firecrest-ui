@@ -10,9 +10,21 @@ import { Link } from '@remix-run/react'
 import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
 
-const Header: React.FC<any> = ({ setSidebarOpen, authUser }: any) => {
+interface HeaderProps {
+  setSidebarOpen: (open: boolean) => void
+  authUser: any
+  fixed?: boolean
+}
+
+const Header: React.FC<HeaderProps> = ({
+  setSidebarOpen,
+  authUser,
+  fixed = false,
+}: HeaderProps) => {
   return (
-    <div className='sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow'>
+    <div
+      className={`top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow ${fixed ? 'fixed right-0 left-64' : 'sticky'}`}
+    >
       <button
         type='button'
         className='px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 md:hidden'

@@ -264,12 +264,11 @@ export const postTransferUpload = async (
   account: string | null = null,
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
-    path: `${path}/${fileName}`,
+    sourcePath: `${path}/${fileName}`,
     account: account,
     transferDirectives: {
       fileSize: fileSize,
-      fileName: fileName,
-      transfer_method: 's3',
+      transferMethod: 's3',
     },
   }
   const apiResponse = await api.post<any, GetTransferUploadResponse>(
@@ -292,7 +291,7 @@ export const postTransferDownload = async (
 ): Promise<GetTransferDownloadResponse> => {
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
-    JSON.stringify({ path }),
+    JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -314,6 +313,21 @@ export const getLocalOpsChecksum = async (
   })
   const apiResponse = await api.get<GetOpsChecksumResponse>(
     `/api/filesystems/${system}/ops/checksum?` + urlSearchParams,
+    {},
+    ApiTarget.API_LOCAL,
+  )
+  return apiResponse
+}
+
+export const getLocalOpsLs = async (
+  system: string,
+  targetPath: string,
+): Promise<GetOpsLsResponse> => {
+  const urlSearchParams = new URLSearchParams({
+    targetPath: targetPath,
+  })
+  const apiResponse = await api.get<GetOpsLsResponse>(
+    `/api/filesystems/${system}/ops/ls?` + urlSearchParams,
     {},
     ApiTarget.API_LOCAL,
   )

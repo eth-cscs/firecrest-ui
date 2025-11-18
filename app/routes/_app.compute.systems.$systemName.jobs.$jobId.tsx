@@ -33,6 +33,7 @@ import { getSystems } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobDetailsView from '~/modules/compute/components/views/JobDetailsView'
+import JobDetailsConsoleView from '~/modules/compute/components/views/JobDetailsConsoleView'
 // observability
 import observability from '~/configs/observability.config'
 
@@ -46,6 +47,8 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     request: request,
     extraInfo: { username: auth.user.username },
   })
+  // Layout
+  let layoutMode = 'standard'
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   const jobId: any = params.jobId
@@ -61,16 +64,24 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     getJobMetadata(accessToken, systemName, jobId),
   ])
   // Filtering data
+  const { jobs } = jobMetadataResponse
   const { systems } = systemsResponse
   const system: System | undefined = systems.find((system: System) => {
     return system.name === systemName
   })
+  if (jobs && jobs.length !== 0) {
+    const job = jobs[0]
+    if (job.script && job.script !== 'NONE') {
+      layoutMode = 'fixed-right'
+    }
+  }
   // Return response
   return {
     jobs: jobResponse.jobs,
     jobsMetadata: jobMetadataResponse.jobs,
     system: system,
     dashboard: observability.dashboard || null,
+    layoutMode: layoutMode,
   }
 }
 
@@ -114,9 +125,22 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   }
 }
 
+export const handle = { layoutMode: 'fixed-right' as const }
+
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
-  const { jobs, jobsMetadata, system, dashboard }: any = useLoaderData()
+  const { jobs, jobsMetadata, system, dashboard, layoutMode }: any = useLoaderData()
+  if (layoutMode === 'fixed-right') {
+    return (
+      <JobDetailsConsoleView
+        jobs={jobs}
+        jobsMetadata={jobsMetadata}
+        system={system}
+        error={getErrorFromData(data)}
+        dashboard={dashboard}
+      />
+    )
+  }
   return (
     <JobDetailsView
       jobs={jobs}

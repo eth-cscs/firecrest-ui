@@ -85,7 +85,8 @@
   "resolutions": {
     "esbuild": "^0.25.10",
     "estree-util-value-to-estree": "^3.4.0",
-    "tar-fs": "^3.1.1"
+    "tar-fs": "^3.1.1",
+    "glob": "11.1.0"
   },
   "engines": {
     "node": ">=21.0.0"

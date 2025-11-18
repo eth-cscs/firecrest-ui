@@ -289,7 +289,6 @@ export const postTransferDownload = async (
   system: string,
   path: string,
 ): Promise<GetTransferDownloadResponse> => {
-  console.log('postTransferDownload called with:', { system, path })
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
     JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
@@ -300,7 +299,6 @@ export const postTransferDownload = async (
       },
     },
   )
-  console.log('postTransferDownload response:', apiResponse)
   return apiResponse
 }
 

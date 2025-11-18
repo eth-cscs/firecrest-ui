@@ -22,7 +22,7 @@ import { postLocalTransferDownload } from '~/apis/filesystem-api'
 interface DownloadDialogProps {
   system: string
   file: File
-  currentPath: string
+  currentPath?: string
   open: boolean
   onClose: () => void
 }
@@ -30,11 +30,11 @@ interface DownloadDialogProps {
 const DownloadDialog: React.FC<DownloadDialogProps> = ({
   system,
   file,
-  currentPath,
+  currentPath = undefined,
   open,
   onClose,
 }: DownloadDialogProps) => {
-  const filePath = `${currentPath}/${file.name}`
+  const filePath = currentPath ? `${currentPath}/${file.name}` : file.name
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [downloadJob, setDownloadJob] = useState<number | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)

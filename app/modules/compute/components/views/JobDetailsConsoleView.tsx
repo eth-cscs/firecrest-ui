@@ -10,7 +10,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react'
 import { ArrowDownCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // types
 import type { System } from '~/types/api-status'
-import { GetOpsTailResponse } from '~/types/api-filesystem'
+import { GetOpsTailResponse, GetOpsLsResponse, File } from '~/types/api-filesystem'
 import { GetJobResponse, Job, JobMetadata, JobStateStatus } from '~/types/api-job'
 // helpers
 import { formatTime } from '~/helpers/time-helper'
@@ -24,9 +24,10 @@ import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
 // dialogs
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
+import DownloadDialog from '~/modules/filesystem/components/dialogs/DownloadDialog'
 // apis
 import { getLocalJob } from '~/apis/compute-api'
-import { getLocalOpsTail } from '~/apis/filesystem-api'
+import { getLocalOpsTail, getLocalOpsLs } from '~/apis/filesystem-api'
 // grafana
 import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
 
@@ -115,8 +116,10 @@ interface JobDetailCenterProps {
   system?: System
   activeTab: OutputTabId
   stdout: string
+  stdoutFile?: File
   stdin: string
   stderr: string
+  stderrFile?: File
   script?: string
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
@@ -128,8 +131,10 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   system,
   activeTab,
   stdout,
+  stdoutFile,
   stdin,
   stderr,
+  stderrFile,
   script,
   dashboards,
   onChangeTab,
@@ -144,7 +149,9 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <ConsolePane
             title='Job output – STDOUT'
             content={stdout}
+            system={system}
             filePath={jobMetadata?.standardOutput}
+            stdFile={stdoutFile}
           />
         )}
         {activeTab === 'stdin' && (
@@ -158,7 +165,9 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <ConsolePane
             title='Job output – STDERR'
             content={stderr}
+            system={system}
             filePath={jobMetadata?.standardError}
+            stdFile={stderrFile}
           />
         )}
         {activeTab === 'script' && <ScriptPane script={script} />}
@@ -179,11 +188,14 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
 interface ConsolePaneProps {
   title: string
   content: string
+  system?: System
   filePath?: string | null
+  stdFile?: File
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, filePath }) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, system, filePath, stdFile }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const [downloadkDialogOpen, setDownloadDialogOpen] = useState(false)
 
   useEffect(() => {
     const el = scrollerRef.current
@@ -192,12 +204,8 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, filePath }) =
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [content])
 
-  const stdFileDownloadable = (filePath?: string | null) => {
-    return filePath && filePath !== '' && filePath !== '/dev/null'
-  }
-
   const handleDownload = () => {
-    console.log('Downloading file:', filePath)
+    setDownloadDialogOpen(true)
   }
 
   return (
@@ -205,14 +213,22 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, filePath }) =
       <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>{title}</div>
         <div className='flex items-center gap-2 text-xs'>
-          {stdFileDownloadable(filePath) && (
-            <button
-              onClick={handleDownload}
-              title='Download STDOUT log'
-              className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
-            >
-              <ArrowDownCircleIcon className='w-4 h-4' />
-            </button>
+          {stdFile && (
+            <>
+              <DownloadDialog
+                system={system?.name || ''}
+                file={stdFile}
+                open={downloadkDialogOpen}
+                onClose={() => setDownloadDialogOpen(false)}
+              />
+              <button
+                onClick={handleDownload}
+                title='Download STDOUT log'
+                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+              >
+                <ArrowDownCircleIcon className='w-4 h-4' />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -447,8 +463,10 @@ interface JobDetailsLayoutProps {
   system?: System
   activeTab: OutputTabId
   stdout: string
+  stdoutFile?: File
   stdin: string
   stderr: string
+  stderrFile?: File
   script?: string
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
@@ -460,8 +478,10 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   system,
   activeTab,
   stdout,
+  stdoutFile,
   stdin,
   stderr,
+  stderrFile,
   script,
   dashboards,
   onChangeTab,
@@ -485,8 +505,10 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
           system={system}
           activeTab={activeTab}
           stdout={stdout}
+          stdoutFile={stdoutFile}
           stdin={stdin}
           stderr={stderr}
+          stderrFile={stderrFile}
           script={script}
           dashboards={dashboards}
           onChangeTab={onChangeTab}
@@ -518,7 +540,9 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   )
   const [currentJob, setCurrentJob] = useState<Job | null>(() => job)
   const [jobStandardOuput, setJobStandardOuput] = useState<GetOpsTailResponse | null>(null)
+  const [jobStandardOutputFile, setJobStandardOutputFile] = useState<File | null>(null)
   const [jobStandardError, setJobStandardError] = useState<GetOpsTailResponse | null>(null)
+  const [jobStandardErrorFile, setJobStandardErrorFile] = useState<File | null>(null)
   const [localError, setLocalError] = useState<any>(error)
   const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
 
@@ -553,6 +577,29 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     }
   }
 
+  const fecthJobFile = async (
+    filePath: string,
+    setter: React.Dispatch<React.SetStateAction<File | null>>,
+  ) => {
+    try {
+      const response: GetOpsLsResponse = await getLocalOpsLs(system.name, filePath)
+      if (response.output && response.output.length > 0) {
+        setter(response.output[0])
+      }
+    } catch (error) {
+      setLocalError(error)
+    }
+  }
+
+  const fecthJobStandardFile = async (jobMetadata: JobMetadata) => {
+    if (jobMetadata.standardOutput !== null && jobMetadata.standardOutput !== '') {
+      fecthJobFile(jobMetadata.standardOutput, setJobStandardOutputFile)
+    }
+    if (jobMetadata.standardError !== null && jobMetadata.standardError !== '') {
+      fecthJobFile(jobMetadata.standardError, setJobStandardErrorFile)
+    }
+  }
+
   useEffect(() => {
     setCurrentJob(job ?? null)
     if (currentJob !== null) {
@@ -563,6 +610,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
           // Get job standard output/s
           if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
             fetchJobStandardFileContent(jobMetadata)
+            fecthJobStandardFile(jobMetadata)
           }
         }
       }
@@ -600,8 +648,10 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       system={system}
       activeTab={activeTab}
       stdout={jobStandardOuput?.output?.content || '...'}
+      stdoutFile={jobStandardOutputFile || undefined}
       stdin={jobMetadata?.standardInput || ''}
       stderr={jobStandardError?.output?.content || '...'}
+      stderrFile={jobStandardErrorFile || undefined}
       script={jobMetadata?.script || undefined}
       dashboards={dashboards}
       onChangeTab={setActiveTab}

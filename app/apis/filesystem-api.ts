@@ -321,6 +321,21 @@ export const getLocalOpsChecksum = async (
   return apiResponse
 }
 
+export const getLocalOpsLs = async (
+  system: string,
+  targetPath: string,
+): Promise<GetOpsLsResponse> => {
+  const urlSearchParams = new URLSearchParams({
+    targetPath: targetPath,
+  })
+  const apiResponse = await api.get<GetOpsLsResponse>(
+    `/api/filesystems/${system}/ops/ls?` + urlSearchParams,
+    {},
+    ApiTarget.API_LOCAL,
+  )
+  return apiResponse
+}
+
 export const getLocalOpsTail = async (
   system: string,
   targetPath: string,

@@ -38,11 +38,18 @@ import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGr
 interface JobDetailsPanelProps {
   job?: Job
   jobMetadata?: JobMetadata
-  system?: System
+  system?: System,
+  stdoutFile?: File
+  stderrFile?: File
 }
 
-const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system }) => {
+const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system,stdoutFile,stderrFile }) => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [downloadkDialogOpen, setDownloadDialogOpen] = useState(false)
+  const handleDownload = () => {
+    setDownloadDialogOpen(true)
+  }
+
   return (
     <>
       <JobCancelDialog
@@ -62,7 +69,8 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
           </button>
         </div>
       )}
-      <h3 className='text-sm font-semibold mb-3'>Job details</h3>
+
+      <h3 className='font-semibold mb-3'>Job details</h3>
       <AttributesList>
         <AttributesListItem label='Job ID'>#{job?.jobId}</AttributesListItem>
         <AttributesListItem label='Name'>{job?.name}</AttributesListItem>
@@ -80,8 +88,8 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
           )}
         </AttributesListItem>
       </AttributesList>
-      <div className='mt-4 mb-6 border-b border-gray-900/10' />
-      <h3 className='text-sm font-semibold mb-3'>Execution times</h3>
+
+      <h3 className='font-semibold mb-3 mt-9'>Execution times</h3>
       <AttributesList>
         <AttributesListItem label='Start time'>
           {formatDateTimeFromTimestamp({ timestamp: job?.time.start })}
@@ -93,8 +101,53 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
           {formatTime({ time: job?.time.elapsed })}
         </AttributesListItem>
       </AttributesList>
-      <div className='mt-4 mb-6 border-b border-gray-900/10' />
-      <h3 className='text-sm font-semibold mb-3'>System and resource details</h3>
+      
+      <h3 className='font-semibold mb-3 mt-9'>Files</h3>
+      <AttributesList>
+        <AttributesListItem label='StdOut'><div className='flex'>{jobMetadata?.standardOutput || 'N/A'}
+          {stdoutFile && (
+            <>
+              <DownloadDialog
+                system={system?.name || ''}
+                file={stdoutFile}
+                open={downloadkDialogOpen}
+                onClose={() => setDownloadDialogOpen(false)}
+              />
+              <button
+                onClick={handleDownload}
+                title='Download STDOUT log'
+                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+              >
+                <ArrowDownCircleIcon className='w-4 h-4' />
+              </button>
+            </>
+          )}
+          </div>
+        </AttributesListItem>
+        <AttributesListItem label='StdErr'>{jobMetadata?.standardError  || 'N/A'}
+          {stderrFile && (
+            <>
+              <DownloadDialog
+                system={system?.name || ''}
+                file={stderrFile}
+                open={downloadkDialogOpen}
+                onClose={() => setDownloadDialogOpen(false)}
+              />
+              <button
+                onClick={handleDownload}
+                title='Download STDOUT log'
+                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+              >
+                <ArrowDownCircleIcon className='w-4 h-4' />
+              </button>
+            </>
+          )}
+        </AttributesListItem>
+        <AttributesListItem label='StdIn'>{jobMetadata?.standardInput  || 'N/A'}</AttributesListItem>
+        <AttributesListItem label='Working directory'>{job?.workingDirectory  || 'N/A'}</AttributesListItem>  
+      </AttributesList>
+
+      <h3 className='font-semibold mb-3 mt-9'>System and resource details</h3>
       <AttributesList>
         <AttributesListItem label='System name'>
           <LabelBadge color={LabelColor.YELLOW}>{system?.name}</LabelBadge>
@@ -104,7 +157,6 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
         </AttributesListItem>
         <AttributesListItem label='Nodes'>{job?.nodes}</AttributesListItem>
         <AttributesListItem label='Partition'>{job?.partition}</AttributesListItem>
-        <AttributesListItem label='Working directory'>{job?.workingDirectory}</AttributesListItem>
       </AttributesList>
     </>
   )
@@ -115,10 +167,10 @@ interface JobDetailCenterProps {
   jobMetadata?: JobMetadata
   system?: System
   activeTab: OutputTabId
-  stdout: string
+  stdout?: string
   stdoutFile?: File
-  stdin: string
-  stderr: string
+  stdin?: string
+  stderr?: string
   stderrFile?: File
   script?: string
   dashboards?: GrafanaDashboard[]
@@ -143,42 +195,34 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
     OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
   }
   return (
-    <div className='flex flex-1 rounded-xl border bg-white/70 shadow-sm'>
-      <div className='flex-1 min-w-0 h-full min-h-0'>
+    <div className='flex-1 rounded-xl border bg-white shadow-sm m-6 pt-2' style={{ marginTop: '20px' }} >
+      <div className='sticky top-16 flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
+        <select name='datasource' value={activeTab} onChange={(e) => onChangeTab(e.target.value)} className='flex-none w-64 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'>
+              <option value='stdout'>Job StdOut</option>
+              <option value='stderr'>Job StdErr</option>
+              <option value='stdin'>Job StdIn</option>
+              <option value='script'>Job Script</option>
+              <option value='resources'>Dashboards</option>
+          </select>
+      </div>
+      <div className='min-w-0 h-full min-h-0 pt-4 '>
         {activeTab === 'stdout' && (
-          <ConsolePane
-            title='Job output – STDOUT'
-            content={stdout}
-            system={system}
-            filePath={jobMetadata?.standardOutput}
-            stdFile={stdoutFile}
-          />
+          <ConsolePane content={stdout}/>
         )}
         {activeTab === 'stdin' && (
-          <ConsolePane
-            title='Job input – STDIN'
-            content={stdin}
-            filePath={jobMetadata?.standardInput}
-          />
+          <ConsolePane content={stdin}/>
         )}
         {activeTab === 'stderr' && (
-          <ConsolePane
-            title='Job output – STDERR'
-            content={stderr}
-            system={system}
-            filePath={jobMetadata?.standardError}
-            stdFile={stderrFile}
-          />
+          <ConsolePane content={stderr}/>
         )}
-        {activeTab === 'script' && <ScriptPane script={script} />}
+        {activeTab === 'script' && <ConsolePane content={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
           <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
         )}
       </div>
       <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
-        <RightTabs active={activeTab} onChange={onChangeTab} />
         <div className='p-4'>
-          <JobDetailsPanel job={job} jobMetadata={jobMetadata} system={system} />
+          <JobDetailsPanel job={job} jobMetadata={jobMetadata} system={system} stdoutFile={stdoutFile} stderrFile={stderrFile}/>
         </div>
       </aside>
     </div>
@@ -186,16 +230,14 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
 }
 
 interface ConsolePaneProps {
-  title: string
-  content: string
-  system?: System
-  filePath?: string | null
-  stdFile?: File
+  
+  content?: string
+  
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, system, filePath, stdFile }) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({ content}) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
-  const [downloadkDialogOpen, setDownloadDialogOpen] = useState(false)
+  
 
   useEffect(() => {
     const el = scrollerRef.current
@@ -204,59 +246,15 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ title, content, system, fileP
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [content])
 
-  const handleDownload = () => {
-    setDownloadDialogOpen(true)
-  }
-
   return (
     <section className='h-full min-h-0 flex flex-col'>
-      <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
-        <div className='text-sm font-medium'>{title}</div>
-        <div className='flex items-center gap-2 text-xs'>
-          {stdFile && (
-            <>
-              <DownloadDialog
-                system={system?.name || ''}
-                file={stdFile}
-                open={downloadkDialogOpen}
-                onClose={() => setDownloadDialogOpen(false)}
-              />
-              <button
-                onClick={handleDownload}
-                title='Download STDOUT log'
-                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
-              >
-                <ArrowDownCircleIcon className='w-4 h-4' />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
       <div className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5'>
-        <pre className='px-3 py-2 whitespace-pre-wrap'>{content}</pre>
+        <pre className='px-3 py-2 whitespace-pre-wrap'>{content || '# No data available'}</pre>
       </div>
     </section>
   )
 }
 
-interface ScriptPaneProps {
-  script?: string
-}
-
-const ScriptPane: React.FC<ScriptPaneProps> = ({ script }) => {
-  return (
-    <section className='h-full min-h-0 flex flex-col'>
-      <div className='flex items-center justify-between border-b bg-white/60 backdrop-blur px-3 py-2 shrink-0'>
-        <div className='text-sm font-medium'>Script</div>
-      </div>
-      <div className='flex-1 bg-neutral-50 text-neutral-800'>
-        <pre className='px-4 py-3 text-xs leading-5 font-mono whitespace-pre'>
-          {script || '# No script available'}
-        </pre>
-      </div>
-    </section>
-  )
-}
 
 interface ResourcePaneProps {
   src?: string
@@ -427,45 +425,16 @@ let OUTPUT_TABS = [
 
 type OutputTabId = (typeof OUTPUT_TABS)[number]['id']
 
-interface RightTabsProps {
-  active: OutputTabId
-  onChange: (id: OutputTabId) => void
-}
-
-const RightTabs: React.FC<RightTabsProps> = ({ active, onChange }) => {
-  return (
-    <div className='border-b bg-white/70 backdrop-blur p-4 sticky top-0 z-10'>
-      <div className='flex flex-col w-full items-stretch gap-2'>
-        {OUTPUT_TABS.map((t) => (
-          <React.Fragment key={t.id}>
-            {t.enabled && (
-              <button
-                key={t.id}
-                type='button'
-                onClick={() => onChange(t.id)}
-                data-active={active === t.id}
-                className='text-xs rounded-md border px-2.5 py-1.5 data-[active=true]:bg-neutral-900 data-[active=true]:text-white data-[active=true]:border-neutral-900 data-[active=false]:bg-white data-[active=false]:text-neutral-700 hover:bg-neutral-50'
-                aria-pressed={active === t.id}
-              >
-                {t.label}
-              </button>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 interface JobDetailsLayoutProps {
   job?: Job
   jobMetadata?: JobMetadata
   system?: System
   activeTab: OutputTabId
-  stdout: string
+  stdout?: string
   stdoutFile?: File
-  stdin: string
-  stderr: string
+  stdin?: string
+  stderr?: string
   stderrFile?: File
   script?: string
   dashboards?: GrafanaDashboard[]
@@ -487,17 +456,7 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   onChangeTab,
 }) => {
   return (
-    <div className='flex flex-1 flex-col gap-4 pt-6 pb-20 px-8'>
-      <div className='flex items-center justify-between'>
-        <div className='text-sm text-neutral-500'>
-          Clariden /{' '}
-          <Link to={`/compute`} className='hover:text-gray-900'>
-            Jobs
-          </Link>{' '}
-          / <span className='text-neutral-800'>{job?.jobId}</span>
-        </div>
-        {/* <div className='text-xs text-neutral-500'>Last update: just now</div> */}
-      </div>
+    <div className='flex flex-1 flex-col gap-4 pb-20'>
       <div className='flex flex-1 h-full'>
         <JobDetailCenter
           job={job}
@@ -647,10 +606,10 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       jobMetadata={jobMetadata || undefined}
       system={system}
       activeTab={activeTab}
-      stdout={jobStandardOuput?.output?.content || '...'}
+      stdout={jobStandardOuput?.output?.content }
       stdoutFile={jobStandardOutputFile || undefined}
-      stdin={jobMetadata?.standardInput || ''}
-      stderr={jobStandardError?.output?.content || '...'}
+      stdin={jobMetadata?.standardInput || undefined}
+      stderr={jobStandardError?.output?.content}
       stderrFile={jobStandardErrorFile || undefined}
       script={jobMetadata?.script || undefined}
       dashboards={dashboards}

@@ -38,3 +38,40 @@ Firecrest-UI includes UI components that may be derived from Tailwind UI, a prod
 - Ensure that any UI components included in Firecrest-UI are either custom-built or derived from freely available Tailwind CSS styles.
 
 For more details, please refer to the [Tailwind UI License](https://tailwindui.com/license).
+
+# Development
+
+## Local UI development with a local FirecREST environment
+
+To simplify running FirecREST locally we provide a set of local Docker environments that already contain all required dependencies. Please make sure [Docker](https://www.docker.com/) is installed and running on your machine.
+
+### Configuration
+
+Please ensure that the FirecREST Docker Compose environment is running. To connect the UI with the backend, you need to create a ```.env``` file (refer to the provided env_example file for guidance).
+
+### Authx
+
+The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
+
+### Compile and run the web application 
+
+The requirements for the web app development are node and yarn.
+```shellscript
+node --version
+npm install -g corepack
+yarn --version
+```
+
+Once the libraries are available
+```shellscript
+yarn install
+yarn run dev
+```
+
+Open the UI on http://localhost:3000/, a login page (Keycloak) should show up.
+
+Authenticate with the follwing credentials:
+```credentials
+client: fireuser
+secret: password
+```

@@ -71,7 +71,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   if (jobs && jobs.length !== 0) {
     const job = jobs[0]
-    if (job.script && job.script !== 'NONE') {
+    if (job.script || job.standardError || job.standardOutput) {
       layoutMode = 'fixed-right'
     }
   }

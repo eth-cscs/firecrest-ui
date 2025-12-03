@@ -37,6 +37,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   const systemName = params.systemName!
   const accountName = params.accountName!
+  const [,searchParams] = request.url.split("?")
+  const allUsers = new URLSearchParams(searchParams).get("allUsers") === 'true' ? true : false
+
   logInfoHttp({
     message: `Compute system ${systemName} account ${accountName} index page`,
     request: request,
@@ -45,15 +48,14 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
-  const response: GetSystemJobsResponse = await getJobs(accessToken, systemName, accountName)
+  const response: GetSystemJobsResponse = await getJobs(accessToken, systemName, accountName, allUsers)
   // Return response
-  return { systems, systemsJobs: [response] }
+  return response
 }
 
 export default function AppComputeIandexRoute() {
-  const { systems, systemsJobs }: any = useLoaderData()
-  return <JobListView systems={systems} systemsJobs={systemsJobs} />
+  const jobs: any = useLoaderData()
+  return <JobListView jobs={jobs}/>
 }
 
 export function ErrorBoundary() {

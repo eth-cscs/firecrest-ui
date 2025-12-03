@@ -33,6 +33,8 @@ import { classNames } from '~/helpers/class-helper'
 import AppLogo from '~/logos/AppLogo'
 // mappers
 import { serviceIconMapper } from '~/mappers/icon-mapper'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -54,15 +56,18 @@ const Sidebar: React.FC<any> = ({
   repoUrl = null,
 }: any) => {
   const location = useLocation()
-
+  const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
   const primaryNavigation: any = [
-    { name: LABEL_COMPUTE_TITLE, path: '/compute', icon: serviceIconMapper('compute') },
+    { name: LABEL_COMPUTE_TITLE, path: '/compute', icon: serviceIconMapper('compute'),
+      children: systems.map(system => ({ name: system.name, path: '/compute/systems/'+system.name }))
+    },
     {
       name: LABEL_FILESYSTEM_TITLE,
       path: '/filesystems',
       icon: serviceIconMapper('filesystem'),
+      children: systems.map(system => ({ name: system.name, path: '/filesystems/systems/'+system.name }))
     },
   ]
 

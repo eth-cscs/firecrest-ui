@@ -12,10 +12,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useLoaderData, useRouteError } from '@remix-run/react'
+import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-// types
-import type { GetSystemJobsResponse } from '~/types/api-job'
 // loggers
 import logger from '~/logger/logger'
 // helpers
@@ -23,11 +21,13 @@ import { logInfoHttp } from '~/helpers/log-helper'
 // utils
 import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
 // apis
-import { getJobs } from '~/apis/compute-api'
-import { getSystems } from '~/apis/status-api'
+import { getUserInfo } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
-import JobListView from '~/modules/compute/components/views/JobListView'
+// contexts
+import { GroupProvider } from '~/contexts/GroupContext'
+// switchers
+import { GroupSwitcherPortal } from '~/components/switchers/GroupSwitcher'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -35,26 +35,27 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     failureRedirect: '/login',
   })
   const systemName = params.systemName!
-  const accountName = params.accountName!
-  const [,searchParams] = request.url.split("?")
-  const allUsers = new URLSearchParams(searchParams).get("allUsers") === 'true' ? true : false
-
   logInfoHttp({
-    message: `Compute system ${systemName} account ${accountName} index page`,
+    message: `Filesystems system ${systemName} layout page`,
     request: request,
     extraInfo: { username: auth.user.username },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const response: GetSystemJobsResponse = await getJobs(accessToken, systemName, accountName, allUsers)
+  const { groups } = await getUserInfo(accessToken, systemName)
   // Return response
-  return response
+  return { groups, systemName }
 }
 
-export default function AppComputeIandexRoute() {
-  const jobs: any = useLoaderData()
-  return <JobListView jobs={jobs}/>
+export default function AppFilesystemsIndexRoute() {
+  const { groups, systemName }: any = useLoaderData()
+  return (
+    <GroupProvider groups={groups}>
+      <GroupSwitcherPortal systemName={systemName} basePath='/filesystems' />
+      <Outlet />
+    </GroupProvider>
+  )
 }
 
 export function ErrorBoundary() {

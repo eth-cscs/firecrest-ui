@@ -16,7 +16,6 @@ import { useLoaderData, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
-import type { System } from '~/types/api-status'
 // loggers
 import logger from '~/logger/logger'
 // helpers

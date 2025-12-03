@@ -26,6 +26,8 @@ import { getUserInfo } from '~/apis/status-api'
 import ErrorView from '~/components/views/ErrorView'
 // contexts
 import { GroupProvider } from '~/contexts/GroupContext'
+// switchers
+import { GroupSwitcherPortal } from '~/components/switchers/GroupSwitcher'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -50,6 +52,7 @@ export default function AppComputeIndexRoute() {
   const { groups, systemName }: any = useLoaderData()
   return (
     <GroupProvider groups={groups}>
+      <GroupSwitcherPortal systemName={systemName} basePath='/compute' />
       <Outlet />
     </GroupProvider>
   )

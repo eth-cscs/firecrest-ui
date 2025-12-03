@@ -92,7 +92,7 @@ export interface GetJobMetadataResponse {
 }
 
 export interface GetSystemJobsResponse {
-  system: System
+  system: string
   jobs: Job[]
   error?: string
 }

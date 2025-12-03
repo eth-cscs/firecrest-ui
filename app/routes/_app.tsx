@@ -12,12 +12,15 @@ import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from '@remix-r
 import stylesheet from '~/styles/app.css?url'
 // configs
 import base from '~/configs/base.config'
+// apis
+import { getSystems } from '~/apis/status-api'
 // layouts
 import AppLayout from '~/layouts/AppLayout'
 // helpers
 import { getNotificationMessage } from '~/helpers/notification-helper'
 // utils
-import { authenticator } from '~/utils/auth.server'
+import { authenticator, getAuthAccessToken } from '~/utils/auth.server'
+import { SystemProvider } from '~/contexts/SystemContext'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
@@ -26,10 +29,14 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const auth = await authenticator.isAuthenticated(request, {
     failureRedirect: '/login',
   })
+  // Get auth access token
+  const accessToken = await getAuthAccessToken(request)
   // Create a headers object
   const headers = new Headers()
   // Get notification messages
   const notificationMessages = await getNotificationMessage(request, headers)
+  // Call api/s and fetch data
+  const { systems } = await getSystems(accessToken)
   // Return json
   return json(
     {
@@ -43,6 +50,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
       logoPath: base.logoPath,
       authUser: auth.user,
       notificationMessages: notificationMessages,
+      systems: systems,
     },
     {
       headers: headers,
@@ -63,19 +71,22 @@ export default function AppLayoutRoute() {
     environment,
     authUser,
     notificationMessages,
+    systems,
   }: any = data
   return (
-    <AppLayout
-      appName={appName}
-      environment={environment}
-      appVersion={appVersion}
-      companyName={companyName}
-      logoPath={logoPath}
-      supportUrl={supportUrl}
-      repoUrl={repoUrl}
-      docUrl={docUrl}
-      authUser={authUser}
-      notificationMessages={notificationMessages}
-    />
+    <SystemProvider systems={systems}>
+      <AppLayout
+        appName={appName}
+        environment={environment}
+        appVersion={appVersion}
+        companyName={companyName}
+        logoPath={logoPath}
+        supportUrl={supportUrl}
+        repoUrl={repoUrl}
+        docUrl={docUrl}
+        authUser={authUser}
+        notificationMessages={notificationMessages}
+      />
+    </SystemProvider>
   )
 }

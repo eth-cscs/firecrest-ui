@@ -17,6 +17,8 @@ import type { System } from '~/types/api-status'
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
 import { authenticator, getAuthAccessToken } from '~/utils/auth.server'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
 // apis
 import { getSystems } from '~/apis/status-api'
 import { getJobs } from '~/apis/compute-api'
@@ -69,7 +71,8 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
 }
 
 export default function AppIndexRoute() {
-  const { systems, dashboardJobs }: any = useLoaderData()
+  const { systems } = useSystem()
+  const { dashboardJobs }: any = useLoaderData()
   return <DashboardView systems={systems} dashboardJobs={dashboardJobs} />
 }
 

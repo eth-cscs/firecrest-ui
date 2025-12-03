@@ -58,6 +58,7 @@ const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className =
 interface JobTableRowProps {
   job: Job
   system: string
+  account: string
 }
 
 enum DisplayField {
@@ -76,13 +77,13 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
-const JobTableRow: React.FC<JobTableRowProps> = ({system, job }: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({system, job, account }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
   const goToDetails = (jobId: number) => {
-    navigate(`/compute/systems/${system}/jobs/${jobId}`)
+    navigate(`/compute/systems/${system}/accounts/${account}/jobs/${jobId}`)
   }
 
   return (
@@ -192,8 +193,6 @@ const JobTableRow: React.FC<JobTableRowProps> = ({system, job }: JobTableRowProp
 
 const JobsTable: React.FC<any> = ({jobs }: any) => {
   
-  const allUsers = true
-
   const onChangeHandler = (event: any) => {
     window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
   }
@@ -239,6 +238,7 @@ const JobsTable: React.FC<any> = ({jobs }: any) => {
             system={jobs.system}
             key={`${job.jobId}`}
             job={job}
+            account={jobs.account}
           />
         ))}
       </tbody>
@@ -247,7 +247,7 @@ const JobsTable: React.FC<any> = ({jobs }: any) => {
   )
 }
 
-const SystemJobList: React.FC<any> = ({ system, jobs, account }) => {
+const SystemJobList: React.FC<any> = ({ jobs }) => {
   
   jobs.jobs =  jobs.jobs.sort((a: any, b: any) => b.time.start - a.time.start)
   return (

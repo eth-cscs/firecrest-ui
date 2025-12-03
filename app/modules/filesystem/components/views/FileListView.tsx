@@ -154,6 +154,7 @@ const FileItem: React.FC<FileItemProps> = ({
           system={system.name}
           file={file}
           currentPath={currentPath}
+          accountName={accountName}
           open={downloadkDialogOpen}
           onClose={() => setDownloadDialogOpen(false)}
         />
@@ -713,7 +714,7 @@ const FileTransferInfo: React.FC<any> = ({ file, uploadLimit }) => {
 }
 
 // TODO: Code refactoring and improvements (remove duplication, create ad-hoc components, ...)
-const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => {
+const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit, accountName }) => {
   const [uploading, setUploading] = useState(false)
   const [fileToUploadSelected, setFileToUploadSelected] = useState<any | null>(null)
   const [fileTransferUploadResult, setFileTransferUploadResult] = useState<any | null>(null)
@@ -722,7 +723,7 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
   const [uploadError, setUploadError] = useState<HttpErrorResponse | null>(null)
   const singleDraggableFileUploadRef = useRef<any>(null)
   const [formValues, setFormValues] = useState({
-    account: '',
+    account: accountName,
   })
 
   const isFileSizeOk = (file: any) => {
@@ -831,8 +832,9 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
             type='text'
             name='account'
             value={formValues.account}
+            disabled
             onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
-            className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+            className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
           />
           {/* {showInputValidation({
                   fieldName: 'name',
@@ -955,6 +957,7 @@ const FileListView: React.FC<FileListViewProps> = ({
                 currentPath={currentPath}
                 setLocalError={setLocalError}
                 fileUploadLimit={fileUploadLimit}
+                accountName={accountName}
               />
             )}
 

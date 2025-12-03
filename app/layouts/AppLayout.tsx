@@ -57,7 +57,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   docUrl,
   repoUrl,
 }: AppLayoutProps) => {
-  const [hasHeaderRightSidebar, setHasHeaderRightSidebar] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   const layoutMode = useAppLayoutMode()
   const isFixedRight = layoutMode === 'fixed-right'
@@ -78,12 +77,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             logoPath={logoPath}
           />
           <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
-            <Header
-              setSidebarOpen={setSidebarOpen}
-              authUser={authUser}
-              fixed={true}
-              hasRightSidebar={hasHeaderRightSidebar}
-            />
+            <Header setSidebarOpen={setSidebarOpen} authUser={authUser} fixed={true} />
             <main className='min-h-0 flex flex-1 flex-col pr-[30rem] mt-[4rem]'>
               <Outlet />
             </main>

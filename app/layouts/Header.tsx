@@ -40,7 +40,6 @@ const Header: React.FC<HeaderProps> = ({
         <div className='ml-4 flex items-center gap-4 md:ml-6'>
           {/* Slot to insert additional components */}
           <div id='app-header-slot' className='flex items-center' />
-          {hasRightSidebar && <div className='h-6 w-px bg-gray-300 ml-2 mr-0'></div>}
           {/* Profile dropdown */}
           <Menu as='div' className='relative'>
             <div>

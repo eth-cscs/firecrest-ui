@@ -19,11 +19,12 @@ import api, { ApiTarget } from './api'
 
 export const getJobs = async (
   accessToken: string,
-  system: System,
+  system: string = '',
+  group: string = '',
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
-    const apiResponse = await api.get<GetJobsResponse>(`/compute/${system.name}/jobs`, {
+    const apiResponse = await api.get<GetJobsResponse>(`/compute/${system}/jobs?account=${group}&allusers=false`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

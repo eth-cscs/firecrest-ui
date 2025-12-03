@@ -12,9 +12,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError } from '@remix-run/react'
+import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { redirect } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
@@ -25,6 +24,8 @@ import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
 import { getUserInfo } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
+// contexts
+import { GroupProvider } from '~/contexts/GroupContext'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -33,16 +34,25 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   const systemName = params.systemName!
   logInfoHttp({
-    message: `Compute system ${systemName} index page`,
+    message: `Compute system ${systemName} layout page`,
     request: request,
     extraInfo: { username: auth.user.username },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { group } = await getUserInfo(accessToken, systemName)
-  // Redirect to default account if no account specified
-  return redirect(`/compute/systems/${systemName}/accounts/${group.name}`)
+  const { groups } = await getUserInfo(accessToken, systemName)
+  // Return response
+  return { groups, systemName }
+}
+
+export default function AppComputeIndexRoute() {
+  const { groups, systemName }: any = useLoaderData()
+  return (
+    <GroupProvider groups={groups}>
+      <Outlet />
+    </GroupProvider>
+  )
 }
 
 export function ErrorBoundary() {

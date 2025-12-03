@@ -20,21 +20,22 @@ import api, { ApiTarget } from './api'
 export const getJobs = async (
   accessToken: string,
   system: string = '',
-  group: string = '',
+  account: string = '',
+  allUsers: boolean = false,
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
     const apiResponse = await api.get<GetJobsResponse>(
-      `/compute/${system}/jobs?account=${group}&allusers=false`,
+      `/compute/${system}/jobs?account=${account}&allusers=${allUsers}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       },
     )
-    return { system: system, jobs: apiResponse.jobs, error: undefined }
-  } catch (error) {
-    return { system: system, jobs: [], error: 'unable to fetch jobs' }
+    return { system: system, jobs: apiResponse.jobs ? apiResponse.jobs : [], account:account, allUsers:allUsers, error: undefined }
+  } catch (api_error) {
+    return { system: system, jobs: [], account:account, allUsers:allUsers, error: {message:'Unable to fetch jobs. Downstream status: ' + api_error.statusText}  }
   }
 }
 

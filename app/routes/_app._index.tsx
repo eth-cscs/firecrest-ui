@@ -40,40 +40,16 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
-  const dashboardJobs: GetSystemJobsResponse[] = []
-  await Promise.all(
-    systems.map((system: System) => {
-      return getJobs(accessToken, system.name)
-    }),
-  ).then((systemJobs) => {
-    systemJobs.map((jobResponse: GetSystemJobsResponse) => {
-      if (jobResponse.jobs == null) {
-        dashboardJobs.push(jobResponse)
-      } else {
-        const systemJobs: GetSystemJobsResponse = {
-          ...jobResponse,
-          jobs: jobResponse.jobs.filter((job: Job) => {
-            return (
-              job.status.state === JobStateStatus.RUNNING ||
-              job.status.state === JobStateStatus.PENDING
-            )
-          }),
-        }
-        dashboardJobs.push(systemJobs)
-      }
-    })
-  })
+  
   // Return response (deferred response)
   return {
     systems: systems,
-    dashboardJobs,
   }
 }
 
 export default function AppIndexRoute() {
   const { systems } = useSystem()
-  const { dashboardJobs }: any = useLoaderData()
-  return <DashboardView systems={systems} dashboardJobs={dashboardJobs} />
+  return <DashboardView systems={systems} />
 }
 
 export function ErrorBoundary() {

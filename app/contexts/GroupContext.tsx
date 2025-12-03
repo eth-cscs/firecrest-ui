@@ -6,11 +6,8 @@
 *************************************************************************/
 
 import { createContext, useContext, useState } from 'react'
-
-type Group = {
-  id: string
-  name: string
-}
+// types
+import type { Group } from '~/types/api-status'
 
 type GroupContextValue = {
   groups: Group[]

@@ -5,6 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // styles
@@ -37,7 +38,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
   // Return json
-  return Response.json(
+  return json(
     {
       environment: base.environment,
       appName: base.appName,

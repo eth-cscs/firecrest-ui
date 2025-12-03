@@ -24,11 +24,14 @@ export const getJobs = async (
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
-    const apiResponse = await api.get<GetJobsResponse>(`/compute/${system}/jobs?account=${group}&allusers=false`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+    const apiResponse = await api.get<GetJobsResponse>(
+      `/compute/${system}/jobs?account=${group}&allusers=false`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    })
+    )
     return { system: system, jobs: apiResponse.jobs, error: undefined }
   } catch (error) {
     return { system: system, jobs: [], error: 'unable to fetch jobs' }

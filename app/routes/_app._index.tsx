@@ -43,7 +43,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const dashboardJobs: GetSystemJobsResponse[] = []
   await Promise.all(
     systems.map((system: System) => {
-      return getJobs(accessToken, system)
+      return getJobs(accessToken, system.name)
     }),
   ).then((systemJobs) => {
     systemJobs.map((jobResponse: GetSystemJobsResponse) => {

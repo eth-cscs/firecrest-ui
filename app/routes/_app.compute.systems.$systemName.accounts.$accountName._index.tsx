@@ -46,12 +46,12 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
-  const systemsJobs: GetSystemJobsResponse[] = getJobs(accessToken, systemName.name)
+  const response: GetSystemJobsResponse = await getJobs(accessToken, systemName, accountName)
   // Return response
-  return { systems, systemsJobs }
+  return { systems, systemsJobs: [response] }
 }
 
-export default function AppComputeIndexRoute() {
+export default function AppComputeIandexRoute() {
   const { systems, systemsJobs }: any = useLoaderData()
   return <JobListView systems={systems} systemsJobs={systemsJobs} />
 }

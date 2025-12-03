@@ -6,7 +6,7 @@
 *************************************************************************/
 
 // types
-import type { GetSystemsResponse } from '~/types/api-status'
+import type { GetSystemsResponse, GetUserInfoResponse } from '~/types/api-status'
 // apis
 import api from './api'
 
@@ -15,6 +15,19 @@ export const getSystems = async (
   request: Request | null = null,
 ): Promise<GetSystemsResponse> => {
   const apiResponse = await api.get<GetSystemsResponse>('/status/systems', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  return apiResponse
+}
+
+export const getUserInfo = async (
+  accessToken: string,
+  systemName: string,
+  request: Request | null = null,
+): Promise<GetUserInfoResponse> => {
+  const apiResponse = await api.get<GetUserInfoResponse>(`/status/${systemName}/userinfo`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

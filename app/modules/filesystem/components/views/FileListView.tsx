@@ -856,6 +856,7 @@ interface FileListViewProps {
   fileUploadLimit: number
   error: any
   remoteFsError: any
+  accountName: string
 }
 
 const FileListView: React.FC<FileListViewProps> = ({
@@ -868,6 +869,7 @@ const FileListView: React.FC<FileListViewProps> = ({
   fileUploadLimit,
   error,
   remoteFsError,
+  accountName,
 }: FileListViewProps) => {
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState<any | null>(error)

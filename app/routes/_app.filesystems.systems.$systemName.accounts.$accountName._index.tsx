@@ -23,7 +23,7 @@ import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
 // helpers
 import { getErrorFromData } from '~/helpers/error-helper'
 // apis
-import { getSystems, getUserInfo } from '~/apis/status-api'
+import { getSystems } from '~/apis/status-api'
 import { getOpsLs } from '~/apis/filesystem-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
@@ -47,6 +47,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const accessToken = await getAuthAccessToken(request)
   // Get path params
   const systemName = params.systemName
+  const accountName = params.accountName
   // Get url params
   const url = new URL(request.url)
   const targetPath = url.searchParams.get('targetPath')
@@ -96,13 +97,6 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       throw err
     }
   }
-  let accountName = ''
-  try {
-    const userinfo = await getUserInfo(accessToken, system.name, request)
-    accountName = userinfo.group.name
-  } catch (err) {
-    logger.error('Error determining account name from path', { error: err })
-  }
   // Return response
   return {
     files,
@@ -138,10 +132,10 @@ export default function AppComputeIndexRoute() {
       fileSystem={fileSystem}
       systems={systems}
       username={username}
-      accountName={accountName}
       fileUploadLimit={fileUploadLimit}
       error={getErrorFromData(data)}
       remoteFsError={remoteFsError}
+      accountName={accountName}
     />
   )
 }

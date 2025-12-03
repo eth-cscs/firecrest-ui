@@ -30,13 +30,15 @@ import { getSystems } from '~/apis/status-api'
 import ErrorView from '~/components/views/ErrorView'
 import JobListView from '~/modules/compute/components/views/JobListView'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const auth = await authenticator.isAuthenticated(request, {
     failureRedirect: '/login',
   })
+  const systemName = params.systemName!
+  const accountName = params.accountName!
   logInfoHttp({
-    message: 'Compute index page',
+    message: `Compute system ${systemName} account ${accountName} index page`,
     request: request,
     extraInfo: { username: auth.user.username },
   })
@@ -44,16 +46,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
-  const systemsJobs: GetSystemJobsResponse[] = []
-  await Promise.all(
-    systems.map((system: System) => {
-      return getJobs(accessToken, system)
-    }),
-  ).then((systemJobs) => {
-    systemJobs.map((jobResponse: GetSystemJobsResponse) => {
-      systemsJobs.push(jobResponse)
-    })
-  })
+  const systemsJobs: GetSystemJobsResponse[] = getJobs(accessToken, systemName.name)
   // Return response
   return { systems, systemsJobs }
 }

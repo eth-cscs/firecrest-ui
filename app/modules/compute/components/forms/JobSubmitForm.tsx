@@ -162,6 +162,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
               </label>
               <select
                 name='system'
+                disabled
                 className={classNames(
                   hasErrorForField({
                     fieldName: 'system',
@@ -170,6 +171,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     ? 'border-red-300 focus:border-red-300 focus:ring-red-300'
                     : 'border-gray-300 focus:border-blue-300 focus:ring-blue-300',
                   'mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none ',
+                  'disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed',
                 )}
                 value={formValues.system}
                 onChange={(e) => handleSystemChanged(e.target.value)}

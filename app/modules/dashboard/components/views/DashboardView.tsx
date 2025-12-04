@@ -11,12 +11,10 @@ import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // stats
 import SystemsStatusStat from '~/modules/status/components/stats/SystemsStatusStat'
 
-
 const DashboardView: React.FC<any> = ({ systems }: any) => {
   return (
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
       <SystemsStatusStat systems={systems} />
-     
     </SimpleView>
   )
 }

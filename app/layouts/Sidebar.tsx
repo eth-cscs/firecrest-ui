@@ -35,6 +35,10 @@ import AppLogo from '~/logos/AppLogo'
 import { serviceIconMapper } from '~/mappers/icon-mapper'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
+// helpers
+import { isSystemHealthy } from '~/helpers/system-helper'
+// types
+import { SystemHealtyStatus } from '~/types/api-status'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -59,15 +63,49 @@ const Sidebar: React.FC<any> = ({
   const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
+  const getSystemHealthyStatusDotClass = (systemHealthyStatus: SystemHealtyStatus) => {
+    switch (systemHealthyStatus) {
+      case SystemHealtyStatus.healthy:
+        return 'bg-green-500'
+      case SystemHealtyStatus.degraded:
+        return 'bg-yellow-400'
+      case SystemHealtyStatus.unhealthy:
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-300'
+    }
+  }
+
   const primaryNavigation: any = [
-    { name: LABEL_COMPUTE_TITLE, path: '/compute', icon: serviceIconMapper('compute'),
-      children: systems.map(system => ({ name: system.name, path: '/compute/systems/'+system.name }))
+    {
+      name: LABEL_COMPUTE_TITLE,
+      path: '/compute',
+      icon: serviceIconMapper('compute'),
+      children: systems.map((system) => {
+        const systemHealthyStatus = isSystemHealthy(system)
+        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+        return {
+          name: system.name,
+          path: '/compute/systems/' + system.name,
+          systemHealthyStatus: systemHealthyStatus,
+          disabled: disabled,
+        }
+      }),
     },
     {
       name: LABEL_FILESYSTEM_TITLE,
       path: '/filesystems',
       icon: serviceIconMapper('filesystem'),
-      children: systems.map(system => ({ name: system.name, path: '/filesystems/systems/'+system.name }))
+      children: systems.map((system) => {
+        const systemHealthyStatus = isSystemHealthy(system)
+        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+        return {
+          name: system.name,
+          path: '/compute/systems/' + system.name,
+          systemHealthyStatus: systemHealthyStatus,
+          disabled: disabled,
+        }
+      }),
     },
   ]
 
@@ -220,7 +258,7 @@ const Sidebar: React.FC<any> = ({
                                       aria-hidden='true'
                                     />
                                   </DisclosureButton>
-                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                  {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
                                     {item.children.map((subItem: any) => (
                                       <li key={`link-${subItem.path}`}>
                                         <DisclosureButton
@@ -237,6 +275,41 @@ const Sidebar: React.FC<any> = ({
                                         </DisclosureButton>
                                       </li>
                                     ))}
+                                  </DisclosurePanel> */}
+                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                    {item.children.map((subItem: any) => {
+                                      const isDisabled = subItem.disabled
+                                      const statusDotClass = getSystemHealthyStatusDotClass(
+                                        subItem.systemHealthyStatus,
+                                      )
+                                      return (
+                                        <li key={`link-${subItem.path}`}>
+                                          <DisclosureButton
+                                            as={isDisabled ? 'div' : 'a'}
+                                            href={isDisabled ? 'undefined' : subItem.path}
+                                            disabled={isDisabled}
+                                            className={classNames(
+                                              'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                              isDisabled
+                                                ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                                : isCurrentRootPath({
+                                                      currentRootPath: subItem.path,
+                                                    })
+                                                  ? 'bg-gray-100 text-gray-900'
+                                                  : 'hover:bg-gray-100 text-gray-900',
+                                            )}
+                                          >
+                                            <span>{subItem.name}</span>
+                                            <span
+                                              className={classNames(
+                                                'ml-3 h-2.5 w-2.5 rounded-full',
+                                                statusDotClass,
+                                              )}
+                                            />
+                                          </DisclosureButton>
+                                        </li>
+                                      )
+                                    })}
                                   </DisclosurePanel>
                                 </>
                               )}
@@ -372,22 +445,37 @@ const Sidebar: React.FC<any> = ({
                                 />
                               </DisclosureButton>
                               <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                {item.children.map((subItem: any) => (
-                                  <li key={`link-${subItem.path}`}>
-                                    <DisclosureButton
-                                      as='a'
-                                      href={subItem.path}
-                                      className={classNames(
-                                        isCurrentRootPath({ currentRootPath: subItem.path })
-                                          ? 'bg-gray-100'
-                                          : 'hover:bg-gray-100',
-                                        'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-900',
-                                      )}
-                                    >
-                                      {subItem.name}
-                                    </DisclosureButton>
-                                  </li>
-                                ))}
+                                {item.children.map((subItem: any) => {
+                                  const isDisabled = subItem.disabled
+                                  const statusDotClass = getSystemHealthyStatusDotClass(
+                                    subItem.systemHealthyStatus,
+                                  )
+                                  return (
+                                    <li key={`link-${subItem.path}`}>
+                                      <DisclosureButton
+                                        as={isDisabled ? 'div' : 'a'}
+                                        href={isDisabled ? undefined : subItem.path}
+                                        disabled={isDisabled}
+                                        className={classNames(
+                                          'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                          isDisabled
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                            : isCurrentRootPath({ currentRootPath: subItem.path })
+                                              ? 'bg-gray-100 text-gray-900'
+                                              : 'hover:bg-gray-100 text-gray-900',
+                                        )}
+                                      >
+                                        <span>{subItem.name}</span>
+                                        <span
+                                          className={classNames(
+                                            'ml-3 h-2.5 w-2.5 rounded-full',
+                                            statusDotClass,
+                                          )}
+                                        />
+                                      </DisclosureButton>
+                                    </li>
+                                  )
+                                })}
                               </DisclosurePanel>
                             </>
                           )}

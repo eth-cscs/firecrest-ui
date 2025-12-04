@@ -7,15 +7,13 @@
 
 import { createContext, useContext, useState } from 'react'
 
-type System = {
-  id: string
-  name: string
-}
+// types
+import type { System } from '~/types/api-status'
 
 type SystemContextValue = {
   systems: System[]
   selectedSystem: System | null
-  setSelectedSystemId: (id: string) => void
+  setSelectedSystemName: (name: string) => void
 }
 
 const SystemContext = createContext<SystemContextValue | undefined>(undefined)
@@ -26,14 +24,14 @@ export function SystemProvider({
   systems: System[]
   children: React.ReactNode
 }) {
-  const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null)
-  const selectedSystem = systems.find((g) => g.id === selectedSystemId) ?? systems[0] ?? null
+  const [selectedSystemName, setSelectedSystemName] = useState<string | null>(null)
+  const selectedSystem = systems.find((g) => g.name === selectedSystemName) ?? systems[0] ?? null
   return (
     <SystemContext.Provider
       value={{
         systems,
         selectedSystem,
-        setSelectedSystemId,
+        setSelectedSystemName,
       }}
     >
       {children}

@@ -39,18 +39,20 @@ export const buildFileSystemSelectionPath = (fileSystem: FileSystem, username: s
 export const buildFileSystemNavigationPath = (
   systemName: string,
   currentPath: string,
+  accountName: string,
   additionalPath: string | null = null,
 ) => {
   if (additionalPath === null || _.isEmpty(additionalPath)) {
-    return `/filesystems/${systemName}/?targetPath=${currentPath}`
+    return `/filesystems/systems/${systemName}/accounts/${accountName}/?targetPath=${currentPath}`
   }
-  return `/filesystems/${systemName}/?targetPath=${currentPath}/${additionalPath}`
+  return `/filesystems/systems/${systemName}/accounts/${accountName}/?targetPath=${currentPath}/${additionalPath}`
 }
 
 export const buildBreadcrumbNavigation = (
   currentPath: string,
   fileSystemPath: string,
   systemName: string,
+  accountName: string,
 ) => {
   if (!currentPath || currentPath.trim() === '') {
     return []
@@ -64,7 +66,7 @@ export const buildBreadcrumbNavigation = (
       dirName: pathSegment,
       path: path,
       isBasePath: path === fileSystemPath,
-      navUrl: buildFileSystemNavigationPath(systemName, path),
+      navUrl: buildFileSystemNavigationPath(systemName, path, accountName),
     })
   })
   return navigationStructure

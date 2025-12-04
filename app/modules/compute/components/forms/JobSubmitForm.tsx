@@ -34,6 +34,8 @@ import BaseSlideOver from '~/components/overlays/BaseSliderOver'
 interface FormData {
   systems: [System]
   username: string
+  accountName: string
+  systemName: string
 }
 
 interface JobSubmitFormData {
@@ -50,12 +52,12 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const [file, setFile] = useState<any>(null)
   const [isOpenTargetBrowse, setIsOpenTargetBrowse] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { systems, username } = formData
+  const { systems, username, systemName, accountName } = formData
   const formErrorFields = getFormErrorFieldsFromError(formError)
   const [formValues, setFormValues] = useState({
-    system: '',
+    system: systemName,
+    accountName: accountName,
     workingDirectory: '',
-    // advanced options
     standardInput: '',
     standardOutput: '',
     standardError: '',
@@ -63,10 +65,18 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   })
 
   useEffect(() => {
-    if (formValues.system == '') {
+    if (formValues.system) {
       const healthySystems = getHealthySchedulerSystems(systems)
-      if (healthySystems && healthySystems.length > 0) {
-        handleSystemChanged(healthySystems[0].name)
+      const system = healthySystems.find((system: System) => system.name == formValues.system)
+      const homeDirs = system?.fileSystems.filter((fileSystem: FileSystem) => {
+        return fileSystem.defaultWorkDir
+      })
+      if (homeDirs && homeDirs.length > 0) {
+        const homeDir: FileSystem = homeDirs[0]
+        const homeDirPath = `${homeDir.path}/${username}/`
+        setFormValues({ ...formValues, workingDirectory: homeDirPath, system: formValues.system })
+      } else {
+        setFormValues({ ...formValues, system: formValues.system })
       }
     }
   }, [])
@@ -91,29 +101,12 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
     setFile(file)
   }
 
-  const handleSystemChanged = (systemName: any) => {
-    if (systemName === '') {
-      setFormValues({ ...formValues, workingDirectory: '', system: '' })
-    } else {
-      const system = systems.find((system: System) => system.name == systemName)
-      const homeDirs = system?.fileSystems.filter((fileSystem: FileSystem) => {
-        return fileSystem.defaultWorkDir
-      })
-      if (homeDirs && homeDirs.length > 0) {
-        const homeDir: FileSystem = homeDirs[0]
-        const homeDirPath = `${homeDir.path}/${username}/`
-        setFormValues({ ...formValues, workingDirectory: homeDirPath, system: systemName })
-      } else {
-        setFormValues({ ...formValues, system: systemName })
-      }
-    }
-  }
-
   const handlReset = () => {
     setFile(null)
     setFormValues({
       ...formValues,
-      system: '',
+      system: systemName,
+      accountName: accountName,
       workingDirectory: '',
       standardInput: '',
       standardOutput: '',
@@ -151,47 +144,18 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       </BaseSlideOver>
       <div className='sm:overflow-hidden'>
         <div>
-          {/* <div className='mb-6'>
-            <h2 className='text-lg font-medium leading-6 text-gray-900'>Project details</h2>
-            <p className='mt-1 text-sm text-gray-500'>Fill the form to proceed with ...</p>
-          </div> */}
           <div className='grid grid-cols-6 gap-6'>
             <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='system' className='block text-sm font-medium text-gray-700'>
-                System <span className='italic text-red-400'>*</span>
+                System <span className='italic text-red-400'>:</span>
               </label>
-              <select
+              <input
+                type='text'
                 name='system'
-                className={classNames(
-                  hasErrorForField({
-                    fieldName: 'system',
-                    formErrorFields: formErrorFields,
-                  })
-                    ? 'border-red-300 focus:border-red-300 focus:ring-red-300'
-                    : 'border-gray-300 focus:border-blue-300 focus:ring-blue-300',
-                  'mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none ',
-                )}
                 value={formValues.system}
-                onChange={(e) => handleSystemChanged(e.target.value)}
-              >
-                <option value=''>Please select a system...</option>
-                {systems &&
-                  systems.length > 0 &&
-                  systems.map((system: any) => (
-                    <option
-                      key={system.name}
-                      value={system.name}
-                      disabled={!isSystemHealthyByServiceType(system, ServiceType.scheduler)}
-                    >
-                      {system.name} ({system.ssh.host}){' '}
-                      {`${isSystemHealthyByServiceType(system, ServiceType.scheduler) ? '' : ' - unhealthy'}`}
-                    </option>
-                  ))}
-              </select>
-              {showInputValidation({
-                fieldName: 'system',
-                formErrorFields: formErrorFields,
-              })}
+                readOnly
+                className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
+              />
             </div>
             <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
@@ -200,6 +164,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
               <input
                 type='text'
                 name='account'
+                value={formData.accountName}
                 className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
               />
               {showInputValidation({

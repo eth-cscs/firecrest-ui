@@ -99,6 +99,22 @@ export interface GetSystemsResponse {
   systems: System[]
 }
 
+export interface User {
+  id: string
+  name: string
+}
+
+export interface Group {
+  id: string
+  name: string
+}
+
+export interface UserInfo {
+  user: User
+  group: Group
+  groups: Group[]
+}
+
 export interface FileSystemModel {
   description: string
   name: string
@@ -110,3 +126,5 @@ export interface FileSystemModel {
 export type GetStatusFilesystemResponse = {
   [key: string]: FileSystemModel[]
 }
+
+export interface GetUserInfoResponse extends UserInfo {}

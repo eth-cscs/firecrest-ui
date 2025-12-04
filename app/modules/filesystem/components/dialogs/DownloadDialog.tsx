@@ -22,6 +22,7 @@ import { postLocalTransferDownload } from '~/apis/filesystem-api'
 interface DownloadDialogProps {
   system: string
   file: File
+  accountName: string
   currentPath?: string
   open: boolean
   onClose: () => void
@@ -30,6 +31,7 @@ interface DownloadDialogProps {
 const DownloadDialog: React.FC<DownloadDialogProps> = ({
   system,
   file,
+  accountName,
   currentPath = undefined,
   open,
   onClose,
@@ -40,7 +42,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [formValues, setFormValues] = useState({
-    account: '',
+    account: accountName,
   })
 
   useEffect(() => {
@@ -105,8 +107,10 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                   <input
                     type='text'
                     name='account'
+                    value={formValues.account}
                     onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
-                    className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+                    disabled
+                    className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
                   />
                 </div>
               )}

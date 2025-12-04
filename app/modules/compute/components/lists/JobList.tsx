@@ -56,7 +56,9 @@ const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className =
 }
 
 interface JobTableRowProps {
-  systemJob: SystemJob
+  job: Job
+  system: string
+  account: string
 }
 
 enum DisplayField {
@@ -75,14 +77,13 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
-const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
-  const { job, system } = systemJob
 
   const goToDetails = (jobId: number) => {
-    navigate(`/compute/systems/${system.name}/jobs/${jobId}`)
+    navigate(`/compute/systems/${system}/accounts/${account}/jobs/${jobId}`)
   }
 
   return (
@@ -103,7 +104,6 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps
       <td className='py-3 align-top tabular-nums text-gray-700'>
         <div className='truncate font-medium text-gray-900 mb-3  text-sm'>{job.name}</div>
         <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
-        <div className='truncate text-gray-500 text-xs'>System: {system.name}</div>
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>
         {job.account !== '' ? (
@@ -189,70 +189,72 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ systemJob }: JobTableRowProps
   )
 }
 
-const JobsTable: React.FC<any> = ({ systemsJobs }: any) => {
-  if (systemsJobs.length <= 0) {
+const JobsTable: React.FC<any> = ({ jobs }: any) => {
+  const onChangeHandler = (event: any) => {
+    window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
+  }
+
+  if (jobs.length <= 0) {
     return <AlertInfo message='Job/s not found' />
   }
   return (
-    <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
-      <colgroup>
-        <col className='lg:w-3/12' />
-        <col className='lg:w-3/12' />
-        <col className='lg:w-3/12' />
-        <col className='lg:w-3/12' />
-        <col className='lg:w-3/12' />
-      </colgroup>
-      <thead className='border-b border-gray-200 text-gray-900'>
-        <tr>
-          <th scope='col' className='px-0 py-3 font-semibold'>
-            Status
-          </th>
-          <th scope='col' className='px-0 py-3 font-semibold'>
-            Job
-          </th>
-          <th scope='col' className='px-0 py-3 font-semibold'>
-            Account
-          </th>
-          <th scope='col' className='px-0 py-3 font-semibold'>
-            Info
-          </th>
-          <th scope='col' className='px-0 py-3 font-semibold'></th>
-        </tr>
-      </thead>
-      <tbody>
-        {systemsJobs.map((systemJob: SystemJob) => (
-          <JobTableRow
-            key={`${systemJob.system.name}-${systemJob.job.jobId}`}
-            systemJob={systemJob}
-          />
-        ))}
-      </tbody>
-    </table>
+    <>
+      <label className='inline-flex items-center cursor-pointer'>
+        <input
+          type='checkbox'
+          defaultChecked={jobs.allUsers}
+          value=''
+          className='sr-only peer'
+          onChange={onChangeHandler}
+        />
+        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+        <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
+      </label>
+      <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
+        <colgroup>
+          <col className='lg:w-3/12' />
+          <col className='lg:w-3/12' />
+          <col className='lg:w-3/12' />
+          <col className='lg:w-3/12' />
+          <col className='lg:w-3/12' />
+        </colgroup>
+        <thead className='border-b border-gray-200 text-gray-900'>
+          <tr>
+            <th scope='col' className='px-0 py-3 font-semibold'>
+              Status
+            </th>
+            <th scope='col' className='px-0 py-3 font-semibold'>
+              Job
+            </th>
+            <th scope='col' className='px-0 py-3 font-semibold'>
+              Account
+            </th>
+            <th scope='col' className='px-0 py-3 font-semibold'>
+              Info
+            </th>
+            <th scope='col' className='px-0 py-3 font-semibold'></th>
+          </tr>
+        </thead>
+        <tbody>
+          {jobs.jobs.map((job: Job) => (
+            <JobTableRow
+              system={jobs.system}
+              key={`${job.jobId}`}
+              job={job}
+              account={jobs.account}
+            />
+          ))}
+        </tbody>
+      </table>
+    </>
   )
 }
 
-const SystemJobList: React.FC<any> = ({ systems, systemsJobs }) => {
-  const unavailableSystems = systems.filter((system: any) =>
-    system.servicesHealth?.some((service: any) => service.healthy === false),
-  )
-  const listOfSystemJob = systemsJobs
-    .filter((systemJobs: any) => {
-      return !systemJobs.error || systemJobs.error === null
-    })
-    .flatMap((systemJobs: any) => {
-      if (systemJobs.jobs === null) {
-        return []
-      }
-      return systemJobs.jobs.map((job: any) => ({
-        system: systemJobs.system,
-        job: job,
-      }))
-    })
-    .sort((a: any, b: any) => b.job.time.start - a.job.time.start)
+const SystemJobList: React.FC<any> = ({ jobs }) => {
+  jobs.jobs = jobs.jobs.sort((a: any, b: any) => b.time.start - a.time.start)
   return (
     <>
-      <UnavailableSystemAlert unavailableSystems={unavailableSystems} className='mb-6' />
-      <JobsTable systemsJobs={listOfSystemJob} />
+      <JobsTable jobs={jobs} />
     </>
   )
 }

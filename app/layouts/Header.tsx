@@ -14,12 +14,14 @@ interface HeaderProps {
   setSidebarOpen: (open: boolean) => void
   authUser: any
   fixed?: boolean
+  hasRightSidebar?: boolean
 }
 
 const Header: React.FC<HeaderProps> = ({
   setSidebarOpen,
   authUser,
   fixed = false,
+  hasRightSidebar = false,
 }: HeaderProps) => {
   return (
     <div
@@ -35,11 +37,13 @@ const Header: React.FC<HeaderProps> = ({
       </button>
       <div className='flex-1 px-4 flex justify-between'>
         <div className='flex-1 flex'></div>
-        <div className='ml-4 flex items-center md:ml-6'>
+        <div className='ml-4 flex items-center gap-4 md:ml-6'>
+          {/* Slot to insert additional components */}
+          <div id='app-header-slot' className='flex items-center' />
           {/* Profile dropdown */}
-          <Menu as='div' className='ml-3 relative'>
+          <Menu as='div' className='relative'>
             <div>
-              <Menu.Button className='max-w-xs bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 lg:p-2 lg:rounded-md lg:hover:bg-gray-50'>
+              <Menu.Button className='max-w-xs bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 lg:py-2 lg:rounded-md lg:hover:bg-gray-50'>
                 <span className='hidden ml-3 text-gray-700 text-sm font-medium lg:block'>
                   <span className='sr-only'>Open user menu for </span>
                   <span>

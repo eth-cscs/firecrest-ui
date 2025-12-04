@@ -42,16 +42,18 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
+  // Get path params
+  const groupId = params.accountName || null
   // Call api/s and fetch data
   const { groups } = await getUserInfo(accessToken, systemName)
   // Return response
-  return { groups, systemName }
+  return { groups, groupId, systemName }
 }
 
 export default function AppComputeIndexRoute() {
-  const { groups, systemName }: any = useLoaderData()
+  const { groups, groupId, systemName }: any = useLoaderData()
   return (
-    <GroupProvider groups={groups}>
+    <GroupProvider groups={groups} groupId={groupId}>
       <GroupSwitcherPortal systemName={systemName} basePath='/compute' />
       <Outlet />
     </GroupProvider>

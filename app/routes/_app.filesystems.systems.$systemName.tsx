@@ -5,13 +5,6 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-/*************************************************************************
- Copyright (c) 2025, ETH Zurich. All rights reserved.
-
-  Please, refer to the LICENSE file in the root directory.
-  SPDX-License-Identifier: BSD-3-Clause
-*************************************************************************/
-
 import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
@@ -42,16 +35,18 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
+  // Get path params
+  const groupId = params.accountName || null
   // Call api/s and fetch data
   const { groups } = await getUserInfo(accessToken, systemName)
   // Return response
-  return { groups, systemName }
+  return { groups, groupId, systemName }
 }
 
 export default function AppFilesystemsIndexRoute() {
-  const { groups, systemName }: any = useLoaderData()
+  const { groups, systemName, groupId }: any = useLoaderData()
   return (
-    <GroupProvider groups={groups}>
+    <GroupProvider groups={groups} groupId={groupId}>
       <GroupSwitcherPortal systemName={systemName} basePath='/filesystems' />
       <Outlet />
     </GroupProvider>

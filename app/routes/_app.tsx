@@ -24,13 +24,15 @@ import { SystemProvider } from '~/contexts/SystemContext'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const auth = await authenticator.isAuthenticated(request, {
     failureRedirect: '/login',
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
+  // Get path params
+  const systemName = params.systemName || null
   // Create a headers object
   const headers = new Headers()
   // Get notification messages
@@ -51,6 +53,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
       authUser: auth.user,
       notificationMessages: notificationMessages,
       systems: systems,
+      systemName,
     },
     {
       headers: headers,
@@ -72,9 +75,10 @@ export default function AppLayoutRoute() {
     authUser,
     notificationMessages,
     systems,
+    systemName,
   }: any = data
   return (
-    <SystemProvider systems={systems}>
+    <SystemProvider systems={systems} systemName={systemName}>
       <AppLayout
         appName={appName}
         environment={environment}

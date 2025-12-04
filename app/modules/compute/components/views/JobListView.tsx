@@ -42,7 +42,6 @@ const JobListView: React.FC<any> = ({ jobs }) => {
       </Link>
     </>
   )
-
   return (
     <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
       <SimplePanel title={'List of jobs'} className='mb-4' actionsButtons={actionsButtons}>

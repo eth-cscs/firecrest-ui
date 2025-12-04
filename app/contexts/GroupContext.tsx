@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 // types
 import type { Group } from '~/types/api-status'
 
@@ -18,13 +18,29 @@ type GroupContextValue = {
 const GroupContext = createContext<GroupContextValue | undefined>(undefined)
 export function GroupProvider({
   groups,
+  groupId,
   children,
 }: {
   groups: Group[]
+  groupId?: string | null
   children: React.ReactNode
 }) {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const selectedGroup = groups.find((g) => g.id === selectedGroupId) ?? groups[0] ?? null
+
+  useEffect(() => {
+    if (groups.length === 0) {
+      setSelectedGroupId(null)
+      return
+    }
+    if (groupId) {
+      const selectedGroupCheck = groups.find((g) => g.id === groupId) ?? groups[0] ?? null
+      if (selectedGroupCheck) {
+        setSelectedGroupId(selectedGroupCheck.id)
+      }
+    }
+  }, [groups, groupId])
+
   return (
     <GroupContext.Provider
       value={{

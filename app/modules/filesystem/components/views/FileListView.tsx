@@ -601,22 +601,6 @@ const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
             </option>
           ))}
         </optgroup>
-        {/* {systems &&
-          systems.length > 0 &&
-          systems.map((itemSystem: System) => (
-            <optgroup key={itemSystem.name} label={itemSystem.name}>
-              {itemSystem.fileSystems.map((itemFileSystem: FileSystem) => (
-                <option
-                  key={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  value={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  disabled={!isFileSystemHealthy(itemSystem, itemFileSystem)}
-                >
-                  {`${itemSystem.name} - ${buildFileSystemSelectionPath(itemFileSystem, username)}`}{' '}
-                  {`${isFileSystemHealthy(itemSystem, itemFileSystem) ? '' : ' - unhealthy'}`}
-                </option>
-              ))}
-            </optgroup>
-          ))} */}
       </select>
     </div>
   )

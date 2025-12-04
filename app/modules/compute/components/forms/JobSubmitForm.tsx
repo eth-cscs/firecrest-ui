@@ -34,6 +34,8 @@ import BaseSlideOver from '~/components/overlays/BaseSliderOver'
 interface FormData {
   systems: [System]
   username: string
+  accountName: string
+  systemName: string
 }
 
 interface JobSubmitFormData {
@@ -50,10 +52,10 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const [file, setFile] = useState<any>(null)
   const [isOpenTargetBrowse, setIsOpenTargetBrowse] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { systems, username } = formData
+  const { systems, username, systemName, accountName } = formData
   const formErrorFields = getFormErrorFieldsFromError(formError)
   const [formValues, setFormValues] = useState({
-    system: '',
+    system: systemName,
     workingDirectory: '',
     // advanced options
     standardInput: '',
@@ -68,6 +70,8 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       if (healthySystems && healthySystems.length > 0) {
         handleSystemChanged(healthySystems[0].name)
       }
+    } else {
+      handleSystemChanged(systemName)
     }
   }, [])
 
@@ -151,14 +155,10 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       </BaseSlideOver>
       <div className='sm:overflow-hidden'>
         <div>
-          {/* <div className='mb-6'>
-            <h2 className='text-lg font-medium leading-6 text-gray-900'>Project details</h2>
-            <p className='mt-1 text-sm text-gray-500'>Fill the form to proceed with ...</p>
-          </div> */}
           <div className='grid grid-cols-6 gap-6'>
             <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='system' className='block text-sm font-medium text-gray-700'>
-                System <span className='italic text-red-400'>*</span>
+                System <span className='italic text-red-400'>:</span>
               </label>
               <select
                 name='system'
@@ -200,6 +200,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
               <input
                 type='text'
                 name='account'
+                value={formData.accountName}
                 className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
               />
               {showInputValidation({

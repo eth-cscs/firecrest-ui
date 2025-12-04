@@ -40,10 +40,10 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
   basePath,
 }: GroupSwitcherProps) => {
   const navigate = useNavigate()
-  const { groups, selectedGroup, setSelectedGroupId } = useGroup()
-  const handleSwitch = (groupId: string) => {
-    setSelectedGroupId(groupId)
-    const group = groups.find((g) => g.id === groupId)
+  const { groups, selectedGroup, setSelectedGroupName } = useGroup()
+  const handleSwitch = (groupName: string) => {
+    setSelectedGroupName(groupName)
+    const group = groups.find((g) => g.name === groupName)
     if (!group || !systemName) return
     navigate(`${basePath}/systems/${systemName}/accounts/${group.name}`)
   }
@@ -52,12 +52,12 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
       <div className='flex items-center gap-2'>
         <span className='text-sm text-gray-600'>Account</span>
         <select
-          value={selectedGroup?.id ?? ''}
+          value={selectedGroup?.name ?? ''}
           onChange={(e) => handleSwitch(e.target.value)}
           className='block rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500 bg-white py-2 pl-2 pr-6 text-sm shadow-sm cursor-pointer'
         >
           {groups.map((g) => (
-            <option key={g.id} value={g.id}>
+            <option key={g.name} value={g.name}>
               {g.name}
             </option>
           ))}

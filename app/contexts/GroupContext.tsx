@@ -12,41 +12,41 @@ import type { Group } from '~/types/api-status'
 type GroupContextValue = {
   groups: Group[]
   selectedGroup: Group | null
-  setSelectedGroupId: (id: string) => void
+  setSelectedGroupName: (name: string) => void
 }
 
 const GroupContext = createContext<GroupContextValue | undefined>(undefined)
 export function GroupProvider({
   groups,
-  groupId,
+  groupName,
   children,
 }: {
   groups: Group[]
-  groupId?: string | null
+  groupName?: string | null
   children: React.ReactNode
 }) {
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const selectedGroup = groups.find((g) => g.id === selectedGroupId) ?? groups[0] ?? null
+  const [selectedGroupName, setSelectedGroupName] = useState<string | null>(null)
+  const selectedGroup = groups.find((g) => g.name === selectedGroupName) ?? groups[0] ?? null
 
   useEffect(() => {
     if (groups.length === 0) {
-      setSelectedGroupId(null)
+      setSelectedGroupName(null)
       return
     }
-    if (groupId) {
-      const selectedGroupCheck = groups.find((g) => g.id === groupId) ?? groups[0] ?? null
+    if (groupName) {
+      const selectedGroupCheck = groups.find((g) => g.name === groupName) ?? groups[0] ?? null
       if (selectedGroupCheck) {
-        setSelectedGroupId(selectedGroupCheck.id)
+        setSelectedGroupName(selectedGroupCheck.name)
       }
     }
-  }, [groups, groupId])
+  }, [groups, groupName])
 
   return (
     <GroupContext.Provider
       value={{
         groups,
         selectedGroup,
-        setSelectedGroupId,
+        setSelectedGroupName,
       }}
     >
       {children}

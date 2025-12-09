@@ -101,7 +101,7 @@ const Sidebar: React.FC<any> = ({
         const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
         return {
           name: system.name,
-          path: '/compute/systems/' + system.name,
+          path: '/filesystems/systems/' + system.name,
           systemHealthyStatus: systemHealthyStatus,
           disabled: disabled,
         }

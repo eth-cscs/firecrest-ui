@@ -231,7 +231,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <option value='stderr'>Job StdErr</option>
           <option value='stdin'>Job StdIn</option>
           <option value='script'>Job Script</option>
-          <option value='resources'>Dashboards</option>
+          {dashboards && dashboards.length > 0 && <option value='resources'>Dashboards</option>}
         </select>
       </div>
       <div className='min-w-0 h-full min-h-0 pt-4 '>
@@ -625,6 +625,8 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       },
     ]
   }
+
+  console.log('JobDetailsConsoleView render', dashboards)
 
   return (
     // <ActiveScrollCtx.Provider value={ctxValue}>

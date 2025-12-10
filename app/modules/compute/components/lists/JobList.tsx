@@ -8,13 +8,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from '@remix-run/react'
 import {
-  ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
-  ArrowRightIcon,
   CalendarIcon,
   ClockIcon,
-  EyeIcon,
   XMarkIcon,
+  CommandLineIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
@@ -102,7 +100,14 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
         </div>
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>
-        <div className='truncate font-medium text-gray-900 mb-3  text-sm'>{job.name}</div>
+        <button
+          type='button'
+          onClick={() => goToDetails(job.jobId)}
+          className='truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
+        >
+          {job.name}
+        </button>
+
         <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>
@@ -140,16 +145,6 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
           onClose={() => setCancelDialogOpen(false)}
         />
         <span className='isolate inline-flex rounded-md shadow-sm'>
-          {/* <SimpleTooltip message={`Show details`} className='right-0 top-9'>
-            <button
-              onClick={() => setDetailsDialogOpen(true)}
-              type='button'
-              className='relative inline-flex items-center rounded-l-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
-            >
-              <span className='sr-only'>Show details</span>
-              <EyeIcon aria-hidden='true' className='h-5 w-5' />
-            </button>
-          </SimpleTooltip> */}
           {!jobCanBeRetried(job) && (
             <SimpleTooltip message={`Retry job subission`} className='right-0 top-9'>
               <button
@@ -180,7 +175,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
               className='relative -ml-px inline-flex items-center rounded-r-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
             >
               <span className='sr-only'>Go to details</span>
-              <ArrowRightIcon aria-hidden='true' className='h-5 w-5' />
+              <CommandLineIcon aria-hidden='true' className='h-5 w-5' />
             </button>
           </SimpleTooltip>
         </span>
@@ -251,7 +246,9 @@ const JobsTable: React.FC<any> = ({ jobs }: any) => {
 }
 
 const SystemJobList: React.FC<any> = ({ jobs }) => {
-  jobs.jobs = jobs.jobs.sort((a: any, b: any) => b.time.start - a.time.start)
+  jobs.jobs = jobs.jobs
+    .sort((a: any, b: any) => b.jobId - a.jobId)
+    .sort((a: any, b: any) => b.time.start - a.time.start)
   return (
     <>
       <JobsTable jobs={jobs} />

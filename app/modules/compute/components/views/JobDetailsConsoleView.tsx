@@ -162,9 +162,11 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
             )}
           </div>
         </AttributesListItem>
-        <AttributesListItem label='StdIn'>{jobMetadata?.standardInput || 'N/A'}</AttributesListItem>
+        <AttributesListItem label='StdIn'>
+          <div className='flex-1 min-w-0 break-words'>{jobMetadata?.standardInput || 'N/A'}</div>
+        </AttributesListItem>
         <AttributesListItem label='Working directory'>
-          {job?.workingDirectory || 'N/A'}
+          <div className='flex-1 min-w-0 break-words'>{job?.workingDirectory || 'N/A'}</div>
         </AttributesListItem>
       </AttributesList>
 

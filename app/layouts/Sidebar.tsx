@@ -76,38 +76,30 @@ const Sidebar: React.FC<any> = ({
     }
   }
 
-  const primaryNavigation: any = [
-    {
-      name: LABEL_COMPUTE_TITLE,
-      path: '/compute',
-      icon: serviceIconMapper('compute'),
-      children: systems.map((system) => {
-        const systemHealthyStatus = isSystemHealthy(system)
-        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
-        return {
-          name: system.name,
-          path: '/compute/systems/' + system.name,
-          systemHealthyStatus: systemHealthyStatus,
-          disabled: disabled,
-        }
-      }),
-    },
-    {
-      name: LABEL_FILESYSTEM_TITLE,
-      path: '/filesystems',
-      icon: serviceIconMapper('filesystem'),
-      children: systems.map((system) => {
-        const systemHealthyStatus = isSystemHealthy(system)
-        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
-        return {
-          name: system.name,
-          path: '/filesystems/systems/' + system.name,
-          systemHealthyStatus: systemHealthyStatus,
-          disabled: disabled,
-        }
-      }),
-    },
-  ]
+  const primaryNavigation: any = systems.map((system) => {
+    const systemHealthyStatus = isSystemHealthy(system)
+    const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+    return {
+      name: system.name,
+      path: '/systems/' + system.name,
+      icon: serviceIconMapper('cluster'),
+      systemHealthyStatus: systemHealthyStatus,
+      disabled: disabled,
+      children: [
+            {
+              name: "Scheduler",
+              path: '/compute/systems/' + system.name,
+              icon: serviceIconMapper('scheduler'),
+            },
+            {
+              name: "Filesystems",
+              path: '/filesystems/systems/' + system.name,
+              icon: serviceIconMapper('filesystem'),
+            }
+
+          ]
+    }
+  })
 
   const secondaryNavigation: any = []
 
@@ -223,7 +215,12 @@ const Sidebar: React.FC<any> = ({
                   </ul>
                   <div className='mt-2 pt-2'>
                     <ul className='space-y-1'>
-                      {primaryNavigation.map((item: any) => (
+                      {primaryNavigation.map((item: any) => {
+                         const statusDotClass = getSystemHealthyStatusDotClass(
+                                        item.systemHealthyStatus,
+                                      )
+                        const isDisabled = item.disabled
+                        return (
                         <li key={`link-${item.path}`}>
                           {'children' in item && item.children ? (
                             <Disclosure
@@ -249,6 +246,12 @@ const Sidebar: React.FC<any> = ({
                                       )}
                                       aria-hidden='true'
                                     />
+                                    <span
+                                              className={classNames(
+                                                'ml-3 h-2.5 w-2.5 rounded-full',
+                                                statusDotClass,
+                                              )}
+                                            />
                                     {item.name}
                                     <ChevronRightIcon
                                       className={classNames(
@@ -278,10 +281,8 @@ const Sidebar: React.FC<any> = ({
                                   </DisclosurePanel> */}
                                   <DisclosurePanel as='ul' className='mt-1 px-2'>
                                     {item.children.map((subItem: any) => {
-                                      const isDisabled = subItem.disabled
-                                      const statusDotClass = getSystemHealthyStatusDotClass(
-                                        subItem.systemHealthyStatus,
-                                      )
+                                      
+                                     
                                       return (
                                         <li key={`link-${subItem.path}`}>
                                           <DisclosureButton
@@ -300,12 +301,6 @@ const Sidebar: React.FC<any> = ({
                                             )}
                                           >
                                             <span>{subItem.name}</span>
-                                            <span
-                                              className={classNames(
-                                                'ml-3 h-2.5 w-2.5 rounded-full',
-                                                statusDotClass,
-                                              )}
-                                            />
                                           </DisclosureButton>
                                         </li>
                                       )
@@ -336,7 +331,7 @@ const Sidebar: React.FC<any> = ({
                             </NavLink>
                           )}
                         </li>
-                      ))}
+                      )})}
                     </ul>
                   </div>
                   <div className='mt-6 pt-6'>
@@ -408,10 +403,16 @@ const Sidebar: React.FC<any> = ({
                 ))}
               </ul>
               <div className='mt-2 pt-2'>
+                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>HPC Clusters</span>
                 <ul className='space-y-1'>
-                  {primaryNavigation.map((item: any) => (
+                  {primaryNavigation.map((item: any) => {
+                    const isDisabled = item.disabled
+                                  const statusDotClass = getSystemHealthyStatusDotClass(
+                                    item.systemHealthyStatus,
+                                  )
+                    return (
                     <li key={`link-${item.path}`}>
-                      {'children' in item && item.children ? (
+                      {'children' in item && item.children  ? (
                         <Disclosure
                           as='div'
                           defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
@@ -435,7 +436,14 @@ const Sidebar: React.FC<any> = ({
                                   )}
                                   aria-hidden='true'
                                 />
+                                <span
+                                          className={classNames(
+                                            ' h-2.5 w-2.5 rounded-full',
+                                            statusDotClass,
+                                          )}
+                                        />
                                 {item.name}
+                                
                                 <ChevronRightIcon
                                   className={classNames(
                                     open ? 'rotate-90 text-gray-500' : 'text-gray-400',
@@ -446,10 +454,7 @@ const Sidebar: React.FC<any> = ({
                               </DisclosureButton>
                               <DisclosurePanel as='ul' className='mt-1 px-2'>
                                 {item.children.map((subItem: any) => {
-                                  const isDisabled = subItem.disabled
-                                  const statusDotClass = getSystemHealthyStatusDotClass(
-                                    subItem.systemHealthyStatus,
-                                  )
+                                  
                                   return (
                                     <li key={`link-${subItem.path}`}>
                                       <DisclosureButton
@@ -457,7 +462,7 @@ const Sidebar: React.FC<any> = ({
                                         href={isDisabled ? undefined : subItem.path}
                                         disabled={isDisabled}
                                         className={classNames(
-                                          'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                          'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
                                           isDisabled
                                             ? 'text-gray-400 cursor-not-allowed opacity-60'
                                             : isCurrentRootPath({ currentRootPath: subItem.path })
@@ -465,13 +470,18 @@ const Sidebar: React.FC<any> = ({
                                               : 'hover:bg-gray-100 text-gray-900',
                                         )}
                                       >
-                                        <span>{subItem.name}</span>
-                                        <span
-                                          className={classNames(
-                                            'ml-3 h-2.5 w-2.5 rounded-full',
-                                            statusDotClass,
-                                          )}
-                                        />
+                                      
+                                      <subItem.icon
+                                        className={classNames(
+                                          isCurrentPath({ currentPath: item.path })
+                                            ? 'text-gray-500'
+                                            : 'text-gray-400 group-hover:text-gray-500',
+                                          'mr-3 flex-shrink-0 h-6 w-6',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                      <span>{subItem.name}</span>
+                                        
                                       </DisclosureButton>
                                     </li>
                                   )
@@ -502,7 +512,7 @@ const Sidebar: React.FC<any> = ({
                         </NavLink>
                       )}
                     </li>
-                  ))}
+                  )})}
                 </ul>
               </div>
               <div className='mt-6 pt-6'>

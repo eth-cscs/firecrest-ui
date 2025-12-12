@@ -10,16 +10,23 @@ import {
   DocumentIcon,
   MinusCircleIcon,
   CommandLineIcon,
+  CpuChipIcon,
+  ForwardIcon
 } from '@heroicons/react/24/outline'
 
 export const serviceIconMapper = (serviceName: string) => {
   switch (serviceName) {
+    
+    case 'cluster':
+      return CpuChipIcon
     case 'status':
       return CheckCircleIcon
     case 'filesystem':
       return DocumentIcon
     case 'compute':
       return CommandLineIcon
+    case 'scheduler':
+      return ForwardIcon
     default:
       return MinusCircleIcon
   }

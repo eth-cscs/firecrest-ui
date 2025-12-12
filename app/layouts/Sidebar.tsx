@@ -60,7 +60,7 @@ const Sidebar: React.FC<any> = ({
   repoUrl = null,
 }: any) => {
   const location = useLocation()
-  const { systems } = useSystem()
+  const { systems, selectedSystem } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
   const getSystemHealthyStatusDotClass = (systemHealthyStatus: SystemHealtyStatus) => {
@@ -79,33 +79,36 @@ const Sidebar: React.FC<any> = ({
   const primaryNavigation: any = [
     {
       name: LABEL_COMPUTE_TITLE,
-      path: '/compute',
+      path: `/compute/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('compute'),
-      children: systems.map((system) => {
-        const systemHealthyStatus = isSystemHealthy(system)
-        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
-        return {
-          name: system.name,
-          path: '/compute/systems/' + system.name,
-          systemHealthyStatus: systemHealthyStatus,
-          disabled: disabled,
-        }
-      }),
+      systemHealthyStatus: isSystemHealthy(selectedSystem!),
+
+      // children: systems.map((system) => {
+      //   const systemHealthyStatus = isSystemHealthy(system)
+      //   const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+      //   return {
+      //     name: system.name,
+      //     path: '/compute/systems/' + system.name,
+      //     systemHealthyStatus: systemHealthyStatus,
+      //     disabled: disabled,
+      //   }
+      // }),
     },
     {
       name: LABEL_FILESYSTEM_TITLE,
-      path: '/filesystems',
+      path: `/filesystems/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('filesystem'),
-      children: systems.map((system) => {
-        const systemHealthyStatus = isSystemHealthy(system)
-        const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
-        return {
-          name: system.name,
-          path: '/filesystems/systems/' + system.name,
-          systemHealthyStatus: systemHealthyStatus,
-          disabled: disabled,
-        }
-      }),
+      systemHealthyStatus: isSystemHealthy(selectedSystem!),
+      //   children: systems.map((system) => {
+      //     const systemHealthyStatus = isSystemHealthy(system)
+      //     const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+      //     return {
+      //       name: system.name,
+      //       path: '/filesystems/systems/' + system.name,
+      //       systemHealthyStatus: systemHealthyStatus,
+      //       disabled: disabled,
+      //     }
+      //   }),
     },
   ]
 
@@ -259,24 +262,6 @@ const Sidebar: React.FC<any> = ({
                                     />
                                   </DisclosureButton>
                                   {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                    {item.children.map((subItem: any) => (
-                                      <li key={`link-${subItem.path}`}>
-                                        <DisclosureButton
-                                          as='a'
-                                          href={subItem.path}
-                                          className={classNames(
-                                            isCurrentRootPath({ currentRootPath: subItem.path })
-                                              ? 'bg-gray-100'
-                                              : 'hover:bg-gray-100',
-                                            'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-900',
-                                          )}
-                                        >
-                                          {subItem.name}
-                                        </DisclosureButton>
-                                      </li>
-                                    ))}
-                                  </DisclosurePanel> */}
-                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
                                     {item.children.map((subItem: any) => {
                                       const isDisabled = subItem.disabled
                                       const statusDotClass = getSystemHealthyStatusDotClass(
@@ -310,7 +295,7 @@ const Sidebar: React.FC<any> = ({
                                         </li>
                                       )
                                     })}
-                                  </DisclosurePanel>
+                                  </DisclosurePanel> */}
                                 </>
                               )}
                             </Disclosure>
@@ -444,7 +429,7 @@ const Sidebar: React.FC<any> = ({
                                   aria-hidden='true'
                                 />
                               </DisclosureButton>
-                              <DisclosurePanel as='ul' className='mt-1 px-2'>
+                              {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
                                 {item.children.map((subItem: any) => {
                                   const isDisabled = subItem.disabled
                                   const statusDotClass = getSystemHealthyStatusDotClass(
@@ -476,7 +461,7 @@ const Sidebar: React.FC<any> = ({
                                     </li>
                                   )
                                 })}
-                              </DisclosurePanel>
+                              </DisclosurePanel> */}
                             </>
                           )}
                         </Disclosure>

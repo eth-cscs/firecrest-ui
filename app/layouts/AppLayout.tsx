@@ -17,7 +17,7 @@ import Footer from './Footer'
 // overlays
 import NotificationOverlay from '~/components/overlays/NotificationOverlay'
 
-type LayoutMode = 'standard' | 'fixed-right'
+type LayoutMode = 'standard' | 'fixed-right' | 'dashboard'
 
 function useAppLayoutMode(): LayoutMode {
   const matches = useMatches()
@@ -25,9 +25,11 @@ function useAppLayoutMode(): LayoutMode {
   for (let i = matches.length - 1; i >= 0; i--) {
     const m = matches[i] as any
     const fromData = m?.data?.layoutMode as LayoutMode | null | undefined
-    if (fromData === 'fixed-right' || fromData === 'standard') return fromData
+    if (fromData === 'fixed-right' || fromData === 'standard' || fromData === 'dashboard')
+      return fromData
     const fromHandle = m?.handle?.layoutMode as LayoutMode | undefined
-    if (fromHandle === 'fixed-right' || fromHandle === 'standard') return fromHandle
+    if (fromHandle === 'fixed-right' || fromHandle === 'standard' || fromHandle === 'dashboard')
+      return fromHandle
   }
   return 'standard'
 }
@@ -59,8 +61,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   const layoutMode = useAppLayoutMode()
-  const isFixedRight = layoutMode === 'fixed-right'
-  if (isFixedRight) {
+  if (layoutMode === 'fixed-right') {
     return (
       <>
         <div className='min-h-full bg-gray-100'>
@@ -87,6 +88,29 @@ const AppLayout: React.FC<AppLayoutProps> = ({
               companyName={companyName}
               fixed={true}
             />
+          </div>
+        </div>
+      </>
+    )
+  } else if (layoutMode === 'dashboard') {
+    return (
+      <>
+        <div className='min-h-full bg-gray-100'>
+          <div className='stacked-notifications'>
+            <NotificationOverlay messages={notificationMessages} />
+          </div>
+          <div className='flex flex-col h-full min-h-screen'>
+            <Header
+              setSidebarOpen={setSidebarOpen}
+              authUser={authUser}
+              withLogo={true}
+              logoPath={logoPath}
+              appName={appName}
+            />
+            <main className='flex-1 min-h-0 overflow-y-auto mt-16'>
+              <Outlet />
+            </main>
+            <Footer environment={environment} appVersion={appVersion} companyName={companyName} />
           </div>
         </div>
       </>

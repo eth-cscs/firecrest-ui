@@ -42,6 +42,8 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   }
 }
 
+export const handle = { layoutMode: 'dashboard' as const }
+
 export default function AppIndexRoute() {
   const { systems } = useSystem()
   return <DashboardView systems={systems} />

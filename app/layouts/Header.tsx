@@ -9,12 +9,17 @@ import React, { Fragment } from 'react'
 import { Link } from '@remix-run/react'
 import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
+// logos
+import AppLogo from '~/logos/AppLogo'
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void
   authUser: any
   fixed?: boolean
   hasRightSidebar?: boolean
+  withLogo?: boolean
+  logoPath?: string | null
+  appName?: string | null
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -22,6 +27,9 @@ const Header: React.FC<HeaderProps> = ({
   authUser,
   fixed = false,
   hasRightSidebar = false,
+  withLogo = false,
+  logoPath = null,
+  appName = '',
 }: HeaderProps) => {
   return (
     <div
@@ -36,7 +44,14 @@ const Header: React.FC<HeaderProps> = ({
         <Bars3BottomLeftIcon className='h-6 w-6' aria-hidden='true' />
       </button>
       <div className='flex-1 px-4 flex justify-between'>
-        <div className='flex-1 flex'></div>
+        <div className='flex-1 flex items-center gap-4'>
+          {withLogo && (
+            <div className='flex items-center'>
+              <AppLogo className='h-12 w-auto' logoPath={logoPath} />
+              <span className='ml-2 pr-5 text-sm font-medium text-gray-700'>{appName}</span>
+            </div>
+          )}
+        </div>
         <div className='ml-4 flex items-center gap-4 md:ml-6'>
           {/* Slot to insert additional components */}
           <div id='app-header-slot' className='flex items-center' />

@@ -7,7 +7,7 @@
 
 import React, { Fragment } from 'react'
 import { Link } from '@remix-run/react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useParams } from 'react-router-dom'
 import {
   Dialog,
   DialogBackdrop,
@@ -49,7 +49,7 @@ interface SidebarProps {
   repoUrl: string | null
 }
 
-const Sidebar: React.FC<any> = ({
+const Sidebar: React.FC<SidebarProps> = ({
   sidebarOpen,
   setSidebarOpen,
   logoPath = null,
@@ -57,9 +57,11 @@ const Sidebar: React.FC<any> = ({
   supportUrl = null,
   docUrl = null,
   repoUrl = null,
-}: any) => {
+}: SidebarProps) => {
   const location = useLocation()
+  const params = useParams()
   const { systems, selectedSystem } = useSystem()
+  const accountName = params?.accountName || null
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
   const getSystemHealthyStatusDotClass = (systemHealthyStatus: SystemHealtyStatus) => {
@@ -78,7 +80,10 @@ const Sidebar: React.FC<any> = ({
   const primaryNavigation: any = [
     {
       name: LABEL_COMPUTE_TITLE,
-      path: `/compute/systems/${selectedSystem?.name}`,
+      path:
+        accountName !== null
+          ? `/compute/systems/${selectedSystem?.name}/accounts/${accountName}`
+          : `/compute/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('compute'),
       systemHealthyStatus: isSystemHealthy(selectedSystem!),
 
@@ -95,7 +100,10 @@ const Sidebar: React.FC<any> = ({
     },
     {
       name: LABEL_FILESYSTEM_TITLE,
-      path: `/filesystems/systems/${selectedSystem?.name}`,
+      path:
+        accountName !== null
+          ? `/filesystems/systems/${selectedSystem?.name}/accounts/${accountName}`
+          : `/filesystems/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('filesystem'),
       systemHealthyStatus: isSystemHealthy(selectedSystem!),
       //   children: systems.map((system) => {

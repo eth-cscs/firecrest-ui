@@ -172,7 +172,7 @@ export const SystemGroupSwitcher: React.FC<{
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder='Search accounts...'
-              className='w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500'
+              className='w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:ring-blue-300'
             />
           </div>
           {(filteredSystems ?? []).map((sys: System) => {

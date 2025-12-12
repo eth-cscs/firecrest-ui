@@ -33,6 +33,8 @@ import { AttributesList, AttributesListItem } from '~/components/lists/Attribute
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
+// components
+import SystemInfo from '~/modules/status/components/stats/SystemInfo'
 
 interface JobDetailsViewProps {
   jobs: Job[]
@@ -139,11 +141,14 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   return (
     <SimpleView size={SimpleViewSize.FULL} className='mb-4'>
       <SimplePanel title='Job details' className='mb-4' actionsButtons={getActionButtons()}>
+        <div className='mb-6'>
+          <SystemInfo system={selectedSystem!} />
+        </div>
         <>
           <AlertError error={localError} />
           <JobCancelDialog
             job={currentJob}
-            system={system}
+            system={selectedSystem?.name}
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
           />
@@ -201,7 +206,9 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
               <AttributesListItem label='Nodes'>{currentJob.nodes}</AttributesListItem>
               <AttributesListItem label='Partition'>{currentJob.partition}</AttributesListItem>
               <AttributesListItem label='Working directory'>
-                {currentJob.workingDirectory}
+                <div className='flex-1 min-w-0 break-words'>
+                  {currentJob.workingDirectory || 'N/A'}
+                </div>
               </AttributesListItem>
             </AttributesList>
           </LeftTitleCard>

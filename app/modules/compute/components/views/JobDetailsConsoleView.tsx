@@ -30,7 +30,8 @@ import { getLocalJob } from '~/apis/compute-api'
 import { getLocalOpsTail, getLocalOpsLs } from '~/apis/filesystem-api'
 // grafana
 import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
-
+// stats
+import SystemInfo from '~/modules/status/components/stats/SystemInfo'
 // contexts
 import { useGroup } from '~/contexts/GroupContext'
 
@@ -223,6 +224,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
       style={{ marginTop: '20px' }}
     >
       <div className='sticky top-16 flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
+        <SystemInfo system={system!} />
         <select
           name='datasource'
           value={activeTab}

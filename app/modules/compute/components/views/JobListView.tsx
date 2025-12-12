@@ -8,7 +8,6 @@
 import React from 'react'
 import { Link } from '@remix-run/react'
 import { PlusIcon } from '@heroicons/react/20/solid'
-import { ArrowPathIcon } from '@heroicons/react/24/outline'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'
 // alerts
@@ -22,6 +21,9 @@ import JobList from '~/modules/compute/components/lists/JobList'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
+
+// stats
+import SystemInfo from '~/modules/status/components/stats/SystemInfo'
 
 const JobListView: React.FC<any> = ({ jobs }) => {
   const { selectedSystem } = useSystem()
@@ -43,9 +45,12 @@ const JobListView: React.FC<any> = ({ jobs }) => {
     </>
   )
   return (
-    <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
-      <SimplePanel title={'List of jobs'} className='mb-4' actionsButtons={actionsButtons}>
+    <SimpleView title={`${LABEL_COMPUTE_TITLE}`} size={SimpleViewSize.FULL}>
+      <SimplePanel title={`List of jobs`} className='mb-4' actionsButtons={actionsButtons}>
         <AlertError error={jobs.error} />
+        <div className='mb-6'>
+          <SystemInfo system={selectedSystem!} />
+        </div>
         <JobList jobs={jobs} />
       </SimplePanel>
     </SimpleView>

@@ -62,6 +62,10 @@ import LoadingButton from '~/components/buttons/LoadingButton'
 import SimplePanel from '~/components/panels/SimplePanel'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
+// stats
+import SystemInfo from '~/modules/status/components/stats/SystemInfo'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
 
 const copyToClipboard = (file: File, fileSystem: FileSystem) => {
   const path = `${fileSystem.path}/${file.name}`
@@ -899,6 +903,7 @@ const FileListView: React.FC<FileListViewProps> = ({
   const [localError, setLocalError] = useState<any | null>(error)
   const [fileList, setFileList] = useState<any | null>(files)
   const [createDirectoryDialogOpen, setCreateDirectoryDialogOpen] = useState(false)
+  const { selectedSystem } = useSystem()
 
   const actionsButtons = (
     <div className='inline-flex rounded-md shadow-sm'>
@@ -922,13 +927,16 @@ const FileListView: React.FC<FileListViewProps> = ({
   console.log('Account Name:', accountName)
 
   return (
-    <SimpleView title='File Manager' size={SimpleViewSize.FULL}>
+    <SimpleView title={`File Manager`} size={SimpleViewSize.FULL}>
       <SimplePanel title={'Filesystem'} className='mb-[330px]' actionsButtons={actionsButtons}>
         <NavigationAlertError
           error={localError}
           isActionError={error !== undefined && error !== null}
         />
         {loading && <LoadingSpinner title='Loading directory content...' className='py-10' />}
+        <div className='mb-6'>
+          <SystemInfo system={selectedSystem!} />
+        </div>
         {!loading && (
           <>
             <div className='mb-4 grid grid-cols-4 gap-6'>

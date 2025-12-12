@@ -86,6 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           : `/compute/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('compute'),
       systemHealthyStatus: isSystemHealthy(selectedSystem!),
+      statusDotClass: getSystemHealthyStatusDotClass(isSystemHealthy(selectedSystem!)),
 
       // children: systems.map((system) => {
       //   const systemHealthyStatus = isSystemHealthy(system)
@@ -106,6 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           : `/filesystems/systems/${selectedSystem?.name}`,
       icon: serviceIconMapper('filesystem'),
       systemHealthyStatus: isSystemHealthy(selectedSystem!),
+      statusDotClass: getSystemHealthyStatusDotClass(isSystemHealthy(selectedSystem!)),
       //   children: systems.map((system) => {
       //     const systemHealthyStatus = isSystemHealthy(system)
       //     const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
@@ -260,6 +262,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                       aria-hidden='true'
                                     />
                                     {item.name}
+                                    <span
+                                      className={classNames(
+                                        'ml-3 h-2.5 w-2.5 rounded-full',
+                                        item.statusDotClass,
+                                      )}
+                                    />
                                     <ChevronRightIcon
                                       className={classNames(
                                         open ? 'rotate-90 text-gray-500' : 'text-gray-400',
@@ -428,6 +436,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   aria-hidden='true'
                                 />
                                 {item.name}
+                                <span
+                                  className={classNames(
+                                    'ml-3 h-2.5 w-2.5 rounded-full',
+                                    item.statusDotClass,
+                                  )}
+                                />
                                 <ChevronRightIcon
                                   className={classNames(
                                     open ? 'rotate-90 text-gray-500' : 'text-gray-400',
@@ -491,6 +505,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                             aria-hidden='true'
                           />
                           {item.name}
+                          <span
+                            className={classNames(
+                              'ml-auto h-2.5 w-2.5 rounded-full',
+                              item.statusDotClass,
+                            )}
+                          />
                         </NavLink>
                       )}
                     </li>
@@ -516,6 +536,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                           aria-hidden='true'
                         />
                         {item.name}
+                        <span
+                          className={classNames(
+                            'ml-auto h-2.5 w-2.5 rounded-full',
+                            item.statusDotClass,
+                          )}
+                        />
                       </Link>
                     </li>
                   ))}

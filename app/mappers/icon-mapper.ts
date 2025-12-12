@@ -7,9 +7,9 @@
 
 import {
   CheckCircleIcon,
-  CpuChipIcon,
   DocumentIcon,
   MinusCircleIcon,
+  CommandLineIcon,
 } from '@heroicons/react/24/outline'
 
 export const serviceIconMapper = (serviceName: string) => {
@@ -19,7 +19,7 @@ export const serviceIconMapper = (serviceName: string) => {
     case 'filesystem':
       return DocumentIcon
     case 'compute':
-      return CpuChipIcon
+      return CommandLineIcon
     default:
       return MinusCircleIcon
   }

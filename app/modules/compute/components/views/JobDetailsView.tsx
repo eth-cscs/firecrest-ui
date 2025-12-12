@@ -30,6 +30,9 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 import LeftTitleCard from '~/components/cards/LeftTitleCard'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
+import { useGroup } from '~/contexts/GroupContext'
 
 interface JobDetailsViewProps {
   jobs: Job[]
@@ -80,6 +83,8 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   const [localError, setLocalError] = useState<any>(error)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const navigate = useNavigate()
+  const { selectedSystem } = useSystem()
+  const { selectedGroup } = useGroup()
 
   useEffect(() => {
     setLocalError(error ?? null)
@@ -90,7 +95,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   }
 
   const handleNavigateBack = () => {
-    navigate('/compute')
+    navigate(`/compute/systems/${selectedSystem?.name}/accounts/${selectedGroup?.name}/`)
   }
 
   const getActionButtons = () => {

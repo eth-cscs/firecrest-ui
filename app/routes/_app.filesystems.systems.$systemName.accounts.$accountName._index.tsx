@@ -13,8 +13,7 @@ import logger from '~/logger/logger'
 // helpers
 import {
   searchSystemByName,
-  searchFileSystemByPath,
-  getDefaultFileSystemFromSystem,
+  getFileSystemByTargetPath,
 } from '~/modules/status/helpers/system-helper'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
@@ -46,12 +45,11 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Get path params
-  const systemName = params.system
+  const systemName = params.systemName
+  const accountName = params.accountName
   // Get url params
   const url = new URL(request.url)
   const targetPath = url.searchParams.get('targetPath')
-  // Local variables
-  let path = targetPath
   // Validate system name
   if (systemName === undefined || _.isEmpty(systemName)) {
     throw new Error('System not specified')
@@ -66,22 +64,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   // Get system
   const system = searchSystemByName(activeSystems, systemName)
   // Get file system & path
-  let fileSystem = null
-  if (targetPath === undefined || _.isEmpty(targetPath)) {
-    fileSystem = getDefaultFileSystemFromSystem(system)
-    if (fileSystem) {
-      path = fileSystem.path
-      if (fileSystem.defaultWorkDir) {
-        path = `${fileSystem.path}/${auth.user.username}`
-      }
-    }
-  } else {
-    fileSystem = searchFileSystemByPath(system.fileSystems, path!, false)
-  }
-  // Validation
-  if (system === null || fileSystem === null) {
-    throw new Error('Filesystem(s) configuration error')
-  }
+  const { fileSystem, path } = getFileSystemByTargetPath(system, targetPath, auth.user.username)
   // Call api/s and fetch data
   let files: File[] = []
   let remoteFsError: any = null
@@ -106,6 +89,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     username: auth.user.username,
     fileUploadLimit: uiConfig.fileUploadLimit,
     remoteFsError: remoteFsError,
+    accountName,
   }
 }
 
@@ -120,6 +104,7 @@ export default function AppComputeIndexRoute() {
     username,
     fileUploadLimit,
     remoteFsError,
+    accountName,
   }: any = useLoaderData()
   return (
     <FileListView
@@ -132,6 +117,7 @@ export default function AppComputeIndexRoute() {
       fileUploadLimit={fileUploadLimit}
       error={getErrorFromData(data)}
       remoteFsError={remoteFsError}
+      accountName={accountName}
     />
   )
 }

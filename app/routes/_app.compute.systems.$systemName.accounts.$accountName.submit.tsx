@@ -31,7 +31,7 @@ import { validateJob } from '~/validations/computeValidation'
 import ErrorView from '~/components/views/ErrorView'
 import JobSubmitView from '~/modules/compute/components/views/JobSubmitView'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const auth = await authenticator.isAuthenticated(request, {
     failureRedirect: '/login',
@@ -43,6 +43,9 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
+  // Get params
+  const systemName = params.systemName!
+  const accountName = params.accountName!
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
   // Return response (deferred response)
@@ -50,17 +53,22 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
     formData: {
       systems: systems,
       username: auth.user.username,
+      systemName: systemName,
+      accountName: accountName,
     },
   }
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  // Get params
+  const systemName = params.systemName!
+  const accountName = params.accountName!
   try {
     // Instance handler
     const uploadHandler = unstable_composeUploadHandlers(
@@ -87,7 +95,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       headers,
     )
     // Redirect with headers
-    return redirect(`/compute`, {
+    return redirect(`/compute/systems/${systemName}/accounts/${accountName}`, {
       headers: headers,
     })
   } catch (error) {

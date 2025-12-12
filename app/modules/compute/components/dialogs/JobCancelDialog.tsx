@@ -18,7 +18,7 @@ import LoadingButton from '~/components/buttons/LoadingButton'
 
 interface JobCancelDialogData {
   job: Job
-  system: System
+  system: string
   open: boolean
   onClose: () => void
 }
@@ -32,7 +32,7 @@ const JobCancelDialog: React.FC<JobCancelDialogData> = ({
   const [loading, setLoading] = useState(false)
   const actionButtons = (
     <form
-      action={`/compute/systems/${system.name}/jobs/${job.jobId}`}
+      action={`/compute/systems/${system}/jobs/${job.jobId}`}
       method='post'
       onSubmit={() => setLoading(true)}
     >

@@ -41,7 +41,7 @@ import { SystemHealtyStatus } from '~/types/api-status'
 
 interface SidebarProps {
   sidebarOpen: boolean
-  setSidebarOpen: () => void
+  setSidebarOpen: any
   logoPath: string | null
   appName: string | null
   supportUrl: string | null

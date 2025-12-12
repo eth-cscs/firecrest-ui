@@ -13,7 +13,7 @@ import stylesheet from '~/styles/app.css?url'
 // configs
 import base from '~/configs/base.config'
 // apis
-import { getSystems } from '~/apis/status-api'
+import { getSystems, getUserInfo } from '~/apis/status-api'
 // layouts
 import AppLayout from '~/layouts/AppLayout'
 // helpers
@@ -21,6 +21,7 @@ import { getNotificationMessage } from '~/helpers/notification-helper'
 // utils
 import { authenticator, getAuthAccessToken } from '~/utils/auth.server'
 import { SystemProvider } from '~/contexts/SystemContext'
+import { System } from '~/types/api-status'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
@@ -39,6 +40,22 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const notificationMessages = await getNotificationMessage(request, headers)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
+  const results = await Promise.allSettled(
+    systems.map(async (s: System) => {
+      const { groups } = await getUserInfo(accessToken, s.name)
+      return { systemName: s.name, groups }
+    }),
+  )
+  const groupsBySystem = new Map<string, any[]>()
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      groupsBySystem.set(r.value.systemName, r.value.groups)
+    }
+  }
+  const systemsWithGroups: System[] = systems.map((s: System) => ({
+    ...s,
+    groups: groupsBySystem.get(s.name) ?? [],
+  }))
   // Return json
   return json(
     {
@@ -52,7 +69,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       logoPath: base.logoPath,
       authUser: auth.user,
       notificationMessages: notificationMessages,
-      systems: systems,
+      systems: systemsWithGroups,
       systemName,
     },
     {

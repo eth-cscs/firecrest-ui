@@ -11,6 +11,11 @@ import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
 // logos
 import AppLogo from '~/logos/AppLogo'
+// switchers
+import {
+  SystemGroupSwitcher,
+  SystemGroupSwitcherLayout,
+} from '~/components/switchers/SystemGroupSwitcher'
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void
@@ -53,8 +58,17 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
         <div className='ml-4 flex items-center gap-4 md:ml-6'>
+          {/* System/Account switcher */}
+          <SystemGroupSwitcher
+            layout={SystemGroupSwitcherLayout.horizontal}
+            className='hidden lg:block w-[360px]'
+            label='System / Account'
+            placeholder='Select System / Account'
+          />
+          <div className='h-6 ml-2 w-px bg-gray-300' aria-hidden='true' />
           {/* Slot to insert additional components */}
-          <div id='app-header-slot' className='flex items-center' />
+          {/* <div id='app-header-slot' className='flex items-center' /> */}
+          {/* Divider */}
           {/* Profile dropdown */}
           <Menu as='div' className='relative'>
             <div>

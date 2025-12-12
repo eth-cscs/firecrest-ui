@@ -13,7 +13,6 @@ import {
   DialogBackdrop,
   Disclosure,
   DisclosureButton,
-  DisclosurePanel,
   Transition,
   TransitionChild,
 } from '@headlessui/react'

@@ -93,6 +93,7 @@ export interface System {
   fileSystems: FileSystem[]
   datatransferJobsDirectives?: string[]
   timeouts?: SystemTimeouts
+  groups?: Group[]
 }
 
 export interface GetSystemsResponse {

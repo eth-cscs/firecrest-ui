@@ -36,7 +36,6 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   open,
   onClose,
 }: DownloadDialogProps) => {
-  const filePath = currentPath ? `${currentPath}/${file.name}` : file.name
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [downloadJob, setDownloadJob] = useState<number | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
@@ -76,21 +75,29 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
     return file.size > uiConfig.fileDownloadLimit
   }
 
+  const getFilePath = () => {
+    return currentPath ? `${currentPath}/${file.name}` : file.name
+  }
+
   const doDownloadFile = () => {
     if (!needTransferDownload()) {
-      const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${filePath}`
+      const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${getFilePath()}`
       onClose()
       window.location.href = downloadEndpoint
     } else {
-      postFileTransferDownload(system, filePath, formValues.account).catch((response) => {
+      postFileTransferDownload(system, getFilePath(), formValues.account).catch((response) => {
         console.log(response)
       })
     }
   }
 
-  const subTitle = `Donwload the file "${filePath}"`
   return (
-    <SimpleDialog title='Download file' subtitle={subTitle} open={open} onClose={onClose}>
+    <SimpleDialog
+      title='Download file'
+      subtitle={`Donwload the file "${getFilePath()}"`}
+      open={open}
+      onClose={onClose}
+    >
       {loading && <LoadingSpinner title='Preparing download...' className='py-10' />}
       {!loading && (
         <>

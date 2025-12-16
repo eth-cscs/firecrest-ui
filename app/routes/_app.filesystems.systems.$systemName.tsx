@@ -20,7 +20,7 @@ import ErrorView from '~/components/views/ErrorView'
 // contexts
 import { GroupProvider } from '~/contexts/GroupContext'
 // switchers
-import { GroupSwitcherPortal } from '~/components/switchers/GroupSwitcher'
+import { GroupSwitcherPortal,GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -47,7 +47,10 @@ export default function AppFilesystemsIndexRoute() {
   const { groups, systemName, groupName }: any = useLoaderData()
   return (
     <GroupProvider groups={groups} groupName={groupName}>
-      <GroupSwitcherPortal systemName={systemName} basePath='/filesystems' />
+      <GroupSwitcherPortal systemName={systemName} basePath='/filesystems' 
+      layout={GroupSwitcherLayout.horizontal}
+      className='hidden lg:block w-[360px]'
+      />
       <Outlet />
     </GroupProvider>
   )

@@ -457,8 +457,7 @@ const Sidebar: React.FC<any> = ({
                                   
                                   return (
                                     <li key={`link-${subItem.path}`}>
-                                      <DisclosureButton
-                                        as={isDisabled ? 'div' : 'a'}
+                                      <a
                                         href={isDisabled ? undefined : subItem.path}
                                         disabled={isDisabled}
                                         className={classNames(
@@ -470,7 +469,6 @@ const Sidebar: React.FC<any> = ({
                                               : 'hover:bg-gray-100 text-gray-900',
                                         )}
                                       >
-                                      
                                       <subItem.icon
                                         className={classNames(
                                           isCurrentPath({ currentPath: item.path })
@@ -482,7 +480,7 @@ const Sidebar: React.FC<any> = ({
                                       />
                                       <span>{subItem.name}</span>
                                         
-                                      </DisclosureButton>
+                                      </a>
                                     </li>
                                   )
                                 })}

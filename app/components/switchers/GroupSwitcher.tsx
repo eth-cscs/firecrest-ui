@@ -87,11 +87,11 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
         <div
           className={
             isHorizontal
-              ? 'text-sm font-medium text-gray-600 whitespace-nowrap'
-              : 'mb-1 text-xs font-medium text-gray-500'
+              ? 'text-sm font-bold text-gray-600 whitespace-nowrap'
+              : 'mb-1 text-sm font-bold text-gray-500'
           }
         >
-          Account
+          Project:
         </div>
         <button
           type='button'

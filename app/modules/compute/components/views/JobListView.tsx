@@ -44,7 +44,7 @@ const JobListView: React.FC<any> = ({ jobs }) => {
   )
   return (
     <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
-      <SimplePanel title={'List of jobs'} className='mb-4' actionsButtons={actionsButtons}>
+      <SimplePanel title={'List of jobs for: ' + selectedGroup?.name} className='mb-4' actionsButtons={actionsButtons}>
         <AlertError error={jobs.error} />
         <JobList jobs={jobs} />
       </SimplePanel>

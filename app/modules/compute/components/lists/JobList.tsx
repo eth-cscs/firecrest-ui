@@ -57,6 +57,7 @@ interface JobTableRowProps {
   job: Job
   system: string
   account: string
+  user: string
 }
 
 enum DisplayField {
@@ -75,7 +76,7 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
-const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account, user }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -111,8 +112,8 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
         <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>
-        {job.account !== '' ? (
-          <LabelBadge color={LabelColor.BLUE}>{job.account}</LabelBadge>
+        {job.user !== '' ? (
+          <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
         ) : (
           <LabelBadge color={LabelColor.GRAY}>undefined</LabelBadge>
         )}
@@ -145,17 +146,6 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
           onClose={() => setCancelDialogOpen(false)}
         />
         <span className='isolate inline-flex rounded-md shadow-sm'>
-          {!jobCanBeRetried(job) && (
-            <SimpleTooltip message={`Retry job subission`} className='right-0 top-9'>
-              <button
-                type='button'
-                className='relative -ml-px inline-flex items-center bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
-              >
-                <span className='sr-only'>Retry</span>
-                <ArrowPathRoundedSquareIcon className='h-5 w-5' />
-              </button>
-            </SimpleTooltip>
-          )}
           {jobCanBeCanceled(job) && (
             <SimpleTooltip message={`Cancel`} className='right-0 top-9'>
               <button
@@ -222,7 +212,7 @@ const JobsTable: React.FC<any> = ({ jobs }: any) => {
               Job
             </th>
             <th scope='col' className='px-0 py-3 font-semibold'>
-              Account
+              User
             </th>
             <th scope='col' className='px-0 py-3 font-semibold'>
               Info
@@ -237,6 +227,7 @@ const JobsTable: React.FC<any> = ({ jobs }: any) => {
               key={`${job.jobId}`}
               job={job}
               account={jobs.account}
+              user={jobs.user}
             />
           ))}
         </tbody>

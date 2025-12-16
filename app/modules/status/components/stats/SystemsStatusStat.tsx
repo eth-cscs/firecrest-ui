@@ -14,6 +14,7 @@ import {
   ServerStackIcon,
   ExclamationCircleIcon,
   EyeIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { SystemHealtyStatus, type System, ServiceHealth, ServiceType } from '~/types/api-status'
@@ -206,7 +207,10 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
 }: SystemStatusStatProps) => {
   const [viewAll, setViewAll] = useState(viewAllByDefault)
   const { name, ssh, scheduler, servicesHealth, probing } = system
-
+  const systemHealtyStatus = isSystemHealthy(system)
+  const handleNavigateToSystem = (systemName: string) => {
+    window.location.href = `/compute/systems/${systemName}`
+  }
   return (
     <div className='relative overflow-hidden rounded-lg bg-white px-4 pb-20 pt-5 shadow sm:px-6 sm:pt-6'>
       <div>
@@ -226,13 +230,25 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
       </div>
       {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth} />}
       <div className='absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6'>
-        <div className='text-sm'>
+        <div className='flex items-center justify-between text-sm'>
           <button
             onClick={() => setViewAll(!viewAll)}
             className='font-medium text-gray-600 hover:text-gray-500'
           >
             {viewAll ? 'Hide' : 'More information'}
           </button>
+          {systemHealtyStatus !== SystemHealtyStatus.unhealthy && (
+            <button
+              type='button'
+              className='inline-flex items-center ml-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
+              onClick={() => {
+                handleNavigateToSystem(system.name)
+              }}
+            >
+              Select the system and proceed
+              <ChevronRightIcon className='-mr-1 ml-2 h-5 w-5 text-gray-500' aria-hidden='true' />
+            </button>
+          )}
         </div>
       </div>
     </div>

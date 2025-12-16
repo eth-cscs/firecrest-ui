@@ -117,7 +117,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       headers,
     )
     // Redirect with headers
-    return redirect(`/compute`, {
+    return redirect(`/compute/systems/${params.systemName}/accounts/${params.accountName}/`, {
       headers: headers,
     })
   } catch (error) {

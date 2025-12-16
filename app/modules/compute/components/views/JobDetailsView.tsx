@@ -144,6 +144,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
           <JobCancelDialog
             job={currentJob}
             system={system}
+            account={selectedGroup?.name!}
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
           />

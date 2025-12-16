@@ -142,6 +142,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account, user }:
         <JobCancelDialog
           job={job}
           system={system}
+          account={account}
           open={cancelDialogOpen}
           onClose={() => setCancelDialogOpen(false)}
         />

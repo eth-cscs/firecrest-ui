@@ -141,27 +141,6 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
       )}
     </div>
   )
-
-
-  return (
-    <>
-      <div className='flex items-center gap-2'>
-        <span className='text-sm text-gray-600'>Account</span>
-        <select
-          value={selectedGroup?.name ?? ''}
-          onChange={(e) => handleSwitch(e.target.value)}
-          className='block rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500 bg-white py-2 pl-2 pr-6 text-sm shadow-sm cursor-pointer'
-        >
-          {groups.map((g) => (
-            <option key={g.name} value={g.name}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className='h-6 w-px bg-gray-300 ml-8 mr-0'></div>
-    </>
-  )
 }
 
 

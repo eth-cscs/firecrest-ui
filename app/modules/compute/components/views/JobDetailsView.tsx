@@ -201,7 +201,9 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
               <AttributesListItem label='Nodes'>{currentJob.nodes}</AttributesListItem>
               <AttributesListItem label='Partition'>{currentJob.partition}</AttributesListItem>
               <AttributesListItem label='Working directory'>
-                {currentJob.workingDirectory}
+                <div className='flex-1 min-w-0 break-words'>
+                  {currentJob.workingDirectory || 'N/A'}
+                </div>
               </AttributesListItem>
             </AttributesList>
           </LeftTitleCard>

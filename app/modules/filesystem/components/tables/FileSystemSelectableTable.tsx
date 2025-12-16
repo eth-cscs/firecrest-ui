@@ -52,7 +52,9 @@ const FileItem: React.FC<FileItemProps> = ({
               <LinkIcon className='h-5 w-5' />
             )}
           </span>{' '}
-          {file.name}
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
+                  {file.name}
+          </div>
         </a>
       </td>
       <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>
@@ -111,7 +113,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
           <span className='mr-1 text-gray-500'>
             <FolderIcon className='h-5 w-5' />
           </span>{' '}
-          {file.name}
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
+                  {file.name}
+          </div>
         </a>
       </td>
       <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>

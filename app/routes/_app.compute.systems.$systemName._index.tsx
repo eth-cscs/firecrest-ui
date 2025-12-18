@@ -5,46 +5,44 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
 import { useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { redirect } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { authenticator, getAuthAccessToken } from '~/utils/auth.server'
-// contexts
-import { useSystem } from '~/contexts/SystemContext'
+import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
 // apis
-import { getSystems } from '~/apis/status-api'
+import { getUserInfo } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
-import DashboardView from '~/modules/dashboard/components/views/DashboardView'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const auth = await authenticator.isAuthenticated(request, {
     failureRedirect: '/login',
   })
+  const systemName = params.systemName!
   logInfoHttp({
-    message: 'Index page',
+    message: `Compute system ${systemName} index page`,
     request: request,
     extraInfo: { username: auth.user.username },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
-
-  // Return response (deferred response)
-  return {
-    systems: systems,
-  }
-}
-
-export default function AppIndexRoute() {
-  const { systems } = useSystem()
-  return <DashboardView systems={systems} />
+  const { group } = await getUserInfo(accessToken, systemName)
+  // Redirect to default account if no account specified
+  return redirect(`/compute/systems/${systemName}/accounts/${group.name}`)
 }
 
 export function ErrorBoundary() {

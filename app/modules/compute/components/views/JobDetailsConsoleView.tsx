@@ -31,30 +31,42 @@ import { getLocalOpsTail, getLocalOpsLs } from '~/apis/filesystem-api'
 // grafana
 import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
 
-// const ActiveScrollCtx = React.createContext<{ setActive: (el: HTMLElement | null) => void } | null>(
-//   null,
-// )
+// contexts
+import { useGroup } from '~/contexts/GroupContext'
 
 interface JobDetailsPanelProps {
   job?: Job
   jobMetadata?: JobMetadata
-  system?: System,
+  system?: System
   stdoutFile?: File
   stderrFile?: File
 }
 
-const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, system,stdoutFile,stderrFile }) => {
+const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
+  job,
+  jobMetadata,
+  system,
+  stdoutFile,
+  stderrFile,
+}) => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
-  const [downloadkDialogOpen, setDownloadDialogOpen] = useState(false)
-  const handleDownload = () => {
-    setDownloadDialogOpen(true)
+  const [stdoutDownloadDialogOpen, setStdoutDownloadDialogOpen] = useState(false)
+  const [stderrDownloadDialogOpen, setStderrDownloadDialogOpen] = useState(false)
+  const { selectedGroup } = useGroup()
+
+  const handleStdoutDownload = () => {
+    setStdoutDownloadDialogOpen(true)
+  }
+  const handleStderrDownload = () => {
+    setStdoutDownloadDialogOpen(true)
   }
 
   return (
     <>
       <JobCancelDialog
         job={job!}
-        system={system!}
+        system={system?.name!}
+        account={selectedGroup?.name!}
         open={cancelDialogOpen}
         onClose={() => setCancelDialogOpen(false)}
       />
@@ -101,50 +113,62 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({ job, jobMetadata, sys
           {formatTime({ time: job?.time.elapsed })}
         </AttributesListItem>
       </AttributesList>
-      
+
       <h3 className='font-semibold mb-3 mt-9'>Files</h3>
       <AttributesList>
-        <AttributesListItem label='StdOut'><div className='flex'>{jobMetadata?.standardOutput || 'N/A'}
-          {stdoutFile && (
-            <>
-              <DownloadDialog
-                system={system?.name || ''}
-                file={stdoutFile}
-                open={downloadkDialogOpen}
-                onClose={() => setDownloadDialogOpen(false)}
-              />
-              <button
-                onClick={handleDownload}
-                title='Download STDOUT log'
-                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
-              >
-                <ArrowDownCircleIcon className='w-4 h-4' />
-              </button>
-            </>
-          )}
+        <AttributesListItem label='StdOut'>
+          <div className='flex flex-col gap-2 min-w-0'>
+            <div className='flex-1 min-w-0 break-words'>{jobMetadata?.standardOutput || 'N/A'}</div>
+
+            {stdoutFile && (
+              <>
+                <DownloadDialog
+                  system={system?.name || ''}
+                  file={stdoutFile}
+                  accountName={selectedGroup?.name || ''}
+                  open={stdoutDownloadDialogOpen}
+                  onClose={() => setStdoutDownloadDialogOpen(false)}
+                />
+                <button
+                  onClick={handleStdoutDownload}
+                  title='Download STDOUT log'
+                  className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+                >
+                  <ArrowDownCircleIcon className='w-4 h-4' />
+                </button>
+              </>
+            )}
           </div>
         </AttributesListItem>
-        <AttributesListItem label='StdErr'>{jobMetadata?.standardError  || 'N/A'}
-          {stderrFile && (
-            <>
-              <DownloadDialog
-                system={system?.name || ''}
-                file={stderrFile}
-                open={downloadkDialogOpen}
-                onClose={() => setDownloadDialogOpen(false)}
-              />
-              <button
-                onClick={handleDownload}
-                title='Download STDOUT log'
-                className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
-              >
-                <ArrowDownCircleIcon className='w-4 h-4' />
-              </button>
-            </>
-          )}
+        <AttributesListItem label='StdErr'>
+          <div className='flex flex-col gap-2 min-w-0'>
+            <div className='flex-1 min-w-0 break-words'>{jobMetadata?.standardError || 'N/A'}</div>
+            {stderrFile && (
+              <>
+                <DownloadDialog
+                  system={system?.name || ''}
+                  file={stderrFile}
+                  open={stderrDownloadDialogOpen}
+                  accountName={selectedGroup?.name || ''}
+                  onClose={() => setStderrDownloadDialogOpen(false)}
+                />
+                <button
+                  onClick={handleStderrDownload}
+                  title='Download STDOUT log'
+                  className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+                >
+                  <ArrowDownCircleIcon className='w-4 h-4' />
+                </button>
+              </>
+            )}
+          </div>
         </AttributesListItem>
-        <AttributesListItem label='StdIn'>{jobMetadata?.standardInput  || 'N/A'}</AttributesListItem>
-        <AttributesListItem label='Working directory'>{job?.workingDirectory  || 'N/A'}</AttributesListItem>  
+        <AttributesListItem label='StdIn'>
+          <div className='flex-1 min-w-0 break-words'>{jobMetadata?.standardInput || 'N/A'}</div>
+        </AttributesListItem>
+        <AttributesListItem label='Working directory'>
+          <div className='flex-1 min-w-0 break-words'>{job?.workingDirectory || 'N/A'}</div>
+        </AttributesListItem>
       </AttributesList>
 
       <h3 className='font-semibold mb-3 mt-9'>System and resource details</h3>
@@ -195,26 +219,28 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
     OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
   }
   return (
-    <div className='flex-1 rounded-xl border bg-white shadow-sm m-6 pt-2' style={{ marginTop: '20px' }} >
+    <div
+      className='flex-1 rounded-xl border bg-white shadow-sm m-6 pt-2'
+      style={{ marginTop: '20px' }}
+    >
       <div className='sticky top-16 flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
-        <select name='datasource' value={activeTab} onChange={(e) => onChangeTab(e.target.value)} className='flex-none w-64 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'>
-              <option value='stdout'>Job StdOut</option>
-              <option value='stderr'>Job StdErr</option>
-              <option value='stdin'>Job StdIn</option>
-              <option value='script'>Job Script</option>
-              <option value='resources'>Dashboards</option>
-          </select>
+        <select
+          name='datasource'
+          value={activeTab}
+          onChange={(e) => onChangeTab(e.target.value)}
+          className='flex-none w-64 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+        >
+          <option value='stdout'>Job StdOut</option>
+          <option value='stderr'>Job StdErr</option>
+          <option value='stdin'>Job StdIn</option>
+          <option value='script'>Job Script</option>
+          {dashboards && dashboards.length > 0 && <option value='resources'>Dashboards</option>}
+        </select>
       </div>
       <div className='min-w-0 h-full min-h-0 pt-4 '>
-        {activeTab === 'stdout' && (
-          <ConsolePane content={stdout}/>
-        )}
-        {activeTab === 'stdin' && (
-          <ConsolePane content={stdin}/>
-        )}
-        {activeTab === 'stderr' && (
-          <ConsolePane content={stderr}/>
-        )}
+        {activeTab === 'stdout' && <ConsolePane content={stdout} />}
+        {activeTab === 'stdin' && <ConsolePane content={stdin} />}
+        {activeTab === 'stderr' && <ConsolePane content={stderr} />}
         {activeTab === 'script' && <ConsolePane content={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
           <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
@@ -222,7 +248,13 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
       </div>
       <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
         <div className='p-4'>
-          <JobDetailsPanel job={job} jobMetadata={jobMetadata} system={system} stdoutFile={stdoutFile} stderrFile={stderrFile}/>
+          <JobDetailsPanel
+            job={job}
+            jobMetadata={jobMetadata}
+            system={system}
+            stdoutFile={stdoutFile}
+            stderrFile={stderrFile}
+          />
         </div>
       </aside>
     </div>
@@ -230,14 +262,11 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
 }
 
 interface ConsolePaneProps {
-  
   content?: string
-  
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ content}) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({ content }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
-  
 
   useEffect(() => {
     const el = scrollerRef.current
@@ -254,7 +283,6 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content}) => {
     </section>
   )
 }
-
 
 interface ResourcePaneProps {
   src?: string
@@ -425,7 +453,6 @@ let OUTPUT_TABS = [
 
 type OutputTabId = (typeof OUTPUT_TABS)[number]['id']
 
-
 interface JobDetailsLayoutProps {
   job?: Job
   jobMetadata?: JobMetadata
@@ -505,7 +532,10 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   const [localError, setLocalError] = useState<any>(error)
   const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
 
-  const fetchJob = async (jobId: number, setter: React.Dispatch<React.SetStateAction<Job>>) => {
+  const fetchJob = async (
+    jobId: number,
+    setter: React.Dispatch<React.SetStateAction<Job | null>>,
+  ) => {
     try {
       const response: GetJobResponse = await getLocalJob(system.name, jobId)
       const [job] = response.jobs
@@ -599,6 +629,8 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     ]
   }
 
+  console.log('JobDetailsConsoleView render', dashboards)
+
   return (
     // <ActiveScrollCtx.Provider value={ctxValue}>
     <JobDetailsLayout
@@ -606,7 +638,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       jobMetadata={jobMetadata || undefined}
       system={system}
       activeTab={activeTab}
-      stdout={jobStandardOuput?.output?.content }
+      stdout={jobStandardOuput?.output?.content}
       stdoutFile={jobStandardOutputFile || undefined}
       stdin={jobMetadata?.standardInput || undefined}
       stderr={jobStandardError?.output?.content}

@@ -33,6 +33,12 @@ import { classNames } from '~/helpers/class-helper'
 import AppLogo from '~/logos/AppLogo'
 // mappers
 import { serviceIconMapper } from '~/mappers/icon-mapper'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
+// helpers
+import { isSystemHealthy } from '~/helpers/system-helper'
+// types
+import { SystemHealtyStatus } from '~/types/api-status'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -54,17 +60,46 @@ const Sidebar: React.FC<any> = ({
   repoUrl = null,
 }: any) => {
   const location = useLocation()
-
+  const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
-  const primaryNavigation: any = [
-    { name: LABEL_COMPUTE_TITLE, path: '/compute', icon: serviceIconMapper('compute') },
-    {
-      name: LABEL_FILESYSTEM_TITLE,
-      path: '/filesystems',
-      icon: serviceIconMapper('filesystem'),
-    },
-  ]
+  const getSystemHealthyStatusDotClass = (systemHealthyStatus: SystemHealtyStatus) => {
+    switch (systemHealthyStatus) {
+      case SystemHealtyStatus.healthy:
+        return 'bg-green-500'
+      case SystemHealtyStatus.degraded:
+        return 'bg-yellow-400'
+      case SystemHealtyStatus.unhealthy:
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-300'
+    }
+  }
+
+  const primaryNavigation: any = systems.map((system) => {
+    const systemHealthyStatus = isSystemHealthy(system)
+    const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
+    return {
+      name: system.name,
+      path: '/systems/' + system.name,
+      icon: serviceIconMapper('cluster'),
+      systemHealthyStatus: systemHealthyStatus,
+      disabled: disabled,
+      children: [
+            {
+              name: "Scheduler",
+              path: '/compute/systems/' + system.name,
+              icon: serviceIconMapper('scheduler'),
+            },
+            {
+              name: "Filesystems",
+              path: '/filesystems/systems/' + system.name,
+              icon: serviceIconMapper('filesystem'),
+            }
+
+          ]
+    }
+  })
 
   const secondaryNavigation: any = []
 
@@ -180,7 +215,12 @@ const Sidebar: React.FC<any> = ({
                   </ul>
                   <div className='mt-2 pt-2'>
                     <ul className='space-y-1'>
-                      {primaryNavigation.map((item: any) => (
+                      {primaryNavigation.map((item: any) => {
+                         const statusDotClass = getSystemHealthyStatusDotClass(
+                                        item.systemHealthyStatus,
+                                      )
+                        const isDisabled = item.disabled
+                        return (
                         <li key={`link-${item.path}`}>
                           {'children' in item && item.children ? (
                             <Disclosure
@@ -206,6 +246,12 @@ const Sidebar: React.FC<any> = ({
                                       )}
                                       aria-hidden='true'
                                     />
+                                    <span
+                                              className={classNames(
+                                                'ml-3 h-2.5 w-2.5 rounded-full',
+                                                statusDotClass,
+                                              )}
+                                            />
                                     {item.name}
                                     <ChevronRightIcon
                                       className={classNames(
@@ -215,7 +261,7 @@ const Sidebar: React.FC<any> = ({
                                       aria-hidden='true'
                                     />
                                   </DisclosureButton>
-                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                  {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
                                     {item.children.map((subItem: any) => (
                                       <li key={`link-${subItem.path}`}>
                                         <DisclosureButton
@@ -232,6 +278,33 @@ const Sidebar: React.FC<any> = ({
                                         </DisclosureButton>
                                       </li>
                                     ))}
+                                  </DisclosurePanel> */}
+                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                    {item.children.map((subItem: any) => {
+                                      
+                                     
+                                      return (
+                                        <li key={`link-${subItem.path}`}>
+                                          <DisclosureButton
+                                            as={isDisabled ? 'div' : 'a'}
+                                            href={isDisabled ? 'undefined' : subItem.path}
+                                            disabled={isDisabled}
+                                            className={classNames(
+                                              'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                              isDisabled
+                                                ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                                : isCurrentRootPath({
+                                                      currentRootPath: subItem.path,
+                                                    })
+                                                  ? 'bg-gray-100 text-gray-900'
+                                                  : 'hover:bg-gray-100 text-gray-900',
+                                            )}
+                                          >
+                                            <span>{subItem.name}</span>
+                                          </DisclosureButton>
+                                        </li>
+                                      )
+                                    })}
                                   </DisclosurePanel>
                                 </>
                               )}
@@ -258,7 +331,7 @@ const Sidebar: React.FC<any> = ({
                             </NavLink>
                           )}
                         </li>
-                      ))}
+                      )})}
                     </ul>
                   </div>
                   <div className='mt-6 pt-6'>
@@ -330,10 +403,16 @@ const Sidebar: React.FC<any> = ({
                 ))}
               </ul>
               <div className='mt-2 pt-2'>
+                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>HPC Clusters</span>
                 <ul className='space-y-1'>
-                  {primaryNavigation.map((item: any) => (
+                  {primaryNavigation.map((item: any) => {
+                    const isDisabled = item.disabled
+                                  const statusDotClass = getSystemHealthyStatusDotClass(
+                                    item.systemHealthyStatus,
+                                  )
+                    return (
                     <li key={`link-${item.path}`}>
-                      {'children' in item && item.children ? (
+                      {'children' in item && item.children  ? (
                         <Disclosure
                           as='div'
                           defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
@@ -357,7 +436,14 @@ const Sidebar: React.FC<any> = ({
                                   )}
                                   aria-hidden='true'
                                 />
+                                <span
+                                          className={classNames(
+                                            ' h-2.5 w-2.5 rounded-full',
+                                            statusDotClass,
+                                          )}
+                                        />
                                 {item.name}
+                                
                                 <ChevronRightIcon
                                   className={classNames(
                                     open ? 'rotate-90 text-gray-500' : 'text-gray-400',
@@ -367,22 +453,37 @@ const Sidebar: React.FC<any> = ({
                                 />
                               </DisclosureButton>
                               <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                {item.children.map((subItem: any) => (
-                                  <li key={`link-${subItem.path}`}>
-                                    <DisclosureButton
-                                      as='a'
-                                      href={subItem.path}
-                                      className={classNames(
-                                        isCurrentRootPath({ currentRootPath: subItem.path })
-                                          ? 'bg-gray-100'
-                                          : 'hover:bg-gray-100',
-                                        'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-900',
-                                      )}
-                                    >
-                                      {subItem.name}
-                                    </DisclosureButton>
-                                  </li>
-                                ))}
+                                {item.children.map((subItem: any) => {
+                                  
+                                  return (
+                                    <li key={`link-${subItem.path}`}>
+                                      <a
+                                        href={isDisabled ? undefined : subItem.path}
+                                        disabled={isDisabled}
+                                        className={classNames(
+                                          'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                          isDisabled
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                            : isCurrentRootPath({ currentRootPath: subItem.path })
+                                              ? 'bg-gray-100 text-gray-900'
+                                              : 'hover:bg-gray-100 text-gray-900',
+                                        )}
+                                      >
+                                      <subItem.icon
+                                        className={classNames(
+                                          isCurrentPath({ currentPath: item.path })
+                                            ? 'text-gray-500'
+                                            : 'text-gray-400 group-hover:text-gray-500',
+                                          'mr-3 flex-shrink-0 h-6 w-6',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                      <span>{subItem.name}</span>
+                                        
+                                      </a>
+                                    </li>
+                                  )
+                                })}
                               </DisclosurePanel>
                             </>
                           )}
@@ -409,7 +510,7 @@ const Sidebar: React.FC<any> = ({
                         </NavLink>
                       )}
                     </li>
-                  ))}
+                  )})}
                 </ul>
               </div>
               <div className='mt-6 pt-6'>

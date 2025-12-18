@@ -64,22 +64,18 @@ const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
         className='mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300'
         onChange={onChangeHandler}
       >
-        {systems &&
-          systems.length > 0 &&
-          systems.map((itemSystem: System) => (
-            <optgroup key={itemSystem.name} label={itemSystem.name}>
-              {itemSystem.fileSystems.map((itemFileSystem: FileSystem) => (
-                <option
-                  key={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  value={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  disabled={!isFileSystemHealthy(itemSystem, itemFileSystem)}
-                >
-                  {`${itemSystem.name} - ${buildFileSystemSelectionPath(itemFileSystem, username)}`}{' '}
-                  {`${isFileSystemHealthy(itemSystem, itemFileSystem) ? '' : ' - unhealthy'}`}
-                </option>
-              ))}
-            </optgroup>
+        <optgroup key={system.name} label={system.name}>
+          {system.fileSystems.map((itemFileSystem: FileSystem) => (
+            <option
+              key={buildFileSystemSelection(system, itemFileSystem, username)}
+              value={buildFileSystemSelection(system, itemFileSystem, username)}
+              disabled={!isFileSystemHealthy(system, itemFileSystem)}
+            >
+              {`${system.name} - ${buildFileSystemSelectionPath(itemFileSystem, username)}`}{' '}
+              {`${isFileSystemHealthy(system, itemFileSystem) ? '' : ' - unhealthy'}`}
+            </option>
           ))}
+        </optgroup>
       </select>
     </div>
   )

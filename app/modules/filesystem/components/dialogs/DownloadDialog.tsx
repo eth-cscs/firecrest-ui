@@ -22,6 +22,7 @@ import { postLocalTransferDownload } from '~/apis/filesystem-api'
 interface DownloadDialogProps {
   system: string
   file: File
+  accountName: string
   currentPath?: string
   open: boolean
   onClose: () => void
@@ -30,17 +31,17 @@ interface DownloadDialogProps {
 const DownloadDialog: React.FC<DownloadDialogProps> = ({
   system,
   file,
+  accountName,
   currentPath = undefined,
   open,
   onClose,
 }: DownloadDialogProps) => {
-  const filePath = currentPath ? `${currentPath}/${file.name}` : file.name
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [downloadJob, setDownloadJob] = useState<number | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [formValues, setFormValues] = useState({
-    account: '',
+    account: accountName,
   })
 
   useEffect(() => {
@@ -74,21 +75,29 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
     return file.size > uiConfig.fileDownloadLimit
   }
 
+  const getFilePath = () => {
+    return currentPath ? `${currentPath}/${file.name}` : file.name
+  }
+
   const doDownloadFile = () => {
     if (!needTransferDownload()) {
-      const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${filePath}`
+      const downloadEndpoint = `/fs/filesystems/${system}/ops/download?sourcePath=${getFilePath()}`
       onClose()
       window.location.href = downloadEndpoint
     } else {
-      postFileTransferDownload(system, filePath, formValues.account).catch((response) => {
+      postFileTransferDownload(system, getFilePath(), formValues.account).catch((response) => {
         console.log(response)
       })
     }
   }
 
-  const subTitle = `Donwload the file "${filePath}"`
   return (
-    <SimpleDialog title='Download file' subtitle={subTitle} open={open} onClose={onClose}>
+    <SimpleDialog
+      title='Download file'
+      subtitle={`Donwload the file "${getFilePath()}"`}
+      open={open}
+      onClose={onClose}
+    >
       {loading && <LoadingSpinner title='Preparing download...' className='py-10' />}
       {!loading && (
         <>
@@ -105,8 +114,10 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
                   <input
                     type='text'
                     name='account'
+                    value={formValues.account}
                     onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
-                    className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+                    disabled
+                    className='flex-1 border-gray-300 focus:border-blue-300 focus:ring-blue-300 rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
                   />
                 </div>
               )}

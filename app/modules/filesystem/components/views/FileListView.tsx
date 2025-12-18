@@ -26,8 +26,8 @@ import {
   buildFileSystemSelection,
   buildFileSystemSelectionPath,
   splitFileSystemSelection,
-  buildFileSystemNavigationPath,
   buildBreadcrumbNavigation,
+  buildFileSystemNavigationPath,
 } from '~/modules/filesystem/helpers/filesystem-helper'
 import { formatDateTime } from '~/helpers/date-helper'
 import { FileTableSortableColumn } from '~/helpers/ui-table-helper'
@@ -62,7 +62,6 @@ import LoadingButton from '~/components/buttons/LoadingButton'
 import SimplePanel from '~/components/panels/SimplePanel'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
-import { showInputValidation } from '~/components/forms/validations/ValidationForm'
 
 const copyToClipboard = (file: File, fileSystem: FileSystem) => {
   const path = `${fileSystem.path}/${file.name}`
@@ -74,9 +73,16 @@ interface FileItemProps {
   currentPath: string
   fileSystem: FileSystem
   system: System
+  accountName: string
 }
 
-const FileItem: React.FC<FileItemProps> = ({ file, currentPath, fileSystem, system }) => {
+const FileItem: React.FC<FileItemProps> = ({
+  file,
+  currentPath,
+  fileSystem,
+  system,
+  accountName,
+}) => {
   const [changeOwnershipDialogOpen, setChangeOwnershipDialogOpen] = useState(false)
   const [changePermissionDialogDialogOpen, setChangePermissionDialogDialogOpen] = useState(false)
   const [checksumDialogOpen, setChecksumDialogOpen] = useState(false)
@@ -148,6 +154,7 @@ const FileItem: React.FC<FileItemProps> = ({ file, currentPath, fileSystem, syst
           system={system.name}
           file={file}
           currentPath={currentPath}
+          accountName={accountName}
           open={downloadkDialogOpen}
           onClose={() => setDownloadDialogOpen(false)}
         />
@@ -159,7 +166,9 @@ const FileItem: React.FC<FileItemProps> = ({ file, currentPath, fileSystem, syst
               <LinkIcon className='h-5 w-5' />
             )}
           </span>{' '}
-          {file.name}
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
+                  {file.name}
+          </div>
         </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -303,9 +312,16 @@ interface DirectoryItemProps {
   currentPath: string
   fileSystem: FileSystem
   system: System
+  accountName: string
 }
 
-const DirectoryItem: React.FC<DirectoryItemProps> = ({ file, currentPath, fileSystem, system }) => {
+const DirectoryItem: React.FC<DirectoryItemProps> = ({
+  file,
+  currentPath,
+  fileSystem,
+  system,
+  accountName,
+}) => {
   const [changeOwnershipDialogOpen, setChangeOwnershipDialogOpen] = useState(false)
   const [changePermissionDialogDialogOpen, setChangePermissionDialogDialogOpen] = useState(false)
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
@@ -316,7 +332,7 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({ file, currentPath, fileSy
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const { name } = file
 
-  const navigationPath = buildFileSystemNavigationPath(system.name, currentPath, name)
+  const navigationPath = buildFileSystemNavigationPath(system.name, currentPath, accountName, name)
   return (
     <tr className='even:bg-blue-50'>
       <td className='px-4 py-3 font-medium'>
@@ -372,7 +388,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({ file, currentPath, fileSy
           <span className='mr-1 text-gray-500'>
             <FolderIcon className='h-5 w-5' />
           </span>{' '}
-          {file.name}
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
+                  {file.name}
+          </div>
         </a>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -493,14 +511,21 @@ interface BreadcrumbNavigationProps {
   currentPath: string
   system: System
   fileSystem: FileSystem
+  accountName: string
 }
 
 const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   currentPath,
   system,
   fileSystem,
+  accountName,
 }) => {
-  const navigationData = buildBreadcrumbNavigation(currentPath, fileSystem.path, system.name)
+  const navigationData = buildBreadcrumbNavigation(
+    currentPath,
+    fileSystem.path,
+    system.name,
+    accountName,
+  )
   return (
     <>
       <nav className='flex rounded-md p-2 mb-4 border border-gray-200' aria-label='Breadcrumb'>
@@ -540,6 +565,7 @@ interface FileSystemSelectionData {
   system: System
   systems: System[]
   username: string
+  accountName: string
 }
 
 const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
@@ -548,11 +574,12 @@ const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
   system,
   systems,
   username,
+  accountName,
 }) => {
   const onChangeHandler = (event: any) => {
     const selectedValue = event.target.value
     const { systemName, fileSystemPath } = splitFileSystemSelection(selectedValue)
-    const newNavigationPath = buildFileSystemNavigationPath(systemName, fileSystemPath)
+    const newNavigationPath = buildFileSystemNavigationPath(systemName, fileSystemPath, accountName)
     window.location.href = newNavigationPath
   }
 
@@ -566,22 +593,18 @@ const FileSystemSelection: React.FC<FileSystemSelectionData> = ({
         className='mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300'
         onChange={onChangeHandler}
       >
-        {systems &&
-          systems.length > 0 &&
-          systems.map((itemSystem: System) => (
-            <optgroup key={itemSystem.name} label={itemSystem.name}>
-              {itemSystem.fileSystems.map((itemFileSystem: FileSystem) => (
-                <option
-                  key={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  value={buildFileSystemSelection(itemSystem, itemFileSystem, username)}
-                  disabled={!isFileSystemHealthy(itemSystem, itemFileSystem)}
-                >
-                  {`${itemSystem.name} - ${buildFileSystemSelectionPath(itemFileSystem, username)}`}{' '}
-                  {`${isFileSystemHealthy(itemSystem, itemFileSystem) ? '' : ' - unhealthy'}`}
-                </option>
-              ))}
-            </optgroup>
+        <optgroup key={system.name} label={system.name}>
+          {system.fileSystems.map((itemFileSystem: FileSystem) => (
+            <option
+              key={buildFileSystemSelection(system, itemFileSystem, username)}
+              value={buildFileSystemSelection(system, itemFileSystem, username)}
+              disabled={!isFileSystemHealthy(system, itemFileSystem)}
+            >
+              {`${system.name} - ${buildFileSystemSelectionPath(itemFileSystem, username)}`}{' '}
+              {`${isFileSystemHealthy(system, itemFileSystem) ? '' : ' - unhealthy'}`}
+            </option>
           ))}
+        </optgroup>
       </select>
     </div>
   )
@@ -618,6 +641,7 @@ interface FileListTableProps {
   currentPath: string
   fileSystem: FileSystem
   system: System
+  accountName: string
 }
 
 const FileListTable: React.FC<FileListTableProps> = ({
@@ -625,6 +649,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
   currentPath,
   fileSystem,
   system,
+  accountName,
 }) => {
   const [sortableColumns, setSortableColumns] = useState<FileTableSortableColumn[]>([])
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
@@ -655,6 +680,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
                 currentPath={currentPath}
                 fileSystem={fileSystem}
                 system={system}
+                accountName={accountName}
               />
             ) : (
               <FileItem
@@ -663,6 +689,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
                 currentPath={currentPath}
                 fileSystem={fileSystem}
                 system={system}
+                accountName={accountName}
               />
             ),
           )}
@@ -687,7 +714,7 @@ const FileTransferInfo: React.FC<any> = ({ file, uploadLimit }) => {
 }
 
 // TODO: Code refactoring and improvements (remove duplication, create ad-hoc components, ...)
-const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => {
+const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit, accountName }) => {
   const [uploading, setUploading] = useState(false)
   const [fileToUploadSelected, setFileToUploadSelected] = useState<any | null>(null)
   const [fileTransferUploadResult, setFileTransferUploadResult] = useState<any | null>(null)
@@ -696,7 +723,7 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
   const [uploadError, setUploadError] = useState<HttpErrorResponse | null>(null)
   const singleDraggableFileUploadRef = useRef<any>(null)
   const [formValues, setFormValues] = useState({
-    account: '',
+    account: accountName,
   })
 
   const isFileSizeOk = (file: any) => {
@@ -805,8 +832,9 @@ const FileUpload: React.FC<any> = ({ system, currentPath, fileUploadLimit }) => 
             type='text'
             name='account'
             value={formValues.account}
+            disabled
             onChange={(e) => setFormValues({ ...formValues, account: e.target.value })}
-            className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
+            className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
           />
           {/* {showInputValidation({
                   fieldName: 'name',
@@ -856,6 +884,7 @@ interface FileListViewProps {
   fileUploadLimit: number
   error: any
   remoteFsError: any
+  accountName: string
 }
 
 const FileListView: React.FC<FileListViewProps> = ({
@@ -868,6 +897,7 @@ const FileListView: React.FC<FileListViewProps> = ({
   fileUploadLimit,
   error,
   remoteFsError,
+  accountName,
 }: FileListViewProps) => {
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState<any | null>(error)
@@ -893,6 +923,8 @@ const FileListView: React.FC<FileListViewProps> = ({
     </div>
   )
 
+  console.log('Account Name:', accountName)
+
   return (
     <SimpleView title='File Manager' size={SimpleViewSize.FULL}>
       <SimplePanel title={'Filesystem'} className='mb-[330px]' actionsButtons={actionsButtons}>
@@ -910,12 +942,14 @@ const FileListView: React.FC<FileListViewProps> = ({
                 system={system}
                 systems={systems}
                 username={username}
+                accountName={accountName}
               />
             </div>
             <BreadcrumbNavigation
               currentPath={currentPath}
               system={system}
               fileSystem={fileSystem}
+              accountName={accountName}
             />
             {remoteFsError == null && (
               <FileUpload
@@ -923,6 +957,7 @@ const FileListView: React.FC<FileListViewProps> = ({
                 currentPath={currentPath}
                 setLocalError={setLocalError}
                 fileUploadLimit={fileUploadLimit}
+                accountName={accountName}
               />
             )}
 
@@ -935,6 +970,7 @@ const FileListView: React.FC<FileListViewProps> = ({
                 currentPath={currentPath}
                 fileSystem={fileSystem}
                 system={system}
+                accountName={accountName}
               />
             )}
             {!fileList ||

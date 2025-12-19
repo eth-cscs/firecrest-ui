@@ -12,27 +12,17 @@ import { redirect } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
-import {
-  searchSystemByName,
-  getFileSystemByTargetPath,
-} from '~/modules/status/helpers/system-helper'
 import { logInfoHttp } from '~/helpers/log-helper'
-import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 // utils
-import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // apis
-import { getSystems, getUserInfo } from '~/apis/status-api'
-import { getOpsLs } from '~/apis/filesystem-api'
+import { getUserInfo } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
-// types
-import type { File } from '~/types/api-filesystem'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/login',
-  })
+  const { auth } = await requireAuth(request, authenticator)
   logInfoHttp({
     message: 'Filesystem index page',
     request: request,

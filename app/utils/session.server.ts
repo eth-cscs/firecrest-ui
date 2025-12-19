@@ -14,6 +14,14 @@ import redisConfig from '~/configs/redis.config'
 // loggers
 import logger from '~/logger/logger'
 
+export const returnToCookie = createCookie('__return-to', {
+  path: '/',
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: base.nodeEnv === 'production', // enable this in prod only
+  maxAge: 60, // 1 min: is enough for the round-trip of login
+})
+
 export const sessionCookie = createCookie('__session', {
   maxAge: 60 * 60, // 1 hour
   sameSite: 'lax', // this helps with CSRF

@@ -18,7 +18,7 @@ import {
 import { logInfoHttp } from '~/helpers/log-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 // utils
-import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // helpers
 import { getErrorFromData } from '~/helpers/error-helper'
 // apis
@@ -34,9 +34,7 @@ import type { File } from '~/types/api-filesystem'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/login',
-  })
+  const { auth } = await requireAuth(request, authenticator)
   logInfoHttp({
     message: 'Filesystem index page',
     request: request,
@@ -71,7 +69,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   try {
     const { output } = await getOpsLs(accessToken, systemName, path!, request)
     files = output || []
-  } catch (err) {
+  } catch (err: any) {
     logger.error('Error fetching filesystem data', { error: err })
     if (err?.status === 404) {
       remoteFsError = { message: "The filesystem path doesn't exist", status: 404 }

@@ -19,22 +19,23 @@ import {
 } from '~/modules/status/helpers/system-helper'
 import { buildFileSystemNavigationPath } from '~/modules/filesystem/helpers/filesystem-helper'
 // utils
-import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // apis
 import { getSystems } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/login',
-  })
+  const { auth } = await requireAuth(request, authenticator)
   logInfoHttp({
     message: 'Filesystem transfer index page',
     request: request,
     extraInfo: { username: auth.user.username },
   })
+  // Get path params
+  const systemName = params.systemName!
+  const accountName = params.accountName!
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
@@ -53,13 +54,13 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
     throw new Error('Filesystem(s) configuration error')
   }
   // Redirect
-  if (fileSystem.defaultWorkDir) {
+  if (fileSystem && fileSystem.defaultWorkDir) {
     const targetPath = `${fileSystem.path}/${auth.user.username}`
-    return redirect(buildFileSystemNavigationPath(system.name, targetPath), {
+    return redirect(buildFileSystemNavigationPath(system.name, targetPath, accountName), {
       headers: request.headers,
     })
   }
-  return redirect(buildFileSystemNavigationPath(system.name, fileSystem.path), {
+  return redirect(buildFileSystemNavigationPath(system.name, fileSystem?.path || '', accountName), {
     headers: request.headers,
   })
 }

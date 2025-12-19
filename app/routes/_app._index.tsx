@@ -12,7 +12,7 @@ import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { authenticator, getAuthAccessToken } from '~/utils/auth.server'
+import { authenticator, requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 // apis
@@ -23,9 +23,7 @@ import DashboardView from '~/modules/dashboard/components/views/DashboardView'
 
 export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/login',
-  })
+  const { auth } = await requireAuth(request, authenticator)
   logInfoHttp({
     message: 'Index page',
     request: request,
@@ -35,7 +33,6 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
-
   // Return response (deferred response)
   return {
     systems: systems,

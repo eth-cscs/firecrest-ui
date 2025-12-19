@@ -12,7 +12,7 @@ import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { getAuthAccessToken, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // apis
 import { getUserInfo } from '~/apis/status-api'
 // views
@@ -20,13 +20,11 @@ import ErrorView from '~/components/views/ErrorView'
 // contexts
 import { GroupProvider } from '~/contexts/GroupContext'
 // switchers
-import { GroupSwitcherPortal,GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
+import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/login',
-  })
+  const { auth } = await requireAuth(request, authenticator)
   const systemName = params.systemName!
   logInfoHttp({
     message: `Filesystems system ${systemName} layout page`,
@@ -47,9 +45,11 @@ export default function AppFilesystemsIndexRoute() {
   const { groups, systemName, groupName }: any = useLoaderData()
   return (
     <GroupProvider groups={groups} groupName={groupName}>
-      <GroupSwitcherPortal systemName={systemName} basePath='/filesystems' 
-      layout={GroupSwitcherLayout.horizontal}
-      className='hidden lg:block w-[360px]'
+      <GroupSwitcherPortal
+        systemName={systemName}
+        basePath='/filesystems'
+        layout={GroupSwitcherLayout.horizontal}
+        className='hidden lg:block w-[360px]'
       />
       <Outlet />
     </GroupProvider>

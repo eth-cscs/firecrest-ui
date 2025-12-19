@@ -42,6 +42,19 @@ export async function getAuthTokens(request: Request) {
   return auth.tokens
 }
 
+export async function requireAuth(
+  request: Request,
+  authenticator: any,
+  failureRedirect = '/login',
+) {
+  const url = new URL(request.url)
+  const returnTo = `${url.pathname}${url.search}`
+  const auth = await authenticator.isAuthenticated(request, {
+    failureRedirect: `${failureRedirect}?returnTo=${encodeURIComponent(returnTo)}`,
+  })
+  return { auth, returnTo }
+}
+
 // TODO: Refactoring and code optimization
 export async function getAuthAccessToken(request: Request, headers = new Headers()) {
   try {

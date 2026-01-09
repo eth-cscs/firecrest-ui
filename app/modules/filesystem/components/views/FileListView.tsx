@@ -166,9 +166,7 @@ const FileItem: React.FC<FileItemProps> = ({
               <LinkIcon className='h-5 w-5' />
             )}
           </span>{' '}
-          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
-                  {file.name}
-          </div>
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -388,9 +386,7 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
           <span className='mr-1 text-gray-500'>
             <FolderIcon className='h-5 w-5' />
           </span>{' '}
-          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>
-                  {file.name}
-          </div>
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </a>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -922,8 +918,6 @@ const FileListView: React.FC<FileListViewProps> = ({
       </button>
     </div>
   )
-
-  console.log('Account Name:', accountName)
 
   return (
     <SimpleView title='File Manager' size={SimpleViewSize.FULL}>

@@ -56,7 +56,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const formErrorFields = getFormErrorFieldsFromError(formError)
   const [formValues, setFormValues] = useState({
     system: systemName,
-    accountName: accountName,
+    account: accountName,
     workingDirectory: '',
     standardInput: '',
     standardOutput: '',
@@ -106,7 +106,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
     setFormValues({
       ...formValues,
       system: systemName,
-      accountName: accountName,
+      account: accountName,
       workingDirectory: '',
       standardInput: '',
       standardOutput: '',

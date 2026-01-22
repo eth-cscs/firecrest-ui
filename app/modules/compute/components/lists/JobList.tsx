@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useState } from 'react'
-import { useNavigate } from '@remix-run/react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from '@remix-run/react'
 import {
   ArrowPathRoundedSquareIcon,
   CalendarIcon,
@@ -20,7 +20,8 @@ import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 import { classNames } from '~/helpers/class-helper'
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
-import { jobCanBeCanceled, jobCanBeRetried } from '~/modules/compute/helpers/status-helper'
+import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
+import { sortJobs } from '~/modules/compute/helpers/job-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -32,6 +33,15 @@ import JobDetailsDialog from '~/modules/compute/components/dialogs/JobDetailsDia
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
+// apis
+import { getLocalJobs } from '~/apis/compute-api'
+// types
+import type { GetSystemJobsResponse } from '~/types/api-job'
+// contexts
+import { useSystem } from '~/contexts/SystemContext'
+import { useGroup } from '~/contexts/GroupContext'
+// alerts
+import AlertError from '~/components/alerts/AlertError'
 
 const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className = '' }) => {
   if (!unavailableSystems || unavailableSystems.length <= 0) {
@@ -76,7 +86,12 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
-const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account, user }: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({
+  system,
+  job,
+  account,
+  user,
+}: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -176,26 +191,11 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account, user }:
 }
 
 const JobsTable: React.FC<any> = ({ jobs }: any) => {
-  const onChangeHandler = (event: any) => {
-    window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
-  }
-
   if (jobs.length <= 0) {
     return <AlertInfo message='Job/s not found' />
   }
   return (
     <>
-      <label className='inline-flex items-center cursor-pointer'>
-        <input
-          type='checkbox'
-          defaultChecked={jobs.allUsers}
-          value=''
-          className='sr-only peer'
-          onChange={onChangeHandler}
-        />
-        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-        <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
-      </label>
       <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
         <colgroup>
           <col className='lg:w-3/12' />
@@ -222,7 +222,7 @@ const JobsTable: React.FC<any> = ({ jobs }: any) => {
           </tr>
         </thead>
         <tbody>
-          {jobs.jobs.map((job: Job) => (
+          {jobs.map((job: Job) => (
             <JobTableRow
               system={jobs.system}
               key={`${job.jobId}`}
@@ -237,13 +237,63 @@ const JobsTable: React.FC<any> = ({ jobs }: any) => {
   )
 }
 
-const SystemJobList: React.FC<any> = ({ jobs }) => {
-  jobs.jobs = jobs.jobs
-    .sort((a: any, b: any) => b.jobId - a.jobId)
-    .sort((a: any, b: any) => b.time.start - a.time.start)
+type SystemJobListProps = {
+  jobs: GetSystemJobsResponse
+}
+
+const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialAllUsers = searchParams.get('allUsers') === 'true'
+  const [allUsers, setAllUsers] = useState<boolean>(jobs?.allUsers ?? initialAllUsers)
+  const [localError, setLocalError] = useState<any>(jobs?.error ?? null)
+  const { selectedSystem } = useSystem()
+  const { selectedGroup } = useGroup()
+  const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
+
+  const onChangeHandler = (event: any) => {
+    // window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
+    const checked = event.currentTarget.checked
+    setAllUsers(checked)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('allUsers', String(checked))
+      return next
+    })
+  }
+
+  const fetchJobs = async () => {
+    try {
+      const response = await getLocalJobs(
+        selectedSystem?.name ?? '',
+        selectedGroup?.name ?? '',
+        allUsers,
+      )
+      setCurrentJobs(sortJobs(response?.jobs ?? []))
+    } catch (error) {
+      setLocalError(error)
+    }
+  }
+
+  useEffect(() => {
+    const intervalId = setInterval(fetchJobs, 2000)
+    return () => clearInterval(intervalId)
+  }, [selectedSystem?.name, selectedGroup?.name, allUsers])
+
   return (
     <>
-      <JobsTable jobs={jobs} />
+      <AlertError error={localError} />
+      <label className='inline-flex items-center cursor-pointer pt-2 pb-4'>
+        <input
+          type='checkbox'
+          defaultChecked={allUsers}
+          value=''
+          className='sr-only peer'
+          onChange={onChangeHandler}
+        />
+        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+        <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
+      </label>
+      <JobsTable jobs={currentJobs ?? []} />
     </>
   )
 }

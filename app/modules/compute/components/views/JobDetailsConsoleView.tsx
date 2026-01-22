@@ -629,8 +629,6 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     ]
   }
 
-  console.log('JobDetailsConsoleView render', dashboards)
-
   return (
     // <ActiveScrollCtx.Provider value={ctxValue}>
     <JobDetailsLayout

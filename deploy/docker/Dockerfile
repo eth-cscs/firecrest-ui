@@ -1,5 +1,5 @@
 # ---------- Base Stage ----------
-FROM node:22-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 WORKDIR /usr/server/app
 ENV PATH=/usr/server/app/node_modules/.bin:$PATH
 
@@ -24,7 +24,7 @@ COPY package.json yarn.lock .yarnrc.yml ./
 RUN yarn install --immutable --mode=skip-build
 
 # ---------- Final ----------
-FROM node:22-bookworm-slim AS final
+FROM node:24-bookworm-slim AS final
 WORKDIR /usr/server/app
 ENV NODE_ENV=production
 ENV PORT=3000

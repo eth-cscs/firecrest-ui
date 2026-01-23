@@ -5,7 +5,6 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { System } from '~/types/api-status'
 import type { PostJobPayload, PostJobResponse } from '~/types/api-compute'
 import type {
   GetSystemJobsResponse,
@@ -22,7 +21,6 @@ export const getJobs = async (
   system: string = '',
   account: string = '',
   allUsers: boolean = false,
-  request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
     const apiResponse = await api.get<GetJobsResponse>(
@@ -33,9 +31,25 @@ export const getJobs = async (
         },
       },
     )
-    return { system: system, jobs: apiResponse.jobs ? apiResponse.jobs : [], account:account, allUsers:allUsers, error: undefined }
-  } catch (api_error) {
-    return { system: system, jobs: [], account:account, allUsers:allUsers, error: {message:'Unable to fetch jobs. Downstream status: ' + api_error.statusText}  }
+    return {
+      system: system,
+      jobs: apiResponse.jobs ? apiResponse.jobs : [],
+      account: account,
+      allUsers: allUsers,
+      error: undefined,
+    }
+  } catch (api_error: unknown) {
+    let message = 'Unable to fetch jobs.'
+    if (api_error instanceof Error) {
+      message += ' ' + api_error.message
+    }
+    return {
+      system: system,
+      jobs: [],
+      account: account,
+      allUsers: allUsers,
+      error: { message },
+    }
   }
 }
 
@@ -115,6 +129,19 @@ export const postJob = async (
 export const getLocalJob = async (systemName: string, jobId: number): Promise<GetJobResponse> => {
   const apiResponse = await api.get<GetJobResponse>(
     `/api/compute/systems/${systemName}/jobs/${jobId}`,
+    {},
+    ApiTarget.API_LOCAL,
+  )
+  return apiResponse
+}
+
+export const getLocalJobs = async (
+  systemName: string,
+  account: string,
+  allUsers: boolean = false,
+): Promise<GetSystemJobsResponse> => {
+  const apiResponse = await api.get<GetSystemJobsResponse>(
+    `/api/compute/systems/${systemName}/accounts/${account}/jobs?allUsers=${allUsers}`,
     {},
     ApiTarget.API_LOCAL,
   )

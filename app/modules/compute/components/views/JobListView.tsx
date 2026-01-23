@@ -8,11 +8,8 @@
 import React from 'react'
 import { Link } from '@remix-run/react'
 import { PlusIcon } from '@heroicons/react/20/solid'
-import { ArrowPathIcon } from '@heroicons/react/24/outline'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'
-// alerts
-import AlertError from '~/components/alerts/AlertError'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // panels
@@ -44,8 +41,11 @@ const JobListView: React.FC<any> = ({ jobs }) => {
   )
   return (
     <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
-      <SimplePanel title={'List of jobs for: ' + selectedGroup?.name} className='mb-4' actionsButtons={actionsButtons}>
-        <AlertError error={jobs.error} />
+      <SimplePanel
+        title={'List of jobs for: ' + selectedGroup?.name}
+        className='mb-4'
+        actionsButtons={actionsButtons}
+      >
         <JobList jobs={jobs} />
       </SimplePanel>
     </SimpleView>

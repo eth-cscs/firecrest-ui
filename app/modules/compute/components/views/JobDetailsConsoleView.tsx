@@ -58,7 +58,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
     setStdoutDownloadDialogOpen(true)
   }
   const handleStderrDownload = () => {
-    setStdoutDownloadDialogOpen(true)
+    setStderrDownloadDialogOpen(true)
   }
 
   return (
@@ -73,7 +73,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
       {job && jobCanBeCanceled(job) && (
         <div className='mt-2 mb-4 flex justify-end gap-2"'>
           <button
-            className='flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
+            className='flex items-center gap-1.5 rounded-md border px-3 py-1.5 bg-red-600 text-sm font-semibold text-white shadow-sm hover:bg-red-500'
             onClick={() => setCancelDialogOpen(true)}
           >
             <XMarkIcon className='w-4 h-4' />
@@ -132,9 +132,9 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 <button
                   onClick={handleStdoutDownload}
                   title='Download STDOUT log'
-                  className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+                  className='w-8 h-8 flex items-center justify-center rounded-md border text-white bg-blue-700 hover:bg-blue-500'
                 >
-                  <ArrowDownCircleIcon className='w-4 h-4' />
+                  <ArrowDownCircleIcon className='w-6 h-6' />
                 </button>
               </>
             )}
@@ -154,10 +154,10 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 />
                 <button
                   onClick={handleStderrDownload}
-                  title='Download STDOUT log'
-                  className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
+                  title='Download STDErr log'
+                  className='w-8 h-8 flex items-center justify-center rounded-md border text-white bg-blue-700 hover:bg-blue-500'
                 >
-                  <ArrowDownCircleIcon className='w-4 h-4' />
+                  <ArrowDownCircleIcon className='w-6 h-6' /> 
                 </button>
               </>
             )}

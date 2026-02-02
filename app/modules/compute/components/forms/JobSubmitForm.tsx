@@ -276,7 +276,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                   </div>
                   <div>
                     {' '}
-                    {showAdvancedOptions ? 'Hide advanced options' : 'Show advanced options'}
+                    {showAdvancedOptions ? 'Hide advanced options' : 'Show advanced options (optional)'}
                   </div>
                 </button>
               </div>
@@ -288,7 +288,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     htmlFor='standardInput'
                     className='block text-sm font-medium text-gray-700'
                   >
-                    Standard input
+                    Standard input file path
                   </label>
                   <input
                     type='text'
@@ -298,7 +298,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                       setFormValues({ ...formValues, standardInput: e.target.value })
                     }
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-                    placeholder='/dev/null'
+                    placeholder=''
                   />
                   {showInputValidation({
                     fieldName: 'standardInput',
@@ -310,7 +310,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     htmlFor='standardOutput'
                     className='block text-sm font-medium text-gray-700'
                   >
-                    Standard output
+                    Standard output file path
                   </label>
                   <input
                     type='text'
@@ -320,7 +320,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                       setFormValues({ ...formValues, standardOutput: e.target.value })
                     }
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-                    placeholder='/home/<my-directory>/<my-output-file>.out'
+                    placeholder=''
                   />
                   {showInputValidation({
                     fieldName: 'standardOutput',
@@ -332,7 +332,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     htmlFor='standardError'
                     className='block text-sm font-medium text-gray-700'
                   >
-                    Standard error
+                    Standard error file path
                   </label>
                   <input
                     type='text'
@@ -342,7 +342,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                       setFormValues({ ...formValues, standardError: e.target.value })
                     }
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-                    placeholder='/home/<my-directory>/<my-error-file>.out'
+                    placeholder=''
                   />
                   {showInputValidation({
                     fieldName: 'standardError',
@@ -351,14 +351,14 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 </div>
                 <div className='col-span-6'>
                   <label htmlFor='environment' className='block text-sm font-medium text-gray-700'>
-                    Environment
+                    Environment variables (JSON format)
                   </label>
                   <textarea
                     name='environment'
                     value={formValues.environment}
                     onChange={(e) => setFormValues({ ...formValues, environment: e.target.value })}
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-                    placeholder='{"PATH": "/bin:/usr/bin/:/usr/local/bin/"}'
+                    placeholder='Example: {"PATH": "/bin:/usr/bin/:/usr/local/bin/"}'
                   />
                   {showInputValidation({
                     fieldName: 'environment',

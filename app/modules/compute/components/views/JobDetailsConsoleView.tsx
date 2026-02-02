@@ -58,7 +58,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
     setStdoutDownloadDialogOpen(true)
   }
   const handleStderrDownload = () => {
-    setStdoutDownloadDialogOpen(true)
+    setStderrDownloadDialogOpen(true)
   }
 
   return (
@@ -154,10 +154,10 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 />
                 <button
                   onClick={handleStderrDownload}
-                  title='Download STDOUT log'
+                  title='Download STDErr log'
                   className='w-8 h-8 flex items-center justify-center rounded-md border text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100'
                 >
-                  <ArrowDownCircleIcon className='w-4 h-4' />
+                  <ArrowDownCircleIcon className='w-4 h-4' /> 
                 </button>
               </>
             )}

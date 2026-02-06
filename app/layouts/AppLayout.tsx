@@ -16,6 +16,8 @@ import Sidebar from './Sidebar'
 import Footer from './Footer'
 // overlays
 import NotificationOverlay from '~/components/overlays/NotificationOverlay'
+// contexts
+import { RefreshingProvider } from '~/contexts/RefreshingContext'
 
 type LayoutMode = 'standard' | 'fixed-right'
 
@@ -62,7 +64,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   const isFixedRight = layoutMode === 'fixed-right'
   if (isFixedRight) {
     return (
-      <>
+      <RefreshingProvider>
         <div className='min-h-full bg-gray-100'>
           <div className='stacked-notifications'>
             <NotificationOverlay messages={notificationMessages} />
@@ -89,11 +91,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({
             />
           </div>
         </div>
-      </>
+      </RefreshingProvider>
     )
   }
   return (
-    <>
+    <RefreshingProvider>
       <div className='h-screen bg-gray-100'>
         <div className='stacked-notifications'>
           <NotificationOverlay messages={notificationMessages} />
@@ -115,7 +117,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           <Footer environment={environment} appVersion={appVersion} companyName={companyName} />
         </div>
       </div>
-    </>
+    </RefreshingProvider>
   )
 }
 

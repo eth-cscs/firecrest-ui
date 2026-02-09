@@ -9,8 +9,7 @@ import { Job } from '~/types/api-job'
 
 export const sortJobs = (jobs: Job[]) =>
   [...jobs].sort((a, b) => {
-    if (b.time.start !== a.time.start) {
-      return b.time.start - a.time.start
-    }
-    return b.jobId - a.jobId
+    const aId = a.jobId ?? -Infinity
+    const bId = b.jobId ?? -Infinity
+    return bId - aId
   })

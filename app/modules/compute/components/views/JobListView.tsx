@@ -30,7 +30,7 @@ interface JobListViewProps {
   jobsPromise: Promise<GetSystemJobsResponse>
 }
 
-const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }) => {
+const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewProps) => {
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
 

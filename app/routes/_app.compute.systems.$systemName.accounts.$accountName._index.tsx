@@ -6,13 +6,13 @@
 *************************************************************************/
 
 import { useLoaderData, useRouteError } from '@remix-run/react'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-// types
-import type { GetSystemJobsResponse } from '~/types/api-job'
+import type { LoaderFunctionArgs } from '@remix-run/node'
+import { defer } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { promiseWithTimeout } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // apis
@@ -21,7 +21,7 @@ import { getJobs } from '~/apis/compute-api'
 import ErrorView from '~/components/views/ErrorView'
 import JobListView from '~/modules/compute/components/views/JobListView'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request, authenticator)
   // Get params
@@ -38,20 +38,19 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
-  // Call api/s and fetch data
-  const response: GetSystemJobsResponse = await getJobs(
-    accessToken,
-    systemName,
-    accountName,
-    allUsers,
+  // Call api/s and fetch data - deferred for better UX with timeout protection
+  const jobsPromise = promiseWithTimeout(
+    getJobs(accessToken, systemName, accountName, allUsers),
+    30000, // 30 seconds timeout
+    'Loading jobs took too long. The system might be busy or unavailable.',
   )
-  // Return response
-  return response
+  // Return deferred response
+  return defer({ jobsPromise })
 }
 
 export default function AppComputeIandexRoute() {
-  const jobs: any = useLoaderData()
-  return <JobListView jobs={jobs} />
+  const { jobsPromise } = useLoaderData<typeof loader>()
+  return <JobListView jobsPromise={jobsPromise} />
 }
 
 export function ErrorBoundary() {

@@ -8,6 +8,10 @@
 import React from 'react'
 // badges
 import EnvironmentBadge from '~/components/badges/EnvironmentBadge'
+// indicators
+import RefreshingIndicator from '~/components/indicators/RefreshingIndicator'
+// contexts
+import { useRefreshing } from '~/contexts/RefreshingContext'
 
 interface FooterProps {
   environment: string
@@ -23,6 +27,7 @@ const Footer: React.FC<FooterProps> = ({
   fixed = false,
 }: FooterProps) => {
   const version = appVersion ? appVersion : 'unknown'
+  const { isRefreshing, refreshMessage } = useRefreshing()
 
   return (
     <footer
@@ -30,10 +35,14 @@ const Footer: React.FC<FooterProps> = ({
     >
       <div className='flex items-center justify-between'>
         <div className='pl-3 pt-3'>
-          <p className='text-xs text-xs text-gray-400'>
-            &copy; {new Date().getFullYear()}
-            {companyName !== null ? ` ${companyName}` : ''} - All rights reserved
-          </p>
+          {isRefreshing ? (
+            <RefreshingIndicator isRefreshing={isRefreshing} text={refreshMessage} />
+          ) : (
+            <p className='text-xs text-xs text-gray-400'>
+              &copy; {new Date().getFullYear()}
+              {companyName !== null ? ` ${companyName}` : ''} - All rights reserved
+            </p>
+          )}
         </div>
         <div className='pr-3 pt-3 inline-flex items-center'>
           <EnvironmentBadge environment={environment} className='mr-4' />

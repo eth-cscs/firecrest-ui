@@ -8,7 +8,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from '@remix-run/react'
 import {
-  ArrowPathRoundedSquareIcon,
   CalendarIcon,
   ClockIcon,
   XMarkIcon,
@@ -40,6 +39,7 @@ import type { GetSystemJobsResponse } from '~/types/api-job'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
+import { useRefreshing } from '~/contexts/RefreshingContext'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
 
@@ -248,9 +248,10 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   const [localError, setLocalError] = useState<any>(jobs?.error ?? null)
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
+  const { setRefreshing } = useRefreshing()
   const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
 
-  const onChangeHandler = (event: any) => {
+  const onChangeHandler = async (event: any) => {
     // window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
     const checked = event.currentTarget.checked
     setAllUsers(checked)
@@ -259,18 +260,34 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
       next.set('allUsers', String(checked))
       return next
     })
+    // Trigger immediate fetch for instant feedback with the new value
+    await fetchJobs(checked)
   }
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (allUsersOverride?: boolean) => {
     try {
+      setRefreshing(true, 'Refreshing jobs...')
+      const startTime = Date.now()
+
       const response = await getLocalJobs(
         selectedSystem?.name ?? '',
         selectedGroup?.name ?? '',
-        allUsers,
+        allUsersOverride !== undefined ? allUsersOverride : allUsers,
       )
+
       setCurrentJobs(sortJobs(response?.jobs ?? []))
+      setLocalError(null)
+
+      // Ensure minimum display time of 300ms to avoid flickering
+      const elapsed = Date.now() - startTime
+      const minDisplayTime = 300
+      if (elapsed < minDisplayTime) {
+        await new Promise((resolve) => setTimeout(resolve, minDisplayTime - elapsed))
+      }
     } catch (error) {
       setLocalError(error)
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -282,17 +299,19 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   return (
     <>
       <AlertError error={localError} />
-      <label className='inline-flex items-center cursor-pointer pt-2 pb-4'>
-        <input
-          type='checkbox'
-          defaultChecked={allUsers}
-          value=''
-          className='sr-only peer'
-          onChange={onChangeHandler}
-        />
-        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-        <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
-      </label>
+      <div className='pt-2 pb-4'>
+        <label className='inline-flex items-center cursor-pointer'>
+          <input
+            type='checkbox'
+            defaultChecked={allUsers}
+            value=''
+            className='sr-only peer'
+            onChange={onChangeHandler}
+          />
+          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+          <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
+        </label>
+      </div>
       <JobsTable jobs={currentJobs ?? []} systemName={selectedSystem?.name || ''} />
     </>
   )

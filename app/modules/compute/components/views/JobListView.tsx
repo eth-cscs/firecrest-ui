@@ -5,11 +5,13 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React from 'react'
-import { Link } from '@remix-run/react'
+import React, { Suspense } from 'react'
+import { Link, Await } from '@remix-run/react'
 import { PlusIcon } from '@heroicons/react/20/solid'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'
+// types
+import type { GetSystemJobsResponse } from '~/types/api-job'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // panels
@@ -19,14 +21,18 @@ import JobList from '~/modules/compute/components/lists/JobList'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
+// errors
+import AsyncError from '~/components/errors/AsyncError'
 
-const JobListView: React.FC<any> = ({ jobs }) => {
+interface JobListViewProps {
+  jobsPromise: Promise<GetSystemJobsResponse>
+}
+
+const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewProps) => {
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
-
-  const handleClickReload = () => {
-    window.location.reload()
-  }
 
   const actionsButtons = (
     <>
@@ -39,6 +45,7 @@ const JobListView: React.FC<any> = ({ jobs }) => {
       </Link>
     </>
   )
+
   return (
     <SimpleView title={LABEL_COMPUTE_TITLE} size={SimpleViewSize.FULL}>
       <SimplePanel
@@ -46,7 +53,11 @@ const JobListView: React.FC<any> = ({ jobs }) => {
         className='mb-4'
         actionsButtons={actionsButtons}
       >
-        <JobList jobs={jobs} />
+        <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
+          <Await resolve={jobsPromise} errorElement={<AsyncError />}>
+            {(jobs: GetSystemJobsResponse) => <JobList jobs={jobs} />}
+          </Await>
+        </Suspense>
       </SimplePanel>
     </SimpleView>
   )

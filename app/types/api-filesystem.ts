@@ -127,16 +127,10 @@ export type PostTransferMvRequest = {
   targetPath: string
 }
 
-// TODO response need to be fixed according to the backend implementation
 export interface TransferUploadDirectives {
-  // completeUploadUrl: string
-  complete_upload_url?: string
-  // partsUploadUrls: string[]
-  parts_upload_urls: string[]
-  // maxPartSize: number
-  max_part_size: number
-  // fileSize: number
-  file_size: number
+  completeUploadUrl?: string
+  partsUploadUrls: string[]
+  maxPartSize: number
 }
 
 export interface GetTransferUploadResponse {
@@ -144,7 +138,6 @@ export interface GetTransferUploadResponse {
 }
 
 export interface TransferDownloadDirectives {
-  download_url: string
   downloadUrl: string
 }
 

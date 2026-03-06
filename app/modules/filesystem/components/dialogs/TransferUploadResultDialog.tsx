@@ -44,11 +44,11 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
   const getTransferDirectives = () => {
     if (!transferResult) return null
     const { transferDirectives } = transferResult
-    const { parts_upload_urls, complete_upload_url, max_part_size } = transferDirectives
+    const { partsUploadUrls, completeUploadUrl, maxPartSize } = transferDirectives
     return {
-      partsUploadUrls: parts_upload_urls,
-      completeUploadUrl: complete_upload_url,
-      maxPartSize: max_part_size,
+      partsUploadUrls,
+      completeUploadUrl,
+      maxPartSize,
       blocSize: '1048576', // 1MB
     }
   }

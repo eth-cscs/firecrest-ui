@@ -56,7 +56,7 @@ export const getJobs = async (
 export const getJob = async (
   accessToken: string,
   systemName: string,
-  jobId: number,
+  jobId: string | number,
   request: Request | null = null,
 ): Promise<GetJobResponse> => {
   try {
@@ -74,7 +74,7 @@ export const getJob = async (
 export const getJobMetadata = async (
   accessToken: string,
   systemName: string,
-  jobId: number,
+  jobId: string | number,
   request: Request | null = null,
 ): Promise<GetJobMetadataResponse> => {
   try {
@@ -95,7 +95,7 @@ export const getJobMetadata = async (
 export const cancelJob = async (
   accessToken: string,
   systemName: string,
-  jobId: number,
+  jobId: string | number,
   request: Request | null = null,
 ): Promise<any> => {
   await api.delete<any, any>(`/compute/${systemName}/jobs/${jobId}`, null, {
@@ -126,7 +126,7 @@ export const postJob = async (
 
 // Local apis
 
-export const getLocalJob = async (systemName: string, jobId: number): Promise<GetJobResponse> => {
+export const getLocalJob = async (systemName: string, jobId: string | number): Promise<GetJobResponse> => {
   const apiResponse = await api.get<GetJobResponse>(
     `/api/compute/systems/${systemName}/jobs/${jobId}`,
     {},

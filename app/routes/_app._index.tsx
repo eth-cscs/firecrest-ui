@@ -5,23 +5,28 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError } from '@remix-run/react'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { useLoaderData, useRouteError } from '@remix-run/react'
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+import { defer } from '@remix-run/node'
+import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { promiseWithTimeout } from '~/helpers/promise-helper'
 // utils
 import { authenticator, requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 // apis
-import { getSystems } from '~/apis/status-api'
+import { getSystems, getSystemNodes } from '~/apis/status-api'
+// types
+import type { SystemNodesOverview } from '~/types/api-status'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import DashboardView from '~/modules/dashboard/components/views/DashboardView'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request, authenticator)
   logInfoHttp({
@@ -33,15 +38,49 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken)
-  // Return response (deferred response)
-  return {
-    systems: systems,
-  }
+  // Defer nodes fetching — resolves to a map of system name → nodes health
+  const systemsNodesPromise = Promise.all(
+    systems.map(async (system) => {
+      try {
+        const { nodes } = await promiseWithTimeout(
+          getSystemNodes(accessToken, system.name),
+          15000,
+          `Loading nodes for ${system.name} timed out.`,
+        )
+        return {
+          name: system.name,
+          nodes: {
+            available: nodes.filter((n) => n.state.toLowerCase() === 'idle').length,
+            allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(n.state.toLowerCase()))
+              .length,
+            total: nodes.length,
+          } as SystemNodesOverview,
+        }
+      } catch {
+        return null
+      }
+    }),
+  ).then((results) => {
+    const systemsNodes: Record<string, SystemNodesOverview> = {}
+    for (const result of results) {
+      if (result !== null) {
+        systemsNodes[result.name] = result.nodes
+      }
+    }
+    return systemsNodes
+  })
+  // Return response with deferred promise (defer is needed for Remix v2 streaming)
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  return defer({
+    systems,
+    systemsNodesPromise,
+  })
 }
 
 export default function AppIndexRoute() {
   const { systems } = useSystem()
-  return <DashboardView systems={systems} />
+  const { systemsNodesPromise } = useLoaderData<typeof loader>()
+  return <DashboardView systems={systems} systemsNodesPromise={systemsNodesPromise} />
 }
 
 export function ErrorBoundary() {

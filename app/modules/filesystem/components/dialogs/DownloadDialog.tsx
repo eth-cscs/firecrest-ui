@@ -61,8 +61,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
         filePath,
         account,
       )
-      // TODO  download_url (not camelized) might be adjusted according to the backend implementation
-      setDownloadUrl(response?.transferDirectives?.download_url)
+      setDownloadUrl(response?.transferDirectives?.downloadUrl)
       setDownloadJob(response?.transferJob?.jobId)
       setLoading(false)
     } catch (error) {

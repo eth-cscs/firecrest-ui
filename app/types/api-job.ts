@@ -46,7 +46,7 @@ export interface JobTask {
 }
 
 export interface Job {
-  jobId: number
+  jobId: string
   name: string
   status: JobStatus
   time: JobTime
@@ -65,7 +65,7 @@ export interface Job {
 }
 
 export interface JobMetadata {
-  jobId: number
+  jobId: string
   script: string | null
   standardInput: string | null
   standardOutput: string | null

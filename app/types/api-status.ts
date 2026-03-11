@@ -64,7 +64,7 @@ export interface SystemNodesOverview {
 
 export interface SystemNode {
   name: string
-  state: string
+  state: string | string[]
   sockets: number
   cores: number
   threads: number

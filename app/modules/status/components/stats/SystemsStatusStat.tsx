@@ -36,7 +36,7 @@ import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
 
 interface SystemStatusStatProps {
   system: System
-  nodes?: SystemNodesOverview
+  nodes?: SystemNodesOverview | null
   viewAllByDefault?: boolean
 }
 
@@ -249,16 +249,19 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                 Alloc
               </span>
             </span>
-            {nodes ? (
+            {nodes === undefined && <span className='italic text-gray-400'>Loading...</span>}
+            {nodes === null && (
+              <span className='italic text-red-400'>Node data unavailable</span>
+            )}
+            {nodes != null && (
               <span>
                 {nodes.available + nodes.allocated} / {nodes.total}
               </span>
-            ) : (
-              <span className='italic'>Loading...</span>
             )}
           </div>
           <div className='w-full bg-gray-200 rounded-full h-2 flex overflow-hidden'>
-            {nodes ? (
+            {nodes === undefined && <div className='bg-gray-300 h-2 w-full animate-pulse' />}
+            {nodes != null && (
               <>
                 <div
                   className='bg-green-500 h-2 transition-all duration-300'
@@ -269,8 +272,6 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                   style={{ width: `${allocPercent}%` }}
                 />
               </>
-            ) : (
-              <div className='bg-gray-300 h-2 w-full animate-pulse' />
             )}
           </div>
         </div>

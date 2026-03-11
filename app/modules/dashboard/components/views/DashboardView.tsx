@@ -14,9 +14,11 @@ import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // stats
 import SystemsStatusStat from '~/modules/status/components/stats/SystemsStatusStat'
 
+type SystemsNodes = Record<string, SystemNodesOverview | null>
+
 interface DashboardViewProps {
   systems: any[]
-  systemsNodesPromise: Promise<Record<string, SystemNodesOverview>>
+  systemsNodesPromise: Promise<SystemsNodes>
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ systems, systemsNodesPromise }) => {
@@ -24,7 +26,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ systems, systemsNodesProm
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
       <Suspense fallback={<SystemsStatusStat systems={systems} />}>
         <Await resolve={systemsNodesPromise} errorElement={<SystemsStatusStat systems={systems} />}>
-          {(systemsNodes: Record<string, SystemNodesOverview>) => (
+          {(systemsNodes: SystemsNodes) => (
             <SystemsStatusStat systems={systems} systemsNodes={systemsNodes} />
           )}
         </Await>

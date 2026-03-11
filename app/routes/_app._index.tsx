@@ -47,25 +47,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           15000,
           `Loading nodes for ${system.name} timed out.`,
         )
+        const nodeState = (n: { state: string | string[] }) =>
+          (Array.isArray(n.state) ? n.state[0] : n.state).toLowerCase()
         return {
           name: system.name,
           nodes: {
-            available: nodes.filter((n) => n.state.toLowerCase() === 'idle').length,
-            allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(n.state.toLowerCase()))
-              .length,
+            available: nodes.filter((n) => nodeState(n) === 'idle').length,
+            allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length,
             total: nodes.length,
           } as SystemNodesOverview,
         }
-      } catch {
-        return null
+      } catch (error) {
+        console.warn(`Failed to load nodes for system ${system.name}:`, error)
+        return { name: system.name, nodes: null }
       }
     }),
   ).then((results) => {
-    const systemsNodes: Record<string, SystemNodesOverview> = {}
+    const systemsNodes: Record<string, SystemNodesOverview | null> = {}
     for (const result of results) {
-      if (result !== null) {
-        systemsNodes[result.name] = result.nodes
-      }
+      systemsNodes[result.name] = result.nodes
     }
     return systemsNodes
   })

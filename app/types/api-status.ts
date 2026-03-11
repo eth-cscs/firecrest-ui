@@ -56,9 +56,29 @@ export interface FileSystem {
   defaultWorkDir: boolean
 }
 
-export interface SystemNodesHealth {
+export interface SystemNodesOverview {
   available: number
+  allocated: number
   total: number
+}
+
+export interface SystemNode {
+  name: string
+  state: string
+  sockets: number
+  cores: number
+  threads: number
+  cpus: number
+  cpuLoad: number
+  freeMemory: number
+  features: string
+  address: string
+  hostname: string
+  partitions: string[]
+  weight: number
+  allocMemory: number
+  allocCpus: number
+  idleCpus: number
 }
 
 export interface ServiceHealth {
@@ -67,7 +87,7 @@ export interface ServiceHealth {
   latency: number
   healthy: boolean
   message: string | null
-  nodes?: SystemNodesHealth
+  nodes?: SystemNodesOverview
   path?: string
 }
 
@@ -97,6 +117,10 @@ export interface System {
 
 export interface GetSystemsResponse {
   systems: System[]
+}
+
+export interface GetSystemNodesResponse {
+  nodes: SystemNode[]
 }
 
 export interface User {

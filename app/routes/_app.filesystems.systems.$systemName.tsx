@@ -39,8 +39,16 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const accessToken = await getAuthAccessToken(request)
   // Get path params
   const groupName = params.accountName || null
-  // Defer getUserInfo so the page renders immediately while groups load in background
-  const userInfoPromise = getUserInfo(accessToken, systemName)
+  // Defer getUserInfo so the page renders immediately while groups load in background.
+  // Convert any Response rejection to a plain Error so it serialises through
+  // turbo-stream and reaches the ErrorBoundary with the correct message.
+  const userInfoPromise = getUserInfo(accessToken, systemName).catch(async (error) => {
+    if (error instanceof Response) {
+      const body = await error.text().catch(() => '')
+      throw new Error(`${error.status} ${error.statusText}${body ? ': ' + body : ''}`)
+    }
+    throw error
+  })
   return defer({ userInfoPromise, groupName, systemName })
 }
 

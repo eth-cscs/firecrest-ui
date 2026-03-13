@@ -5,22 +5,25 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError } from '@remix-run/react'
+import { useEffect } from 'react'
+import { useLoaderData, useNavigate, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { redirect } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
-// apis
-import { getUserInfo } from '~/apis/status-api'
+import { requireAuth, authenticator } from '~/utils/auth.server'
+// contexts
+import { useGroup } from '~/contexts/GroupContext'
 // views
 import ErrorView from '~/components/views/ErrorView'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
-  // Check authentication
+  // Check authentication only — groups are resolved client-side from the
+  // deferred userInfoPromise already started by the parent layout loader.
   const { auth } = await requireAuth(request, authenticator)
   const systemName = params.systemName!
   logInfoHttp({
@@ -28,12 +31,21 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     request: request,
     extraInfo: { username: auth.user.username },
   })
-  // Get auth access token
-  const accessToken = await getAuthAccessToken(request)
-  // Call api/s and fetch data
-  const { group } = await getUserInfo(accessToken, systemName)
-  // Redirect to default account if no account specified
-  return redirect(`/compute/systems/${systemName}/accounts/${group.name}`)
+  return { systemName }
+}
+
+export default function AppComputeSystemIndexRoute() {
+  const { systemName } = useLoaderData<typeof loader>()
+  const { selectedGroup } = useGroup()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (selectedGroup) {
+      navigate(`/compute/systems/${systemName}/accounts/${selectedGroup.name}`, { replace: true })
+    }
+  }, [selectedGroup, systemName, navigate])
+
+  return <LoadingSpinner title='Loading...' className='py-10' />
 }
 
 export function ErrorBoundary() {

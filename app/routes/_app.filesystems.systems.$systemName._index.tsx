@@ -5,46 +5,51 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import _ from 'lodash'
+import { useEffect } from 'react'
+import { useLoaderData, useLocation, useNavigate, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { useRouteError } from '@remix-run/react'
-import { redirect } from '@remix-run/node'
 // loggers
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
-// apis
-import { getUserInfo } from '~/apis/status-api'
+import { requireAuth, authenticator } from '~/utils/auth.server'
+// contexts
+import { useGroup } from '~/contexts/GroupContext'
 // views
 import ErrorView from '~/components/views/ErrorView'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
-  // Check authentication
+  // Check authentication only — groups are resolved client-side from the
+  // deferred userInfoPromise already started by the parent layout loader.
   const { auth } = await requireAuth(request, authenticator)
+  const systemName = params.systemName!
   logInfoHttp({
     message: 'Filesystem index page',
     request: request,
     extraInfo: { username: auth.user.username },
   })
-  // Get path params
-  const systemName = params.systemName!
-  // Get url params
-  const url = new URL(request.url)
-  const targetPath = url.searchParams.get('targetPath')
-  // Get auth access token
-  const accessToken = await getAuthAccessToken(request)
-  // Call api/s and fetch data
-  const { group } = await getUserInfo(accessToken, systemName)
-  // Redirect to default account if no account specified
-  if (targetPath == null || _.isEmpty(targetPath)) {
-    return redirect(`/filesystems/systems/${systemName}/accounts/${group.name}`)
-  } else {
-    return redirect(
-      `/filesystems/systems/${systemName}/accounts/${group.name}?targetPath=${encodeURIComponent(targetPath)}`,
-    )
-  }
+  return { systemName }
+}
+
+export default function AppFilesystemsSystemIndexRoute() {
+  const { systemName } = useLoaderData<typeof loader>()
+  const { selectedGroup } = useGroup()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (selectedGroup) {
+      const targetPath = new URLSearchParams(location.search).get('targetPath')
+      const base = `/filesystems/systems/${systemName}/accounts/${selectedGroup.name}`
+      const to = targetPath ? `${base}?targetPath=${encodeURIComponent(targetPath)}` : base
+      navigate(to, { replace: true })
+    }
+  }, [selectedGroup, systemName, navigate, location.search])
+
+  return <LoadingSpinner title='Loading...' className='py-10' />
 }
 
 export function ErrorBoundary() {

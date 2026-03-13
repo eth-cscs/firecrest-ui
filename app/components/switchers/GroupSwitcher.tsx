@@ -57,7 +57,7 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
   className = '',
 }: GroupSwitcherProps) => {
   const navigate = useNavigate()
-  const { groups, selectedGroup, setSelectedGroupName } = useGroup()
+  const { groups, selectedGroup, isLoadingGroups, setSelectedGroupName } = useGroup()
   const handleSwitch = (groupName: string) => {
     setSelectedGroupName(groupName)
     const group = groups.find((g) => g.name === groupName)
@@ -95,10 +95,16 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
         </div>
         <button
           type='button'
-          onClick={() => setOpen((v) => !v)}
-          className='flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500'
+          onClick={() => !isLoadingGroups && setOpen((v) => !v)}
+          disabled={isLoadingGroups}
+          className={[
+            'flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none',
+            isLoadingGroups
+              ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'border-gray-300 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-gray-500',
+          ].join(' ')}
         >
-          <span className={`truncate text-gray-900`}>
+          <span className='truncate'>
             {selectedGroup?.name}
           </span>
           <ChevronDownIcon className='h-4 w-4 text-gray-400' />

@@ -17,7 +17,13 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
 // types
-import { SystemHealtyStatus, type System, ServiceHealth, ServiceType } from '~/types/api-status'
+import {
+  SystemHealtyStatus,
+  type System,
+  type SystemNodesOverview,
+  ServiceHealth,
+  ServiceType,
+} from '~/types/api-status'
 // helpers
 import { classNames } from '~/helpers/class-helper'
 import { formatDateTime } from '~/helpers/date-helper'
@@ -30,6 +36,7 @@ import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
 
 interface SystemStatusStatProps {
   system: System
+  nodes?: SystemNodesOverview | null
   viewAllByDefault?: boolean
 }
 
@@ -203,11 +210,14 @@ const SystemHealthDetailTable: React.FC<SystemHealthDetailTableProps> = ({
 
 const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
   system,
+  nodes,
   viewAllByDefault = false,
 }: SystemStatusStatProps) => {
   const [viewAll, setViewAll] = useState(viewAllByDefault)
-  const { name, ssh, scheduler, servicesHealth, probing } = system
+  const { name, ssh, scheduler, servicesHealth } = system
   const systemHealtyStatus = isSystemHealthy(system)
+  const idlePercent = nodes && nodes.total > 0 ? (nodes.available / nodes.total) * 100 : 0
+  const allocPercent = nodes && nodes.total > 0 ? (nodes.allocated / nodes.total) * 100 : 0
   const handleNavigateToSystem = (systemName: string) => {
     window.location.href = `/compute/systems/${systemName}`
   }
@@ -226,6 +236,44 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
           <LabelBadge color={LabelColor.BLUE}>{scheduler.version}</LabelBadge>
           &nbsp;&bull;&nbsp;<span>Hostname</span>&nbsp;
           <LabelBadge color={LabelColor.BLUE}>{ssh.host}</LabelBadge>
+        </div>
+        <div className='ml-16 mt-3'>
+          <div className='flex justify-between text-xs text-gray-500 mb-1'>
+            <span className='flex items-center gap-3'>
+              <span className='flex items-center gap-1'>
+                <span className='inline-block w-2 h-2 rounded-full bg-green-500' />
+                Idle
+              </span>
+              <span className='flex items-center gap-1'>
+                <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
+                Alloc
+              </span>
+            </span>
+            {nodes === undefined && <span className='italic text-gray-400'>Loading...</span>}
+            {nodes === null && (
+              <span className='italic text-red-400'>Node data unavailable</span>
+            )}
+            {nodes != null && (
+              <span>
+                {nodes.available + nodes.allocated} / {nodes.total}
+              </span>
+            )}
+          </div>
+          <div className='w-full bg-gray-200 rounded-full h-2 flex overflow-hidden'>
+            {nodes === undefined && <div className='bg-gray-300 h-2 w-full animate-pulse' />}
+            {nodes != null && (
+              <>
+                <div
+                  className='bg-green-500 h-2 transition-all duration-300'
+                  style={{ width: `${idlePercent}%` }}
+                />
+                <div
+                  className='bg-yellow-400 h-2 transition-all duration-300'
+                  style={{ width: `${allocPercent}%` }}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
       {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth} />}
@@ -255,23 +303,27 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
   )
 }
 
-const SystemsStatusStatList: React.FC<any> = ({ systems }) => {
+const SystemsStatusStatList: React.FC<any> = ({ systems, systemsNodes }) => {
   return (
     <div className='mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 items-start'>
       {systems &&
         systems.length > 0 &&
-        systems.map((system: any, index: number) => (
-          <SystemStatusStat system={system} key={system.name} />
+        systems.map((system: any) => (
+          <SystemStatusStat
+            system={system}
+            nodes={systemsNodes?.[system.name]}
+            key={system.name}
+          />
         ))}
     </div>
   )
 }
 
-const SystemsStatusStat: React.FC<any> = ({ systems, className = '' }: any) => {
+const SystemsStatusStat: React.FC<any> = ({ systems, systemsNodes, className = '' }: any) => {
   return (
     <div className={classNames('mb-4', className)}>
       <h3 className='text-base font-semibold leading-6 text-gray-900'>Systems status</h3>
-      <SystemsStatusStatList systems={systems} />
+      <SystemsStatusStatList systems={systems} systemsNodes={systemsNodes} />
     </div>
   )
 }

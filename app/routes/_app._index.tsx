@@ -58,7 +58,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           } as SystemNodesOverview,
         }
       } catch (error) {
-        console.warn(`Failed to load nodes for system ${system.name}:`, error)
+        const msg = error instanceof Response ? `${error.status} ${error.statusText}` : error
+        console.warn(`Failed to load nodes for system ${system.name}:`, msg)
         return { name: system.name, nodes: null }
       }
     }),

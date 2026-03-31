@@ -86,6 +86,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     systems: systems,
     username: auth.user.username,
     fileUploadLimit: uiConfig.fileUploadLimit,
+    fileDownloadLimit: uiConfig.fileDownloadLimit,
     remoteFsError: remoteFsError,
     accountName,
   }
@@ -101,6 +102,7 @@ export default function AppComputeIndexRoute() {
     systems,
     username,
     fileUploadLimit,
+    fileDownloadLimit,
     remoteFsError,
     accountName,
   }: any = useLoaderData()
@@ -113,6 +115,7 @@ export default function AppComputeIndexRoute() {
       systems={systems}
       username={username}
       fileUploadLimit={fileUploadLimit}
+      fileDownloadLimit={fileDownloadLimit}
       error={getErrorFromData(data)}
       remoteFsError={remoteFsError}
       accountName={accountName}

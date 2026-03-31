@@ -20,7 +20,7 @@ import { File, FileType, GetTransferUploadResponse } from '~/types/api-filesyste
 import { System, FileSystem } from '~/types/api-status'
 import type { HttpErrorResponse } from '~/types/error'
 // helpers
-import { prettyBytes } from '~/helpers/file-helper'
+import { prettyBytes, isPreviewable, isTextPreviewable } from '~/helpers/file-helper'
 import { classNames } from '~/helpers/class-helper'
 import {
   buildFileSystemSelection,
@@ -74,6 +74,7 @@ interface FileItemProps {
   fileSystem: FileSystem
   system: System
   accountName: string
+  fileDownloadLimit: number
 }
 
 const FileItem: React.FC<FileItemProps> = ({
@@ -82,6 +83,7 @@ const FileItem: React.FC<FileItemProps> = ({
   fileSystem,
   system,
   accountName,
+  fileDownloadLimit,
 }) => {
   const [changeOwnershipDialogOpen, setChangeOwnershipDialogOpen] = useState(false)
   const [changePermissionDialogDialogOpen, setChangePermissionDialogDialogOpen] = useState(false)
@@ -166,7 +168,25 @@ const FileItem: React.FC<FileItemProps> = ({
               <LinkIcon className='h-5 w-5' />
             )}
           </span>{' '}
-          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
+          {file.type === FileType.file &&
+          isPreviewable(file.name) &&
+          parseInt(file.size) <= fileDownloadLimit ? (
+            <a
+              href={
+                isTextPreviewable(file.name)
+                  ? `/view/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
+                  : `/fs/filesystems/${system.name}/ops/preview?sourcePath=${currentPath}/${file.name}`
+              }
+              target='_blank'
+              rel='noopener noreferrer'
+              title='Preview file'
+              className='flex-1 min-w-0 max-w-sm break-words truncate text-blue-600 hover:underline'
+            >
+              {file.name}
+            </a>
+          ) : (
+            <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
+          )}
         </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -638,6 +658,7 @@ interface FileListTableProps {
   fileSystem: FileSystem
   system: System
   accountName: string
+  fileDownloadLimit: number
 }
 
 const FileListTable: React.FC<FileListTableProps> = ({
@@ -646,6 +667,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
   fileSystem,
   system,
   accountName,
+  fileDownloadLimit,
 }) => {
   const [sortableColumns, setSortableColumns] = useState<FileTableSortableColumn[]>([])
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
@@ -686,6 +708,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
                 fileSystem={fileSystem}
                 system={system}
                 accountName={accountName}
+                fileDownloadLimit={fileDownloadLimit}
               />
             ),
           )}
@@ -878,6 +901,7 @@ interface FileListViewProps {
   systems: System[]
   username: string
   fileUploadLimit: number
+  fileDownloadLimit: number
   error: any
   remoteFsError: any
   accountName: string
@@ -891,6 +915,7 @@ const FileListView: React.FC<FileListViewProps> = ({
   systems,
   username,
   fileUploadLimit,
+  fileDownloadLimit,
   error,
   remoteFsError,
   accountName,
@@ -965,6 +990,7 @@ const FileListView: React.FC<FileListViewProps> = ({
                 fileSystem={fileSystem}
                 system={system}
                 accountName={accountName}
+                fileDownloadLimit={fileDownloadLimit}
               />
             )}
             {!fileList ||

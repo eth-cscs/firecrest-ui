@@ -8,6 +8,7 @@
 import React, { useState, Fragment, useRef } from 'react'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import {
+  ArrowTopRightOnSquareIcon,
   DocumentTextIcon,
   FolderIcon,
   HomeIcon,
@@ -168,25 +169,7 @@ const FileItem: React.FC<FileItemProps> = ({
               <LinkIcon className='h-5 w-5' />
             )}
           </span>{' '}
-          {file.type === FileType.file &&
-          isPreviewable(file.name) &&
-          parseInt(file.size) <= fileDownloadLimit ? (
-            <a
-              href={
-                isTextPreviewable(file.name)
-                  ? `/view/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
-                  : `/preview/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
-              }
-              target='_blank'
-              rel='noopener noreferrer'
-              title='Preview file'
-              className='flex-1 min-w-0 max-w-sm break-words truncate text-blue-600 hover:underline'
-            >
-              {file.name}
-            </a>
-          ) : (
-            <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
-          )}
+          <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
@@ -203,7 +186,24 @@ const FileItem: React.FC<FileItemProps> = ({
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
       <td className='px-4 py-3 font-medium text-right'>
-        <div className='inline-flex rounded-md shadow-sm'>
+        <div className='inline-flex items-center gap-1 rounded-md shadow-sm'>
+          {file.type === FileType.file &&
+            isPreviewable(file.name) &&
+            parseInt(file.size) <= fileDownloadLimit && (
+              <a
+                href={
+                  isTextPreviewable(file.name)
+                    ? `/view/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
+                    : `/preview/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
+                }
+                target='_blank'
+                rel='noopener noreferrer'
+                title='Preview in new window'
+                className='inline-flex items-center text-gray-400 hover:text-blue-600 focus:outline-none'
+              >
+                <ArrowTopRightOnSquareIcon className='h-4 w-4' />
+              </a>
+            )}
           <Menu as='div' className='relative -ml-px block'>
             <div>
               <MenuButton className='inline-flex items-center text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-50 '>

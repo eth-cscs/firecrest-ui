@@ -97,7 +97,9 @@
     "react-router-dom": "^6.30.2",
     "brace-expansion": "^2.0.2",
     "rollup": "^4.59.0",
-    "undici": "^6.24.1"
+    "undici": "^6.24.1",
+    "handlebars": "^4.7.9",
+    "path-to-regexp": "^0.1.13"
   },
   "engines": {
     "node": ">=21.0.0"

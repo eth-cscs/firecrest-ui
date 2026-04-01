@@ -8,13 +8,21 @@
 import React, { useState, Fragment, useRef } from 'react'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import {
+  ArrowDownTrayIcon,
+  ArrowsRightLeftIcon,
   ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
+  DocumentDuplicateIcon,
   DocumentTextIcon,
+  FingerPrintIcon,
   FolderIcon,
   HomeIcon,
-  LinkIcon,
-  PlusIcon,
   InformationCircleIcon,
+  LinkIcon,
+  LockClosedIcon,
+  PlusIcon,
+  TrashIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { File, FileType, GetTransferUploadResponse } from '~/types/api-filesystem'
@@ -186,7 +194,7 @@ const FileItem: React.FC<FileItemProps> = ({
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
       <td className='px-4 py-3 font-medium text-right'>
-        <div className='inline-flex items-center gap-1 rounded-md shadow-sm'>
+        <div className='inline-flex items-center gap-3 rounded-md shadow-sm'>
           {file.type === FileType.file &&
             isPreviewable(file.name) &&
             parseInt(file.size) <= fileDownloadLimit && (
@@ -227,8 +235,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => copyToClipboard(file, fileSystem)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <ClipboardDocumentIcon className='h-4 w-4 text-gray-400' />
                   Copy path to clipboard
                 </a>
               </MenuItem>
@@ -236,8 +245,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setCopyDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <DocumentDuplicateIcon className='h-4 w-4 text-gray-400' />
                   Copy - cp
                 </a>
               </MenuItem>
@@ -245,8 +255,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setMoveDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <ArrowsRightLeftIcon className='h-4 w-4 text-gray-400' />
                   Move - mv
                 </a>
               </MenuItem>
@@ -254,8 +265,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setSymlinkDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <LinkIcon className='h-4 w-4 text-gray-400' />
                   Symbolic link - symlink
                 </a>
               </MenuItem>
@@ -263,8 +275,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setChangePermissionDialogDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <LockClosedIcon className='h-4 w-4 text-gray-400' />
                   Change permissions - chmod
                 </a>
               </MenuItem>
@@ -272,8 +285,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setChangeOwnershipDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <UserIcon className='h-4 w-4 text-gray-400' />
                   Change ownership - chown
                 </a>
               </MenuItem>
@@ -281,8 +295,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setRemoveDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <TrashIcon className='h-4 w-4 text-gray-400' />
                   Delete - rm
                 </a>
               </MenuItem>
@@ -292,8 +307,9 @@ const FileItem: React.FC<FileItemProps> = ({
                     <a
                       href='#'
                       onClick={() => setChecksumDialogOpen(true)}
-                      className='block px-4 py-2 text-sm text-gray-700'
+                      className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                     >
+                      <FingerPrintIcon className='h-4 w-4 text-gray-400' />
                       Checksum
                     </a>
                   </MenuItem>
@@ -301,8 +317,9 @@ const FileItem: React.FC<FileItemProps> = ({
                     <a
                       href='#'
                       onClick={() => setDownloadDialogOpen(true)}
-                      className='block px-4 py-2 text-sm text-gray-700'
+                      className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                     >
+                      <ArrowDownTrayIcon className='h-4 w-4 text-gray-400' />
                       Download
                     </a>
                   </MenuItem>
@@ -312,8 +329,9 @@ const FileItem: React.FC<FileItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setDetailsDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <InformationCircleIcon className='h-4 w-4 text-gray-400' />
                   Details
                 </a>
               </MenuItem>
@@ -447,8 +465,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => copyToClipboard(file, fileSystem)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <ClipboardDocumentIcon className='h-4 w-4 text-gray-400' />
                   Copy path to clipboard
                 </a>
               </MenuItem>
@@ -456,8 +475,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setCopyDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <DocumentDuplicateIcon className='h-4 w-4 text-gray-400' />
                   Copy - cp
                 </a>
               </MenuItem>
@@ -465,8 +485,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setMoveDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <ArrowsRightLeftIcon className='h-4 w-4 text-gray-400' />
                   Move - mv
                 </a>
               </MenuItem>
@@ -474,8 +495,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setSymlinkDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <LinkIcon className='h-4 w-4 text-gray-400' />
                   Symbolic link - symlink
                 </a>
               </MenuItem>
@@ -483,8 +505,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setChangePermissionDialogDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <LockClosedIcon className='h-4 w-4 text-gray-400' />
                   Change permissions - chmod
                 </a>
               </MenuItem>
@@ -492,8 +515,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setChangeOwnershipDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <UserIcon className='h-4 w-4 text-gray-400' />
                   Change ownership - chown
                 </a>
               </MenuItem>
@@ -501,8 +525,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setRemoveDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <TrashIcon className='h-4 w-4 text-gray-400' />
                   Delete - rm
                 </a>
               </MenuItem>
@@ -510,8 +535,9 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
                 <a
                   href='#'
                   onClick={() => setDetailsDialogOpen(true)}
-                  className='block px-4 py-2 text-sm text-gray-700'
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
                 >
+                  <InformationCircleIcon className='h-4 w-4 text-gray-400' />
                   Details
                 </a>
               </MenuItem>

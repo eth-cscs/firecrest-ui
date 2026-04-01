@@ -29,9 +29,10 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   await getAuthAccessToken(request, headers)
   const url = new URL(request.url)
   const sourcePath = url.searchParams.get('sourcePath') || ''
+  const account = url.searchParams.get('account') || ''
   const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
   const mimeType = getMimeType(fileName)
-  const previewUrl = `/fs/filesystems/${params.system}/ops/preview?sourcePath=${sourcePath}`
+  const previewUrl = `/fs/filesystems/systems/${params.system}/accounts/${account}/ops/preview?sourcePath=${sourcePath}`
   return json({ fileName, sourcePath, mimeType, previewUrl })
 }
 

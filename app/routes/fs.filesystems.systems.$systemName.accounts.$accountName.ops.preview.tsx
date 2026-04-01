@@ -24,7 +24,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const accessToken = await getAuthAccessToken(request, headers)
   try {
     // Get path params
-    const system: string = params.system || ''
+    const system: string = params.systemName || ''
     // Get query params
     const url = new URL(request.url)
     const sourcePath = url.searchParams.get('sourcePath') || ''

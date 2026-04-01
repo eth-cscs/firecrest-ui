@@ -98,6 +98,8 @@ const PREVIEW_MIME_TYPES: Record<string, string> = {
   // Text / code — served as plain text so the browser displays them inline
   txt: 'text/plain',
   log: 'text/plain',
+  out: 'text/plain',
+  err: 'text/plain',
   csv: 'text/plain',
   md: 'text/plain',
   json: 'text/plain',
@@ -121,7 +123,7 @@ const PREVIEW_MIME_TYPES: Record<string, string> = {
 
 // Extensions that should open in the in-app text viewer
 const TEXT_PREVIEW_EXTENSIONS = new Set([
-  'txt', 'log', 'csv', 'md', 'json', 'xml', 'yaml', 'yml',
+  'txt', 'log', 'out', 'err', 'csv', 'md', 'json', 'xml', 'yaml', 'yml',
   'sh', 'py', 'js', 'ts', 'html', 'css',
 ])
 

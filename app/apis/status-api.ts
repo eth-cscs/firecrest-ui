@@ -6,7 +6,7 @@
 *************************************************************************/
 
 // types
-import type { GetSystemsResponse, GetUserInfoResponse } from '~/types/api-status'
+import type { GetSystemNodesResponse, GetSystemsResponse, GetUserInfoResponse } from '~/types/api-status'
 // apis
 import api from './api'
 
@@ -26,6 +26,18 @@ export const getSystems = async (
 // tolerates being slightly stale (groups change infrequently).
 const USER_INFO_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const userInfoCache = new Map<string, { data: GetUserInfoResponse; expiresAt: number }>()
+
+export const getSystemNodes = async (
+  accessToken: string,
+  systemName: string,
+): Promise<GetSystemNodesResponse> => {
+  const apiResponse = await api.get<GetSystemNodesResponse>(`/status/${systemName}/nodes`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  return apiResponse
+}
 
 export const getUserInfo = async (
   accessToken: string,

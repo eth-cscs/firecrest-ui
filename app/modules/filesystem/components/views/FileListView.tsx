@@ -201,8 +201,8 @@ const FileItem: React.FC<FileItemProps> = ({
               <a
                 href={
                   isTextPreviewable(file.name)
-                    ? `/view/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}`
-                    : `/preview/filesystems/${system.name}?sourcePath=${currentPath}/${file.name}&account=${accountName}`
+                    ? `/view/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
+                    : `/preview/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
                 }
                 target='_blank'
                 rel='noopener noreferrer'

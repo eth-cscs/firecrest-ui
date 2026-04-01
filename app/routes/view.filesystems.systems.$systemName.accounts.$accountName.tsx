@@ -29,7 +29,7 @@ type LoaderData =
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
   const headers = new Headers()
   const accessToken = await getAuthAccessToken(request, headers)
-  const system: string = params.system || ''
+  const system: string = params.systemName || ''
   const url = new URL(request.url)
   const sourcePath = url.searchParams.get('sourcePath') || ''
   const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)

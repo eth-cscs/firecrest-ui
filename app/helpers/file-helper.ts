@@ -81,6 +81,70 @@ const prettyBytes = (
   return value
 }
 
+const PREVIEW_SIZE_LIMIT = 5 * 1024 * 1024 // 5 MB
+
+const PREVIEW_MIME_TYPES: Record<string, string> = {
+  // Documents
+  pdf: 'application/pdf',
+  // Images
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  // Text / code — served as plain text so the browser displays them inline
+  txt: 'text/plain',
+  log: 'text/plain',
+  out: 'text/plain',
+  err: 'text/plain',
+  csv: 'text/plain',
+  md: 'text/plain',
+  json: 'text/plain',
+  xml: 'text/plain',
+  yaml: 'text/plain',
+  yml: 'text/plain',
+  sh: 'text/plain',
+  py: 'text/plain',
+  js: 'text/plain',
+  ts: 'text/plain',
+  html: 'text/plain',
+  css: 'text/plain',
+  // Video
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  // Audio
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+}
+
+// Extensions that should open in the in-app text viewer
+const TEXT_PREVIEW_EXTENSIONS = new Set([
+  'txt', 'log', 'out', 'err', 'csv', 'md', 'json', 'xml', 'yaml', 'yml',
+  'sh', 'py', 'js', 'ts', 'html', 'css',
+])
+
+const getFileExtension = (filename: string): string => {
+  const dotIndex = filename.lastIndexOf('.')
+  if (dotIndex === -1) return ''
+  return filename.substring(dotIndex + 1).toLowerCase()
+}
+
+const isPreviewable = (filename: string): boolean => {
+  return getFileExtension(filename) in PREVIEW_MIME_TYPES
+}
+
+const isTextPreviewable = (filename: string): boolean => {
+  return TEXT_PREVIEW_EXTENSIONS.has(getFileExtension(filename))
+}
+
+const getMimeType = (filename: string): string => {
+  return PREVIEW_MIME_TYPES[getFileExtension(filename)] ?? 'application/octet-stream'
+}
+
 export {
   DIR_PATH_REGEXP,
   FILE_PATH_REGEXP,
@@ -88,4 +152,8 @@ export {
   validateFilePath,
   getBytesLimit,
   prettyBytes,
+  PREVIEW_SIZE_LIMIT,
+  isPreviewable,
+  isTextPreviewable,
+  getMimeType,
 }

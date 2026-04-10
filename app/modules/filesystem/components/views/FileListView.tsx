@@ -10,10 +10,10 @@ import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/r
 import {
   ArrowDownTrayIcon,
   ArrowsRightLeftIcon,
-  ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   DocumentDuplicateIcon,
   DocumentTextIcon,
+  EyeIcon,
   FingerPrintIcon,
   FolderIcon,
   HomeIcon,
@@ -63,6 +63,7 @@ import RemoveDialog from '~/modules/filesystem/components/dialogs/RemoveDialog'
 import SymLinkDialog from '~/modules/filesystem/components/dialogs/SymLinkDialog'
 import DetailsDialog from '~/modules/filesystem/components/dialogs/DetailsDialog'
 import DownloadDialog from '~/modules/filesystem/components/dialogs/DownloadDialog'
+import FilePreviewPanel from '~/modules/filesystem/components/dialogs/FilePreviewPanel'
 import SingleDraggableFileUpload from '~/components/forms/files/SingleDraggableFileUpload'
 import TransferUploadResultDialog from '~/modules/filesystem/components/dialogs/TransferUploadResultDialog'
 // buttons
@@ -103,6 +104,14 @@ const FileItem: React.FC<FileItemProps> = ({
   const [moveDialogOpen, setMoveDialogOpen] = useState(false)
   const [symlinkDialogOpen, setSymlinkDialogOpen] = useState(false)
   const [downloadkDialogOpen, setDownloadDialogOpen] = useState(false)
+  const [previewPanelOpen, setPreviewPanelOpen] = useState(false)
+
+  const previewUrl =
+    file.type === FileType.file && isPreviewable(file.name)
+      ? isTextPreviewable(file.name)
+        ? `/view/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
+        : `/preview/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
+      : ''
   return (
     <tr className='even:bg-blue-50'>
       <td className='px-4 py-3 font-medium'>
@@ -169,6 +178,14 @@ const FileItem: React.FC<FileItemProps> = ({
           open={downloadkDialogOpen}
           onClose={() => setDownloadDialogOpen(false)}
         />
+        {previewUrl && (
+          <FilePreviewPanel
+            isOpen={previewPanelOpen}
+            setIsOpen={setPreviewPanelOpen}
+            previewUrl={previewUrl}
+            fileName={file.name}
+          />
+        )}
         <div className='inline-flex'>
           <span className='mr-1 text-gray-500'>
             {file.type === FileType.file ? (
@@ -198,19 +215,14 @@ const FileItem: React.FC<FileItemProps> = ({
           {file.type === FileType.file &&
             isPreviewable(file.name) &&
             parseInt(file.size) <= fileDownloadLimit && (
-              <a
-                href={
-                  isTextPreviewable(file.name)
-                    ? `/view/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
-                    : `/preview/filesystems/systems/${system.name}/accounts/${accountName}?sourcePath=${currentPath}/${file.name}`
-                }
-                target='_blank'
-                rel='noopener noreferrer'
-                title='Preview in new window'
+              <button
+                type='button'
+                title='Preview'
                 className='inline-flex items-center text-gray-400 hover:text-blue-600 focus:outline-none'
+                onClick={() => setPreviewPanelOpen(true)}
               >
-                <ArrowTopRightOnSquareIcon className='h-4 w-4' />
-              </a>
+                <EyeIcon className='h-4 w-4' />
+              </button>
             )}
           <Menu as='div' className='relative -ml-px block'>
             <div>

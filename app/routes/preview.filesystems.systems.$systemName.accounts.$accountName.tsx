@@ -61,21 +61,21 @@ export default function BinaryFileViewer() {
   }
 
   const titleBar = (
-    <div className='flex items-center gap-3 px-4 py-2 bg-[#252526] border-b border-[#3c3c3c] shrink-0'>
-      <span className='text-[#cccccc] font-medium truncate' title={sourcePath}>
+    <div className='flex items-center gap-3 px-4 py-2 bg-gray-100 border-b border-gray-200 shrink-0'>
+      <span className='text-gray-800 font-medium truncate' title={sourcePath}>
         {fileName}
       </span>
-      <span className='text-[#858585] text-xs truncate hidden sm:block'>{sourcePath}</span>
+      <span className='text-gray-400 text-xs truncate hidden sm:block'>{sourcePath}</span>
     </div>
   )
 
   const errorPanel = (
     <div className='flex flex-1 items-center justify-center'>
       <div className='flex flex-col items-center gap-3 text-center max-w-md px-6'>
-        <ExclamationTriangleIcon className='h-10 w-10 text-[#f48771]' />
-        <p className='text-[#f48771] font-semibold text-base'>Unable to preview file</p>
-        <p className='text-[#9d9d9d] text-sm'>{errorMessage}</p>
-        {errorCode && <p className='text-[#555555] text-xs'>HTTP {errorCode}</p>}
+        <ExclamationTriangleIcon className='h-10 w-10 text-red-500' />
+        <p className='text-red-600 font-semibold text-base'>Unable to preview file</p>
+        <p className='text-gray-500 text-sm'>{errorMessage}</p>
+        {errorCode && <p className='text-gray-400 text-xs'>HTTP {errorCode}</p>}
       </div>
     </div>
   )
@@ -138,7 +138,7 @@ export default function BinaryFileViewer() {
   }
 
   return (
-    <div className='flex flex-col h-screen bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm'>
+    <div className='flex flex-col h-screen bg-white text-gray-800'>
       {titleBar}
       {renderContent()}
     </div>

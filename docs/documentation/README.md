@@ -2,7 +2,7 @@
 
 ## Dashboard
 
-The dashboard provides an overview of accessible clusters and their health status. Each cluster card shows the system's health, SLURM and filesystem service checks, and a link to navigate to the system.
+The dashboard provides an overview of accessible clusters and their health status. Each cluster card shows the system's health, workload scheduler and filesystem service checks, and a link to navigate to the system.
 
 ![Dashboard Overview](../screenshots/01_dashboard-health-checks.png)
 

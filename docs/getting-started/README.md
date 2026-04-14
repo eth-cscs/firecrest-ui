@@ -3,7 +3,7 @@
 ## Local Development
 
 ### Requirements
-- Node.js >= 22.0.0
+- Node.js >= 21.0.0 (tested with Node 24)
 - Yarn
 
 ### Backend Configuration

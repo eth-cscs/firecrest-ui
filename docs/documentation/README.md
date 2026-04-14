@@ -2,7 +2,7 @@
 
 ## Dashboard
 
-The dashboard provides an overview of accessible clusters and their statuses. It also displays currently running jobs.
+The dashboard provides an overview of accessible clusters and their health status. Each cluster card shows the system's health, SLURM and filesystem service checks, and a link to navigate to the system.
 
 ![Dashboard Overview](../screenshots/01_dashboard-health-checks.png)
 
@@ -10,28 +10,30 @@ The dashboard provides an overview of accessible clusters and their statuses. It
 
 ### Job Scheduler View
 
-The Job Scheduler lists all jobs and includes functionality to schedule new jobs.
+The Job Scheduler lists all jobs for the selected account, showing their status, name, submitting user, and partition. New jobs can be submitted using the **Submit new Job** button at the top-right.
 
-![Job Scheduler View](../screenshots/02_job-scheduler.png)
+![Job Scheduler View](../screenshots/02_job-scheduler-completed.png)
 
-### Schedule a Job
+### Submit a Job
 
-The "Submit a Job" button, located at the top-right corner of the Job Scheduler view, opens a form to schedule a new job.
+Clicking **Submit new Job** opens a form to submit a new SLURM batch job. It requires selecting a system, account, and optionally a job name and working directory. A local SLURM script file must be provided. Advanced options are available via a collapsible section.
 
-![Schedule a Job Form](../screenshots/02_job-scheduler-create.png)
+![Submit a Job Form](../screenshots/02_job-scheduler-create.png)
 
 ### Job Details
 
-Job details can be viewed on a dedicated page, depending on the job's status. A tabbed interface allows users to view the running script, as well as the standard output and error logs.
+Clicking a job opens its detail page with a split layout: the left panel displays the job's standard output, and the right panel shows metadata including Job ID, status, submitting user, execution times, and download links for StdOut, StdErr, and StdIn files.
 
 ![Job Details Page](../screenshots/02_job-details.png)
 
 ## File Manager
 
-The File Manager view lists files on a specific cluster. Users can navigate through the file structure and perform basic file operations (e.g., copy, move). 
+The File Manager lists files for a specific cluster and account. Users can navigate the directory tree and perform basic file operations (e.g., copy, move, rename, delete, create directory).
 
-Additionally, users can upload or download files. File uploads are handled transparently based on file size:
+Files can be uploaded via drag-and-drop or file selection, and downloaded individually. File uploads are handled transparently based on file size:
 - Files smaller than 5MB are uploaded directly.
-- Larger files require a file upload process involving a scheduled file transfer job (typically via S3 storage).
+- Larger files require a file transfer job (typically via S3 storage).
+
+Known file types (text, images, PDF) under 5MB can also be previewed directly in the browser without downloading.
 
 ![File Manager View](../screenshots/03_file-manager.png)

@@ -9,9 +9,9 @@ FirecREST offers a REST API that enables developers to interact with HPC resourc
 ## Features
 
 - A modern web interface built on FirecREST API functionalities.
-- A dashboard offering an overview of configured clusters and their statuses.
-- A dedicated view for creating and monitoring jobs.
-- A file navigator with basic file management functionalities, including upload and download features.
+- A dashboard providing an overview of configured HPC clusters and their health status.
+- A dedicated Scheduler view for submitting and monitoring workload scheduler jobs.
+- A File Manager with directory navigation, basic file operations (copy, move, rename, delete), upload, download, and file preview.
 
 While the FirecREST API empowers users to build complex workflows, a workflow manager is not included in the current web interface implementation.
 

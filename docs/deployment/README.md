@@ -8,7 +8,22 @@ This documentation provides step-by-step instructions for deploying the FirecRES
 
 * Helm 3 installed on your local machine
 * Kubernetes cluster with appropriate access
+* A Kubernetes Secret named `firecrest-web-ui-v2` with the following keys:
+  * `session-secret` — a random secret used to sign session cookies
+  * `keycloak-client-id` — the Keycloak client ID
+  * `keycloak-client-secret` — the Keycloak client secret
+  * `redis-auth-password` — the Redis authentication password
 * ConfigMap for the custom logo (if enabled)
+
+To create the secret:
+
+```bash
+kubectl create secret generic firecrest-web-ui-v2 \
+  --from-literal=session-secret=<random-secret> \
+  --from-literal=keycloak-client-id=<client-id> \
+  --from-literal=keycloak-client-secret=<client-secret> \
+  --from-literal=redis-auth-password=<redis-password>
+```
 
 ---
 
@@ -44,27 +59,38 @@ cd <repository-directory>
 Customize the deployment by editing the `values.yaml` file. Below are the most common configurations:
 
 ```yaml
+global:
+  environment: "production"
+  dns:
+    webUI: "webui.example.com"
+
 replicas: 2
 image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
-fileUploadLimit: "5MB"
+fileUploadLimit: "5242880"  # bytes (5MB)
 
 companyName: "MyCompany"
 appName: "MyPlatform"
-customLogo: true
+customLogo: false
 customLogoVolume: "/usr/server/app/public/custom/logo.svg"
 customLogoPath: "./custom/logo.svg"
 
-keycloakDomain: "auth.example.com"
+keycloakDomain: "auth.example.com/auth"
 keycloakRealm: "myrealm"
-keycloakCallbackUrl: "https://webui.example.com/callback"
+keycloakCallbackUrl: "https://webui.example.com/auth/callback"
 keycloakLogoutRedirectUrl: "https://webui.example.com/logout"
+
 firecrestApiBaseUrl: "https://api.example.com"
+
 redisActive: "true"
-redisHost: "redis.example.com"
+redisHost: "redis-master"
+
 supportUrl: "https://support.example.com"
 docUrl: "https://docs.example.com"
 repoUrl: "https://github.com/example/repo"
+
+# Optional: URL of an observability/monitoring dashboard to link from the UI
+uiObservabilityDashboard: ""
 ```
 
 ### 4. Deploy the Helm Chart

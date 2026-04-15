@@ -37,3 +37,9 @@ Files can be uploaded via drag-and-drop or file selection, and downloaded indivi
 Known file types (text, images, PDF) under 5MB can also be previewed directly in the browser without downloading.
 
 ![File Manager View](../screenshots/03_file-manager.png)
+
+### File Preview
+
+Clicking the preview icon on a supported file opens a slide-in panel with an inline preview. Text files, images, and PDFs under 5MB can be previewed directly in the browser without downloading.
+
+![File Preview Panel](../screenshots/03_file-manager-preview.png)

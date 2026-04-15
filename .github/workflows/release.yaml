@@ -102,6 +102,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -131,12 +133,8 @@ jobs:
 
           [ -d .charts ] && mv .charts charts || echo "No charts directory to restore"
           [ -f .nojekyll.bak ] && mv .nojekyll.bak .nojekyll || echo "No .nojekyll to restore"
-      - name: Check for changes
-        run: |
-          git diff --quiet || echo "CHANGES=true" >> $GITHUB_ENV
       - name: Publish MkDocs
-        if: ${{ env.CHANGES == 'true' }}
         run: |
           git add .
-          git commit -m "New documentation release ($RELEASE_VERSION)"
+          git diff --cached --quiet || git commit -m "New documentation release ($RELEASE_VERSION)"
           git push origin $GH_PAGES_BRANCH

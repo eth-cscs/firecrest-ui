@@ -54,6 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           nodes: {
             available: nodes.filter((n) => nodeState(n) === 'idle').length,
             allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length,
+            unavailable: nodes.length - (nodes.filter((n) => nodeState(n) === 'idle').length + nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length),
             total: nodes.length,
           } as SystemNodesOverview,
         }

@@ -238,15 +238,22 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
           <LabelBadge color={LabelColor.BLUE}>{ssh.host}</LabelBadge>
         </div>
         <div className='ml-16 mt-3'>
+          <span className='text-sm text-gray-500 mb-6'>
+          Nodes status
+          </span>
           <div className='flex justify-between text-xs text-gray-500 mb-1'>
             <span className='flex items-center gap-3'>
               <span className='flex items-center gap-1'>
                 <span className='inline-block w-2 h-2 rounded-full bg-green-500' />
-                Idle
+                {nodes?.available} Idle
               </span>
               <span className='flex items-center gap-1'>
                 <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
-                Alloc
+                {nodes?.allocated} Allocated
+              </span>
+              <span className='flex items-center gap-1'>
+                <span className='inline-block w-2 h-2 rounded-full bg-gray-300' />
+                {nodes?.unavailable} Unavailable
               </span>
             </span>
             {nodes === undefined && <span className='italic text-gray-400'>Loading...</span>}
@@ -255,7 +262,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
             )}
             {nodes != null && (
               <span>
-                {nodes.available + nodes.allocated} / {nodes.total}
+                {nodes.total} Total
               </span>
             )}
           </div>

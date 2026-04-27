@@ -10,8 +10,9 @@ import { RemixServer } from '@remix-run/react'
 import { renderToPipeableStream } from 'react-dom/server'
 import { createReadableStreamFromReadable } from '@remix-run/node'
 import type { AppLoadContext, EntryContext } from '@remix-run/node'
+import { ABORT_DELAY_MS } from '~/helpers/promise-helper'
 
-const ABORT_DELAY = 5_000
+const ABORT_DELAY = ABORT_DELAY_MS
 
 export default function handleRequest(
   request: Request,

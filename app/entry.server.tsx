@@ -11,7 +11,7 @@ import { renderToPipeableStream } from 'react-dom/server'
 import { createReadableStreamFromReadable } from '@remix-run/node'
 import type { AppLoadContext, EntryContext } from '@remix-run/node'
 
-const ABORT_DELAY = 5_000
+const ABORT_DELAY = 20_000
 
 export default function handleRequest(
   request: Request,

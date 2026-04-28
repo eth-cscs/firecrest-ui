@@ -15,7 +15,7 @@ import logger from '~/logger/logger'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { promiseWithTimeout } from '~/helpers/promise-helper'
 // utils
-import { authenticator, requireAuth, getAuthAccessToken } from '~/utils/auth.server'
+import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 // apis
@@ -28,7 +28,7 @@ import DashboardView from '~/modules/dashboard/components/views/DashboardView'
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   logInfoHttp({
     message: 'Index page',
     request: request,

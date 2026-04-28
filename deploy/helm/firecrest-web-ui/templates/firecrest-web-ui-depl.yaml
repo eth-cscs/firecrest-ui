@@ -47,24 +47,22 @@ spec:
                   key: session-secret
             - name: FILE_UPLOAD_LIMIT
               value: "{{ .Values.fileUploadLimit }}"
-            - name: KEYCLOAK_DOMAIN
-              value: "{{ .Values.keycloakDomain }}"
-            - name: KEYCLOAK_REALM
-              value: "{{ .Values.keycloakRealm }}"
-            - name: KEYCLOAK_CLIENT_ID
+            - name: OIDC_ISSUER_URL
+              value: "{{ .Values.oidcIssuerUrl }}"
+            - name: OIDC_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
-                  key: keycloak-client-id
-            - name: KEYCLOAK_CLIENT_SECRET
+                  key: oidc-client-id
+            - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
-                  key: keycloak-client-secret
-            - name: KEYCLOAK_CALLBACK_URL
-              value: "{{ .Values.keycloakCallbackUrl }}"
-            - name: KEYCLOAK_LOGOUT_REDIRECT_URL
-              value: "{{ .Values.keycloakLogoutRedirectUrl }}"
+                  key: oidc-client-secret
+            - name: OIDC_CALLBACK_URL
+              value: "{{ .Values.oidcCallbackUrl }}"
+            - name: OIDC_POST_LOGOUT_REDIRECT_URL
+              value: "{{ .Values.oidcPostLogoutRedirectUrl }}"
             - name: FIRECREST_API_BASE_URL
               value: "{{ .Values.firecrestApiBaseUrl }}"
             - name: REDIS_ACTIVE

@@ -17,11 +17,10 @@ customLogo: false
 customLogoVolume: "/usr/server/app/public/custom/logo.svg"
 customLogoPath: "./custom/logo.svg"
 
-# Keycloak settings
-keycloakDomain: "auth.example.com/auth"
-keycloakRealm: "kcrealm"
-keycloakCallbackUrl: "https://firecrest-ui.example.com/auth/callback"
-keycloakLogoutRedirectUrl: "https://firecrest-ui.example.com/logout"
+# OIDC settings
+oidcIssuerUrl: "https://auth.example.com/auth/realms/kcrealm"
+oidcCallbackUrl: "https://firecrest-ui.example.com/auth/callback"
+oidcPostLogoutRedirectUrl: "https://firecrest-ui.example.com/logout"
 
 # Firecrest API settings
 firecrestApiBaseUrl: "https://firecrest-api.example.com"

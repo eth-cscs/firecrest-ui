@@ -16,7 +16,7 @@ import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // types
 import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types/api-compute'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { getErrorFromData } from '~/helpers/error-helper'
@@ -33,7 +33,7 @@ import JobSubmitView from '~/modules/compute/components/views/JobSubmitView'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   logInfoHttp({
     message: 'Compute submit page',
     request: request,

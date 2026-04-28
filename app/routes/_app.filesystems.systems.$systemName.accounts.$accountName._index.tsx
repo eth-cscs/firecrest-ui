@@ -18,7 +18,7 @@ import {
 import { logInfoHttp } from '~/helpers/log-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // helpers
 import { getErrorFromData } from '~/helpers/error-helper'
 // apis
@@ -34,7 +34,7 @@ import type { File } from '~/types/api-filesystem'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   logInfoHttp({
     message: 'Filesystem index page',
     request: request,

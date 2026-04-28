@@ -41,7 +41,8 @@
     "pretty-ms": "^9.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remix-keycloak": "^2.0.4",
+    "remix-auth": "^3.7.0",
+    "remix-auth-oauth2": "^1.11.2",
     "uuid": "^9.0.1",
     "yup": "^1.4.0"
   },

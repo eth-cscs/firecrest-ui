@@ -19,14 +19,14 @@ import AppLayout from '~/layouts/AppLayout'
 // helpers
 import { getNotificationMessage } from '~/helpers/notification-helper'
 // utils
-import { authenticator, requireAuth, getAuthAccessToken } from '~/utils/auth.server'
+import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 import { SystemProvider } from '~/contexts/SystemContext'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Get path params

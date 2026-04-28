@@ -10,8 +10,8 @@ This documentation provides step-by-step instructions for deploying the FirecRES
 * Kubernetes cluster with appropriate access
 * A Kubernetes Secret named `firecrest-web-ui-v2` with the following keys:
   * `session-secret` — a random secret used to sign session cookies
-  * `keycloak-client-id` — the Keycloak client ID
-  * `keycloak-client-secret` — the Keycloak client secret
+  * `oidc-client-id` — the OIDC client ID
+  * `oidc-client-secret` — the OIDC client secret
   * `redis-auth-password` — the Redis authentication password
 * ConfigMap for the custom logo (if enabled)
 
@@ -20,8 +20,8 @@ To create the secret:
 ```bash
 kubectl create secret generic firecrest-web-ui-v2 \
   --from-literal=session-secret=<random-secret> \
-  --from-literal=keycloak-client-id=<client-id> \
-  --from-literal=keycloak-client-secret=<client-secret> \
+  --from-literal=oidc-client-id=<client-id> \
+  --from-literal=oidc-client-secret=<client-secret> \
   --from-literal=redis-auth-password=<redis-password>
 ```
 
@@ -75,10 +75,12 @@ customLogo: false
 customLogoVolume: "/usr/server/app/public/custom/logo.svg"
 customLogoPath: "./custom/logo.svg"
 
-keycloakDomain: "auth.example.com/auth"
-keycloakRealm: "myrealm"
-keycloakCallbackUrl: "https://webui.example.com/auth/callback"
-keycloakLogoutRedirectUrl: "https://webui.example.com/logout"
+# OIDC settings — configure with your identity provider's issuer URL.
+# The application will automatically discover all endpoints (authorization,
+# token, userinfo, end_session) from {oidcIssuerUrl}/.well-known/openid-configuration.
+oidcIssuerUrl: "https://auth.example.com/auth/realms/myrealm"
+oidcCallbackUrl: "https://webui.example.com/auth/callback"
+oidcPostLogoutRedirectUrl: "https://webui.example.com/logout"
 
 firecrestApiBaseUrl: "https://api.example.com"
 
@@ -105,6 +107,31 @@ helm upgrade --install firecrest ./chart --values values.yaml
 kubectl get deployments
 kubectl get pods -l app=firecrest-web-ui
 ```
+
+---
+
+## OIDC Configuration
+
+The FirecREST UI uses standard OpenID Connect (OIDC) for authentication and supports any OIDC-compliant identity provider (Keycloak, Auth0, Microsoft Entra ID, Dex, etc.).
+
+### Required environment variables
+
+| Variable | Description |
+|---|---|
+| `OIDC_ISSUER_URL` | Full issuer URL of your OIDC provider (e.g. `https://auth.example.com/auth/realms/myrealm`). All endpoints are discovered automatically from `{issuerUrl}/.well-known/openid-configuration`. |
+| `OIDC_CLIENT_ID` | OAuth2 client ID registered with your identity provider. |
+| `OIDC_CLIENT_SECRET` | OAuth2 client secret. |
+| `OIDC_CALLBACK_URL` | Redirect URI registered with your identity provider — must be `https://<your-ui-host>/auth/callback`. |
+| `OIDC_POST_LOGOUT_REDIRECT_URL` | URL to redirect to after logout (typically your UI's root URL). |
+
+### Required OAuth2 client configuration
+
+Register a **confidential** OAuth2 client in your identity provider with:
+- **Grant type**: Authorization Code
+- **Redirect URI**: `https://<your-ui-host>/auth/callback`
+- **Scopes**: `openid`, `profile`, `email`
+
+The `preferred_username`, `given_name`, `family_name`, and `email` claims must be included in the userinfo response.
 
 ---
 

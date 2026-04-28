@@ -7,19 +7,20 @@
 
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // utils
-import { authenticator } from '~/utils/auth.server'
+import { getAuthenticator } from '~/utils/auth.server'
 import { returnToCookie } from '~/utils/session.server'
 import { isRedirectResponse, safeRedirect } from '~/utils/redirect.server'
 
 export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+  const authenticator = await getAuthenticator()
   // Get returnTo from query param and set cookie if needed
   const url = new URL(request.url)
   const returnToParam = url.searchParams.get('returnTo')
   const returnTo = safeRedirect(returnToParam, '/')
   try {
     // If the user is already authenticated, they can be redirected directly to returnTo here.
-    // If not, this call "throws" a redirect Response to Keycloak.
-    return await authenticator.authenticate('keycloak', request, {
+    // If not, this call "throws" a redirect Response to the OIDC provider.
+    return await authenticator.authenticate('oidc', request, {
       successRedirect: returnTo,
       failureRedirect: '/login',
     })

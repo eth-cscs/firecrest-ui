@@ -5,9 +5,12 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+export const ABORT_DELAY_MS = 35_000
+export const DEFERRED_PROMISE_TIMEOUT_MS = Math.floor(ABORT_DELAY_MS * 0.95)
+
 export async function promiseWithTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 30000,
+  timeoutMs: number = DEFERRED_PROMISE_TIMEOUT_MS,
   timeoutMessage: string = 'Request timed out. Please try again.',
 ): Promise<T> {
   // Create a timeout promise that rejects after timeoutMs

@@ -13,6 +13,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
 // apis
@@ -42,7 +43,10 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Defer getUserInfo so the page renders immediately while groups load in background.
   // Convert any Response rejection to a plain Error so it serialises through
   // turbo-stream and reaches the ErrorBoundary with the correct message.
-  const userInfoPromise = getUserInfo(accessToken, systemName).catch(async (error) => {
+  const userInfoPromise = promiseWithTimeout(
+    getUserInfo(accessToken, systemName),
+    DEFERRED_PROMISE_TIMEOUT_MS,
+  ).catch(async (error) => {
     if (error instanceof Response) {
       const body = await error.text().catch(() => '')
       throw new Error(`${error.status} ${error.statusText}${body ? ': ' + body : ''}`)

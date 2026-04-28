@@ -88,6 +88,24 @@ app.all(
       },
 )
 
+// Verify OIDC provider is reachable before accepting requests
+const oidcIssuerUrl = process.env.OIDC_ISSUER_URL
+if (!oidcIssuerUrl) {
+  logger.error('OIDC_ISSUER_URL is not configured — halting')
+  process.exit(1)
+}
+try {
+  const res = await fetch(`${oidcIssuerUrl}/.well-known/openid-configuration`)
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
+  logger.info(`OIDC discovery verified (${oidcIssuerUrl})`)
+} catch (err) {
+  logger.error(
+    { err },
+    `OIDC discovery failed for ${oidcIssuerUrl} — check OIDC_ISSUER_URL and provider availability. Halting.`,
+  )
+  process.exit(1)
+}
+
 const port = Number(process.env.PORT || 3000)
 app.listen(port, () => {
   logger.info(`App listening on http://localhost:${port}`)

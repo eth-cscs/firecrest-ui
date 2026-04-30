@@ -126,7 +126,7 @@ export async function getAuthenticator(): Promise<Authenticator<Auth>> {
           username: (profile._json.preferred_username as string) || profile.id || '',
           email: profile.emails?.[0]?.value || '',
           firstName: profile.name?.givenName || '',
-          lastLame: profile.name?.familyName || '',
+          lastName: profile.name?.familyName || '',
         },
         tokens: {
           accessToken: accessToken,

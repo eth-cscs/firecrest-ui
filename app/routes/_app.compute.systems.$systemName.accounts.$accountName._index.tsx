@@ -12,7 +12,7 @@ import { defer } from '@remix-run/node'
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
-import { promiseWithTimeout } from '~/helpers/promise-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
@@ -41,7 +41,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Call api/s and fetch data - deferred for better UX with timeout protection
   const jobsPromise = promiseWithTimeout(
     getJobs(accessToken, systemName, accountName, allUsers),
-    30000, // 30 seconds timeout
+    DEFERRED_PROMISE_TIMEOUT_MS,
     'Loading jobs took too long. The system might be busy or unavailable.',
   )
   // Return deferred response

@@ -59,6 +59,7 @@ export interface FileSystem {
 export interface SystemNodesOverview {
   available: number
   allocated: number
+  unavailable: number
   total: number
 }
 

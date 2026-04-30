@@ -13,7 +13,7 @@ import type { LoaderFunctionArgs } from '@remix-run/node'
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
-import { promiseWithTimeout } from '~/helpers/promise-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 // contexts
@@ -44,7 +44,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       try {
         const { nodes } = await promiseWithTimeout(
           getSystemNodes(accessToken, system.name),
-          15000,
+          DEFERRED_PROMISE_TIMEOUT_MS,
           `Loading nodes for ${system.name} timed out.`,
         )
         const nodeState = (n: { state: string | string[] }) =>
@@ -54,6 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           nodes: {
             available: nodes.filter((n) => nodeState(n) === 'idle').length,
             allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length,
+            unavailable: nodes.length - (nodes.filter((n) => nodeState(n) === 'idle').length + nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length),
             total: nodes.length,
           } as SystemNodesOverview,
         }

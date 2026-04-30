@@ -230,3 +230,46 @@ To uninstall the Helm chart:
 ```bash
 helm uninstall firecrest
 ```
+
+---
+
+## Session Store for Multiple Replicas
+
+When deploying with more than one replica (`replicas > 1`), a shared session store must be configured. Without it, users will lose their session when requests are routed to different replicas.
+
+Set `redisActive: "true"` and point `redisHost` to a Valkey (or Redis) instance. A minimal example using the [Bitnami Valkey Helm chart](https://charts.bitnami.com/bitnami) as a dependency:
+
+`Chart.yaml`:
+```yaml
+dependencies:
+  - name: valkey
+    version: 5.4.9
+    repository: https://charts.bitnami.com/bitnami
+```
+
+`values.yaml`:
+```yaml
+global:
+  security:
+    allowInsecureImages: true  # required when using a non-Bitnami image
+
+firecrest-web-ui-v2:
+  replicas: 2
+  redisActive: "true"
+  redisHost: "<release-name>-valkey-primary"
+
+valkey:
+  image:
+    registry: docker.io
+    repository: valkey/valkey
+    tag: 8.1.6
+  architecture: standalone
+  auth:
+    existingSecret: <secret-name>
+    existingSecretPasswordKey: <password-key>
+  primary:
+    persistence:
+      enabled: false
+```
+
+> **Note:** The official [valkey/valkey](https://hub.docker.com/r/valkey/valkey) image is used here as it provides versioned tags. The `allowInsecureImages` flag is required by the Bitnami chart when using a non-Bitnami image.

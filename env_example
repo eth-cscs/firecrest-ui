@@ -30,15 +30,15 @@ SESSION_FILE_DIR_PATH='./sessions'
 
 REDIS_ACTIVE=false
 
-# Keycloak
+# OIDC
+# Set OIDC_ISSUER_URL to the full issuer URL of your identity provider.
+# All endpoints are discovered automatically from {issuerUrl}/.well-known/openid-configuration.
 
-KEYCLOAK_DOMAIN='localhost:8080/auth'
-KEYCLOAK_REALM='kcrealm'
-KEYCLOAK_CLIENT_ID='firecrest-web-ui'
-KEYCLOAK_CLIENT_SECRET='<client-secret>'
-KEYCLOAK_CALLBACK_URL='http://localhost:3000/auth/callback'
-KEYCLOAK_LOGOUT_REDIRECT_URL='http://localhost:3000/'
-KEYCLOAK_USE_SSL=false
+OIDC_ISSUER_URL='http://localhost:8080/auth/realms/kcrealm'
+OIDC_CLIENT_ID='firecrest-web-ui'
+OIDC_CLIENT_SECRET='<client-secret>'
+OIDC_CALLBACK_URL='http://localhost:3000/auth/callback'
+OIDC_POST_LOGOUT_REDIRECT_URL='http://localhost:3000/'
 
 # FirecREST (f7t)
 

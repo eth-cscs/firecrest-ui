@@ -51,7 +51,7 @@ Please ensure that the FirecREST Docker Compose environment is running. To conne
 
 ### Authx
 
-The FirecREST environment includes a set of default access configurations (Keycloak settings) that enable the UI to authenticate with an IDM.
+The FirecREST environment includes a set of default access configurations (OIDC settings) that enable the UI to authenticate with an identity provider.
 
 ### Compile and run the web application 
 
@@ -68,7 +68,7 @@ yarn install
 yarn run dev
 ```
 
-Open the UI on http://localhost:3000/, a login page (Keycloak) should show up.
+Open the UI on http://localhost:3000/, the login page should show up.
 
 Authenticate with the follwing credentials:
 ```credentials

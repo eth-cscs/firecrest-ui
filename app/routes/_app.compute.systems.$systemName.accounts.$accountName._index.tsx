@@ -14,7 +14,7 @@ import logger from '~/logger/logger'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 // views
@@ -23,7 +23,7 @@ import JobListView from '~/modules/compute/components/views/JobListView'
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   // Get params
   const systemName = params.systemName!
   const accountName = params.accountName!

@@ -26,7 +26,7 @@ import { getErrorFromData } from '~/helpers/error-helper'
 import { handleErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getJob, cancelJob, getJobMetadata } from '~/apis/compute-api'
 import { getSystems } from '~/apis/status-api'
@@ -39,7 +39,7 @@ import observability from '~/configs/observability.config'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   logInfoHttp({
     message: 'Compute job detail page',
     request: request,

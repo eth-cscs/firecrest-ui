@@ -13,7 +13,7 @@ import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
-import { requireAuth, authenticator } from '~/utils/auth.server'
+import { requireAuth } from '~/utils/auth.server'
 // contexts
 import { useGroup } from '~/contexts/GroupContext'
 // views
@@ -24,7 +24,7 @@ import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication only — groups are resolved client-side from the
   // deferred userInfoPromise already started by the parent layout loader.
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
     message: `Compute system ${systemName} index page`,

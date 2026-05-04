@@ -9,7 +9,7 @@ export interface AuthUser {
   username: string
   email: string
   firstName: string
-  lastLame: string
+  lastName: string
 }
 
 export interface AuthTokens {

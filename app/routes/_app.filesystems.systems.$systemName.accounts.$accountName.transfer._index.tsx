@@ -19,7 +19,7 @@ import {
 } from '~/modules/status/helpers/system-helper'
 import { buildFileSystemNavigationPath } from '~/modules/filesystem/helpers/filesystem-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getSystems } from '~/apis/status-api'
 // views
@@ -27,7 +27,7 @@ import ErrorView from '~/components/views/ErrorView'
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   logInfoHttp({
     message: 'Filesystem transfer index page',
     request: request,

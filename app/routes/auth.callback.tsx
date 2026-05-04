@@ -7,14 +7,15 @@
 
 import type { LoaderFunctionArgs } from '@remix-run/node'
 // utils
-import { authenticator } from '~/utils/auth.server'
+import { getAuthenticator } from '~/utils/auth.server'
 import { safeRedirect } from '~/utils/redirect.server'
 import { returnToCookie } from '~/utils/session.server'
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const authenticator = await getAuthenticator()
   const cookieHeader = request.headers.get('Cookie')
   const returnTo = safeRedirect(await returnToCookie.parse(cookieHeader), '/')
-  return await authenticator.authenticate('keycloak', request, {
+  return await authenticator.authenticate('oidc', request, {
     successRedirect: returnTo,
     failureRedirect: '/login',
   })

@@ -38,7 +38,7 @@ yarn --version
     yarn run dev
     ```
 
-3. Open the UI in your browser at [http://localhost:3000/](http://localhost:3000/). You should see a login page (Keycloak).
+3. Open the UI in your browser at [http://localhost:3000/](http://localhost:3000/). You should see the login page.
 
 #### Authentication
 Use the following credentials to log in:

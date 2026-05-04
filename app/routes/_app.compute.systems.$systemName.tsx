@@ -15,7 +15,7 @@ import logger from '~/logger/logger'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
-import { getAuthAccessToken, requireAuth, authenticator } from '~/utils/auth.server'
+import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getUserInfo } from '~/apis/status-api'
 // types
@@ -29,7 +29,7 @@ import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
-  const { auth } = await requireAuth(request, authenticator)
+  const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
     message: `Compute system ${systemName} layout page`,

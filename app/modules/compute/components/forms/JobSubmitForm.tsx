@@ -165,6 +165,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 type='text'
                 name='account'
                 value={formData.accountName}
+                readOnly
                 className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
               />
               {showInputValidation({

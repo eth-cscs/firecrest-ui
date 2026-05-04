@@ -268,17 +268,32 @@ interface ConsolePaneProps {
 const ConsolePane: React.FC<ConsolePaneProps> = ({ content }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
+  const cleanedContent = useMemo(() => {
+    if (!content) return null
+    return content
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => {
+        const parts = line.split('\r')
+        return parts[parts.length - 1]
+      })
+      .join('\n')
+  }, [content])
+
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
-  }, [content])
+  }, [cleanedContent])
 
   return (
     <section className='h-full min-h-0 flex flex-col'>
-      <div className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5'>
-        <pre className='px-3 py-2 whitespace-pre-wrap'>{content || '# No data available'}</pre>
+      <div
+        ref={scrollerRef}
+        className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
+      >
+        <pre className='px-3 py-2 whitespace-pre-wrap'>{cleanedContent || '# No data available'}</pre>
       </div>
     </section>
   )

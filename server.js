@@ -56,6 +56,11 @@ if (isProd) {
   app.use(vite.middlewares)
 }
 
+// Silently ignore Chrome DevTools well-known probe so it never reaches Remix
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
+  res.status(404).end()
+})
+
 // Remix handler
 app.all(
   '*',

@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { Suspense } from 'react'
+import React, { Suspense, memo } from 'react'
 import { Link, Await } from '@remix-run/react'
 import { PlusIcon } from '@heroicons/react/20/solid'
 // lables
@@ -25,6 +25,17 @@ import { useGroup } from '~/contexts/GroupContext'
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // errors
 import AsyncError from '~/components/errors/AsyncError'
+
+// Isolated from GroupContext re-renders so the dehydrated <Await> boundary inside is
+// never traversed before it resolves, preventing React error #421.
+const JobsPanel = memo(({ jobsPromise }: { jobsPromise: Promise<GetSystemJobsResponse> }) => (
+  <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
+    <Await resolve={jobsPromise} errorElement={<AsyncError />}>
+      {(jobs: GetSystemJobsResponse) => <JobList jobs={jobs} />}
+    </Await>
+  </Suspense>
+))
+JobsPanel.displayName = 'JobsPanel'
 
 interface JobListViewProps {
   jobsPromise: Promise<GetSystemJobsResponse>
@@ -53,11 +64,7 @@ const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewPro
         className='mb-4'
         actionsButtons={actionsButtons}
       >
-        <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
-          <Await resolve={jobsPromise} errorElement={<AsyncError />}>
-            {(jobs: GetSystemJobsResponse) => <JobList jobs={jobs} />}
-          </Await>
-        </Suspense>
+        <JobsPanel jobsPromise={jobsPromise} />
       </SimplePanel>
     </SimpleView>
   )

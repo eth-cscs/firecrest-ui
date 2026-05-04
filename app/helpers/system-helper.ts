@@ -41,6 +41,10 @@ const isSystemHealthy = (system: System): SystemHealtyStatus => {
 }
 
 const isSystemHealthyByServiceType = (system: System, serviceType: ServiceType) => {
+  //TODO: replace string "filesystems" with enum ServiceType.filesystem after f7t 2.6.0 release
+  if (!system.probing.services || !system.probing.services["filesystems"]) {
+    return true
+  }
   const servicesHealth = filterServicesHealthByType(system.servicesHealth, serviceType, true)
   return servicesHealth.length > 0
 }
@@ -61,14 +65,20 @@ const getHealthyFileSystemSystems = (systems: System[]) => {
   return healthySystems
 }
 
+
 const isFileSystemHealthy = (system: System, fileSystem: FileSystem) => {
+
+  //TODO: replace string "filesystems" with enum ServiceType.filesystem after f7t 2.6.0 release
+  if (!system.probing.services || !system.probing.services["filesystems"]) {
+    return true
+  }
   const servicesHealth = filterServicesHealthByType(
     system.servicesHealth,
     ServiceType.filesystem,
     true,
   )
   if (!servicesHealth || servicesHealth === null || servicesHealth.length <= 0) {
-    return false
+      return false
   }
   return servicesHealth.find((servicesHealth: ServiceHealth) => {
     return servicesHealth.path === fileSystem.path

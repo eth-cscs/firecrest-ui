@@ -22,6 +22,7 @@ export enum ServiceType {
   scheduler = 'scheduler',
   ssh = 'ssh',
   filesystem = 'filesystem',
+  external_storage = 's3',  //To be renamed after f7t 2.6.0 release
 }
 
 export enum SystemHealtyStatus {
@@ -92,11 +93,14 @@ export interface ServiceHealth {
   path?: string
 }
 
-export interface SystemProbing {
-  interval: number
+
+export interface ProbingService {
   timeout: number
-  healthyLatency: number
-  healthyLoad: number
+}
+
+export interface SystemProbing {
+  services: { [key: string]: ProbingService } | null
+  interval_check: number
 }
 
 export interface SystemTimeouts {

@@ -5,14 +5,11 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import os from 'os';
-import {v4 as uuidv4} from 'uuid';
-
 import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import {
   unstable_createMemoryUploadHandler,
   unstable_parseMultipartFormData,
-  unstable_createFileUploadHandler,
+  MaxPartSizeExceededError,
 } from '@remix-run/node'
 // types
 import { PostFileUploadPayload } from '~/types/api-filesystem'
@@ -41,21 +38,26 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   if (!maxOpsFileSize) {
     throw new Error(`System "${system}" not found or has no file size limit configured`)
   }
-  // Init file handler
-  const fileHandler = unstable_createFileUploadHandler({
-    maxPartSize: maxOpsFileSize,
-    file: ({ filename }) => filename || 'upload',
-    avoidFileConflicts: false,
-    directory: os.tmpdir() + '/' + uuidv4(),
-  })
   const memHandler = unstable_createMemoryUploadHandler()
-  // The standard file handler skips parts that have no filename in their
-  // Content-Disposition (early return before our `file` option is called).
-  // Inject a fallback filename for the 'file' part so it is always written
-  // to disk and returns a NodeOnDiskFile with a correct .size property.
+  // Custom handler: the standard file handler silently skips parts with no
+  // filename in Content-Disposition (common with some nginx configurations).
+  // For the 'file' part we collect chunks directly and return a File object
+  // regardless of whether filename is present, using the fileName text field
+  // sent by the client as the authoritative name.
   const uploadHandler = async (part: any) => {
     if (part.name === 'file') {
-      return fileHandler({ ...part, filename: part.filename || 'upload' })
+      const chunks: BlobPart[] = []
+      let size = 0
+      for await (const chunk of part.data) {
+        size += chunk.byteLength
+        if (size > maxOpsFileSize) {
+          throw new MaxPartSizeExceededError('file', maxOpsFileSize)
+        }
+        chunks.push(chunk)
+      }
+      return new File(chunks, part.filename || 'upload', {
+        type: part.contentType || 'application/octet-stream',
+      })
     }
     return memHandler(part)
   }

@@ -27,8 +27,6 @@ import { getOpsLs } from '~/apis/filesystem-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import FileListView from '~/modules/filesystem/components/views/FileListView'
-// config
-import uiConfig from '~/configs/ui.config'
 // types
 import type { File } from '~/types/api-filesystem'
 
@@ -85,8 +83,8 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     fileSystem: fileSystem,
     systems: systems,
     username: auth.user.username,
-    fileUploadLimit: uiConfig.fileUploadLimit,
-    fileDownloadLimit: uiConfig.fileDownloadLimit,
+    fileUploadLimit: system.dataOperation?.max_ops_file_size,
+    fileDownloadLimit: system.dataOperation?.max_ops_file_size,
     remoteFsError: remoteFsError,
     accountName,
   }

@@ -126,6 +126,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                   system={system?.name || ''}
                   file={stdoutFile}
                   accountName={selectedGroup?.name || ''}
+                  downloadLimit={system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER}
                   open={stdoutDownloadDialogOpen}
                   onClose={() => setStdoutDownloadDialogOpen(false)}
                 />
@@ -148,8 +149,9 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 <DownloadDialog
                   system={system?.name || ''}
                   file={stderrFile}
-                  open={stderrDownloadDialogOpen}
                   accountName={selectedGroup?.name || ''}
+                  downloadLimit={system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER}
+                  open={stderrDownloadDialogOpen}
                   onClose={() => setStderrDownloadDialogOpen(false)}
                 />
                 <button

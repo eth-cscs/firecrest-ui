@@ -15,14 +15,13 @@ import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 import SimpleDialog from '~/components/dialogs/SimpleDialog'
 import CodeBlock from '~/components/codes/CodeBlock'
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
-// config
-import uiConfig from '~/configs/ui.config'
 import { postLocalTransferDownload } from '~/apis/filesystem-api'
 
 interface DownloadDialogProps {
   system: string
   file: File
   accountName: string
+  downloadLimit: number
   currentPath?: string
   open: boolean
   onClose: () => void
@@ -32,6 +31,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   system,
   file,
   accountName,
+  downloadLimit,
   currentPath = undefined,
   open,
   onClose,
@@ -71,7 +71,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   }
 
   const needTransferDownload = () => {
-    return file.size > uiConfig.fileDownloadLimit
+    return parseInt(file.size) > downloadLimit
   }
 
   const getFilePath = () => {

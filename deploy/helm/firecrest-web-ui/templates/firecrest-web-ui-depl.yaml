@@ -45,8 +45,6 @@ spec:
                 secretKeyRef:
                   name: firecrest-web-ui-v2
                   key: session-secret
-            - name: FILE_UPLOAD_LIMIT
-              value: "{{ .Values.fileUploadLimit }}"
             - name: OIDC_ISSUER_URL
               value: "{{ .Values.oidcIssuerUrl }}"
             - name: OIDC_CLIENT_ID

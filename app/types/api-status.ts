@@ -109,6 +109,12 @@ export interface SystemTimeouts {
   sshCommandExecution: number
 }
 
+export interface DataOperation {
+  max_ops_file_size: number
+  datatransfer_jobs_directives: string[]
+  data_transfer: any | null
+}
+
 export interface System {
   name: string
   ssh: Ssh
@@ -118,6 +124,7 @@ export interface System {
   fileSystems: FileSystem[]
   datatransferJobsDirectives?: string[]
   timeouts?: SystemTimeouts
+  dataOperation?: DataOperation
 }
 
 export interface GetSystemsResponse {

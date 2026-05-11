@@ -175,6 +175,7 @@ const FileItem: React.FC<FileItemProps> = ({
           file={file}
           currentPath={currentPath}
           accountName={accountName}
+          downloadLimit={fileDownloadLimit}
           open={downloadkDialogOpen}
           onClose={() => setDownloadDialogOpen(false)}
         />

@@ -237,9 +237,14 @@ export const postFileUpload = async (
   system: string,
   path: string,
   fileData: any,
+  fileName?: string,
 ): Promise<any> => {
   const formData = new FormData()
-  formData.append('file', fileData)
+  if (fileName) {
+    formData.append('file', fileData, fileName)
+  } else {
+    formData.append('file', fileData)
+  }
   const urlSearchParams = new URLSearchParams({
     path: path,
   })

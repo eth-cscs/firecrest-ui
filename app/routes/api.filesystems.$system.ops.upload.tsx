@@ -46,7 +46,8 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   const uploadHandler = unstable_composeUploadHandlers(
     unstable_createFileUploadHandler({
       maxPartSize: maxOpsFileSize,
-      file: ({ filename }) => filename,
+      // Fall back to 'upload' if filename is missing (e.g. some proxy strips it)
+      file: ({ filename }) => filename || 'upload',
       avoidFileConflicts: false,
       directory: os.tmpdir() + '/' + uuidv4(),
     }),
@@ -54,12 +55,16 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   )
   try {
     const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+    const fileValue = formData.get('file')
+    const originalFileName = (formData.get('fileName') as string) || (fileValue as any)?.name
+    console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
+    console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
-    await postFileUpload(accessToken, system, payloadData.path, payloadData.file)
+    await postFileUpload(accessToken, system, payloadData.path, payloadData.file, originalFileName)
     await notifySuccessMessage(
       {
         title: 'File upload',
-        text: `File "${payloadData.file.name}" have been upload successfully at the target path "${payloadData.path}"`,
+        text: `File "${originalFileName}" have been upload successfully at the target path "${payloadData.path}"`,
       },
       request,
       headers,

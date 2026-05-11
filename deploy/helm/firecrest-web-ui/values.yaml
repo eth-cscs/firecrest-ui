@@ -8,7 +8,6 @@ global:
 replicas: 2
 image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
-fileUploadLimit: "5242880"  # 5MB
 
 # Logo settings
 companyName: "MyCompany"

@@ -5,15 +5,11 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import os from 'os';
-import {v4 as uuidv4} from 'uuid';
-
 import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import {
-  unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
   unstable_parseMultipartFormData,
-  unstable_createFileUploadHandler,
+  MaxPartSizeExceededError,
 } from '@remix-run/node'
 // types
 import { PostFileUploadPayload } from '~/types/api-filesystem'
@@ -25,10 +21,9 @@ import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/respons
 import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { postFileUpload } from '~/apis/filesystem-api'
+import { getSystems } from '~/apis/status-api'
 // validation
 import { validateFileUpload } from '~/validations/filesystemValidation'
-// config
-import uiConfig from '~/configs/ui.config'
 
 export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
@@ -37,35 +32,51 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
-  // Init file handler
-  const uploadHandler = unstable_composeUploadHandlers(
-    unstable_createFileUploadHandler({
-      maxPartSize: uiConfig.fileUploadLimit,
-      file: ({ filename }) => filename,
-      avoidFileConflicts: false,
-      directory: 	os.tmpdir() + "/" + uuidv4() 
-    }),
-    unstable_createMemoryUploadHandler(),
-  )
-  // Get form data
-  const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+  const system: string = params.system || ''
+  const { systems } = await getSystems(accessToken)
+  const maxOpsFileSize = systems.find((s) => s.name === system)?.dataOperation?.max_ops_file_size
+  if (!maxOpsFileSize) {
+    throw new Error(`System "${system}" not found or has no file size limit configured`)
+  }
+  const memHandler = unstable_createMemoryUploadHandler()
+  // Custom handler: the standard file handler silently skips parts with no
+  // filename in Content-Disposition (common with some nginx configurations).
+  // For the 'file' part we collect chunks directly and return a File object
+  // regardless of whether filename is present, using the fileName text field
+  // sent by the client as the authoritative name.
+  const uploadHandler = async (part: any) => {
+    if (part.name === 'file') {
+      const chunks: BlobPart[] = []
+      let size = 0
+      for await (const chunk of part.data) {
+        size += chunk.byteLength
+        if (size > maxOpsFileSize) {
+          throw new MaxPartSizeExceededError('file', maxOpsFileSize)
+        }
+        chunks.push(chunk)
+      }
+      return new File(chunks, part.filename || 'upload', {
+        type: part.contentType || 'application/octet-stream',
+      })
+    }
+    return memHandler(part)
+  }
   try {
-    // Get path params
-    const system: string = params.system || ''
-    // Validate
-    const payloadData: PostFileUploadPayload = await validateFileUpload(formData)
-    // Post data
-    await postFileUpload(accessToken, system, payloadData.path, payloadData.file)
-    // Notify success message
+    const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+    const fileValue = formData.get('file')
+    const originalFileName = (formData.get('fileName') as string) || (fileValue as any)?.name
+    console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
+    console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
+    const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
+    await postFileUpload(accessToken, system, payloadData.path, payloadData.file, originalFileName)
     await notifySuccessMessage(
       {
         title: 'File upload',
-        text: `File "${payloadData.file.name}" have been upload successfully at the target path "${payloadData.path}"`,
+        text: `File "${originalFileName}" have been upload successfully at the target path "${payloadData.path}"`,
       },
       request,
       headers,
     )
-    // Return response
     return handleSuccessResponse(
       {
         result: {

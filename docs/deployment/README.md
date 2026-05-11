@@ -67,7 +67,6 @@ global:
 replicas: 2
 image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
-fileUploadLimit: "5242880"  # bytes (5MB)
 
 companyName: "MyCompany"
 appName: "MyPlatform"
@@ -94,6 +93,10 @@ repoUrl: "https://github.com/example/repo"
 # Optional: URL of an observability/monitoring dashboard to link from the UI
 uiObservabilityDashboard: ""
 ```
+
+### File upload and download limits
+
+Upload and download size limits are **not configured in the UI**. They are read at runtime from the `max_ops_file_size` field returned by the FirecREST backend for each system. Make sure your ingress `proxy-body-size` (or equivalent) is set to at least the backend limit plus some overhead for multipart framing — e.g. if the backend allows 5 MB, set the ingress limit to `6m`.
 
 ### 4. Deploy the Helm Chart
 

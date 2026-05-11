@@ -10,7 +10,6 @@ import {v4 as uuidv4} from 'uuid';
 
 import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import {
-  unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
   unstable_parseMultipartFormData,
   unstable_createFileUploadHandler,
@@ -43,16 +42,23 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     throw new Error(`System "${system}" not found or has no file size limit configured`)
   }
   // Init file handler
-  const uploadHandler = unstable_composeUploadHandlers(
-    unstable_createFileUploadHandler({
-      maxPartSize: maxOpsFileSize,
-      // Fall back to 'upload' if filename is missing (e.g. some proxy strips it)
-      file: ({ filename }) => filename || 'upload',
-      avoidFileConflicts: false,
-      directory: os.tmpdir() + '/' + uuidv4(),
-    }),
-    unstable_createMemoryUploadHandler(),
-  )
+  const fileHandler = unstable_createFileUploadHandler({
+    maxPartSize: maxOpsFileSize,
+    file: ({ filename }) => filename || 'upload',
+    avoidFileConflicts: false,
+    directory: os.tmpdir() + '/' + uuidv4(),
+  })
+  const memHandler = unstable_createMemoryUploadHandler()
+  // The standard file handler skips parts that have no filename in their
+  // Content-Disposition (early return before our `file` option is called).
+  // Inject a fallback filename for the 'file' part so it is always written
+  // to disk and returns a NodeOnDiskFile with a correct .size property.
+  const uploadHandler = async (part: any) => {
+    if (part.name === 'file') {
+      return fileHandler({ ...part, filename: part.filename || 'upload' })
+    }
+    return memHandler(part)
+  }
   try {
     const formData = await unstable_parseMultipartFormData(request, uploadHandler)
     const fileValue = formData.get('file')

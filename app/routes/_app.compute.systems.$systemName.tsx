@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Suspense, useEffect } from 'react'
-import { Await, Outlet, useAsyncValue, useLoaderData, useRouteError } from '@remix-run/react'
+import { useEffect, startTransition } from 'react'
+import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
 import { defer } from '@remix-run/node'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
@@ -41,37 +41,42 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Get path params
   const groupName = params.accountName || null
   // Defer getUserInfo so the page renders immediately while groups load in background.
-  // Convert any Response rejection to a plain Error so it serialises through
-  // turbo-stream and reaches the ErrorBoundary with the correct message.
+  // Resolve with null on any failure (timeout, HTTP error) rather than rejecting —
+  // the page still works because groups are seeded from the URL, and DeferredGroupsLoader
+  // uses optional chaining so null userInfo is handled gracefully.
   const userInfoPromise = promiseWithTimeout(
     getUserInfo(accessToken, systemName),
     DEFERRED_PROMISE_TIMEOUT_MS,
-  ).catch(async (error) => {
-    if (error instanceof Response) {
-      const body = await error.text().catch(() => '')
-      throw new Error(`${error.status} ${error.statusText}${body ? ': ' + body : ''}`)
-    }
-    throw error
+  ).catch((error) => {
+    logger.warn({ error }, `Failed to load user info for system ${systemName}`)
+    return null
   })
   return defer({ userInfoPromise, groupName, systemName })
 }
 
-// Updates GroupContext with the real groups once the deferred data resolves,
-// without causing a remount of the Outlet or child components.
-// groupName is the accountName from the URL (null on the system index page).
-function DeferredGroupsLoader({ groupName }: { groupName: string | null }) {
-  const userInfo = useAsyncValue() as GetUserInfoResponse
+// Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,
+// so there is no dehydrated Suspense boundary that can trigger React error #421 during
+// Remix's internal fetchAndApplyManifestPatches hydration pass.
+function GroupsUpdater({
+  promise,
+  groupName,
+}: {
+  promise: Promise<GetUserInfoResponse | null>
+  groupName: string | null
+}) {
   const { setGroups, setSelectedGroupName } = useGroup()
   useEffect(() => {
-    if (userInfo?.groups) {
-      setGroups(userInfo.groups)
-    }
-    // When there is no account in the URL (system index page) use the API's
-    // default group so the client-side redirect in the index knows where to go.
-    if (!groupName && userInfo?.group?.name) {
-      setSelectedGroupName(userInfo.group.name)
-    }
-  }, [userInfo, groupName, setGroups, setSelectedGroupName])
+    Promise.resolve(promise).then((userInfo) => {
+      startTransition(() => {
+        if (userInfo?.groups) {
+          setGroups(userInfo.groups)
+        }
+        if (!groupName && userInfo?.group?.name) {
+          setSelectedGroupName(userInfo.group.name)
+        }
+      })
+    })
+  }, [promise, groupName, setGroups, setSelectedGroupName])
   return null
 }
 
@@ -84,11 +89,7 @@ export default function AppComputeIndexRoute() {
   return (
     <GroupProvider groups={initialGroups} groupName={groupName}>
       {/* Resolve deferred groups and push them into context without remounting children */}
-      <Suspense fallback={null}>
-        <Await resolve={userInfoPromise}>
-          <DeferredGroupsLoader groupName={groupName} />
-        </Await>
-      </Suspense>
+      <GroupsUpdater promise={userInfoPromise} groupName={groupName} />
       <GroupSwitcherPortal
         systemName={systemName}
         basePath='/compute'

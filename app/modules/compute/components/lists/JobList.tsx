@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from '@remix-run/react'
+import { useNavigate } from '@remix-run/react'
 import {
   CalendarIcon,
   ClockIcon,
@@ -242,9 +242,7 @@ type SystemJobListProps = {
 }
 
 const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const initialAllUsers = searchParams.get('allUsers') === 'true'
-  const [allUsers, setAllUsers] = useState<boolean>(jobs?.allUsers ?? initialAllUsers)
+  const [allUsers, setAllUsers] = useState<boolean>(jobs?.allUsers ?? false)
   const [localError, setLocalError] = useState<any>(jobs?.error ?? null)
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
@@ -252,14 +250,13 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
 
   const onChangeHandler = async (event: any) => {
-    // window.location.href = `/compute/systems/${jobs.system}/accounts/${jobs.account}?allUsers=${event.currentTarget.checked}`
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.set('allUsers', String(checked))
-      return next
-    })
+    // Update URL for bookmarkability without triggering a Remix navigation/loader re-run,
+    // which would cause Suspense to re-suspend and conflict with the in-flight fetchJobs call.
+    const url = new URL(window.location.href)
+    url.searchParams.set('allUsers', String(checked))
+    window.history.replaceState({}, '', url.toString())
     // Trigger immediate fetch for instant feedback with the new value
     await fetchJobs(checked)
   }
@@ -276,7 +273,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
       )
 
       setCurrentJobs(sortJobs(response?.jobs ?? []))
-      setLocalError(null)
+      setLocalError(response?.error ?? null)
 
       // Ensure minimum display time of 300ms to avoid flickering
       const elapsed = Date.now() - startTime

@@ -12,7 +12,7 @@ import { defer } from '@remix-run/node'
 import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
-import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
+import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
@@ -38,11 +38,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
-  // Call api/s and fetch data - deferred for better UX with timeout protection
-  const jobsPromise = promiseWithTimeout(
+  // Call api/s and fetch data - deferred for better UX with timeout protection.
+  // Resolves with an error object on timeout so the job list view renders inline
+  // rather than triggering the route ErrorBoundary.
+  const jobsPromise = promiseWithTimeoutOrDefault(
     getJobs(accessToken, systemName, accountName, allUsers),
     DEFERRED_PROMISE_TIMEOUT_MS,
-    'Loading jobs took too long. The system might be busy or unavailable.',
+    {
+      system: systemName,
+      jobs: [],
+      account: accountName,
+      allUsers,
+      error: { message: 'Loading jobs took too long. The system might be busy or unavailable.' },
+    },
   )
   // Return deferred response
   return defer({ jobsPromise })

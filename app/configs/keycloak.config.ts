@@ -18,6 +18,7 @@ const keycloak = {
   callbackUrl: getEnvVariable(env, 'KEYCLOAK_CALLBACK_URL'),
   logoutRedirectUrl: getEnvVariable(env, 'KEYCLOAK_LOGOUT_REDIRECT_URL'),
   useSSL: getEnvVariable(env, 'KEYCLOAK_USE_SSL', false, true, true),
+  tokenExpirationBuffer: parseInt(getEnvVariable(env, 'KEYCLOAK_TOKEN_EXPIRATION_BUFFER', false, '60'), 10),
 }
 
 export default keycloak

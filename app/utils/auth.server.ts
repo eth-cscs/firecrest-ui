@@ -85,7 +85,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
         auth.tokens.refreshToken,
       )
       const expirationDate = new Date()
-      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - 30)
+      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - keycloak.tokenExpirationBuffer)
       auth.tokens = {
         accessToken: access_token,
         refreshToken: refresh_token,
@@ -152,7 +152,7 @@ const keycloakStrategy = new KeycloakStrategy(
     const { expires_in } = extraParams
     const expirationDate = new Date()
     const refreshExpirationDate = new Date()
-    expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - 30)
+    expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - keycloak.tokenExpirationBuffer)
     return {
       user: {
         username: profile._json.preferred_username,

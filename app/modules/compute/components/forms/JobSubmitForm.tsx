@@ -50,7 +50,9 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const submit = useSubmit()
   const formRef = useRef<any>()
   const [file, setFile] = useState<any>(null)
+  const [scriptMode, setScriptMode] = useState<'local' | 'remote'>('local')
   const [isOpenTargetBrowse, setIsOpenTargetBrowse] = useState(false)
+  const [isOpenRemoteScriptBrowse, setIsOpenRemoteScriptBrowse] = useState(false)
   const [loading, setLoading] = useState(false)
   const { systems, username, systemName, accountName } = formData
   const formErrorFields = getFormErrorFieldsFromError(formError)
@@ -58,6 +60,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
     system: systemName,
     account: accountName,
     workingDirectory: '',
+    remoteScript: '',
     standardInput: '',
     standardOutput: '',
     standardError: '',
@@ -103,11 +106,13 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
 
   const handlReset = () => {
     setFile(null)
+    setScriptMode('local')
     setFormValues({
       ...formValues,
       system: systemName,
       account: accountName,
       workingDirectory: '',
+      remoteScript: '',
       standardInput: '',
       standardOutput: '',
       standardError: '',
@@ -127,6 +132,15 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
     setIsOpenTargetBrowse(false)
   }
 
+  const handleOnRemoteScriptBrowse = () => {
+    setIsOpenRemoteScriptBrowse(true)
+  }
+
+  const handleOnBrowseRemoteScriptSelection = (_systemName: string, targetPath: string) => {
+    setFormValues({ ...formValues, remoteScript: targetPath })
+    setIsOpenRemoteScriptBrowse(false)
+  }
+
   return (
     <form ref={formRef} onSubmit={handleOnSubmit} className='relative'>
       <BaseSlideOver
@@ -142,48 +156,112 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
           mode={RemoteFilesystemBrowserMode.DIRECTORY}
         />
       </BaseSlideOver>
+      <BaseSlideOver
+        isOpen={isOpenRemoteScriptBrowse}
+        setIsOpen={setIsOpenRemoteScriptBrowse}
+        title={'Browse remote filesystem'}
+        subtitle={'Navigate the remote file system and select the script file'}
+      >
+        <RemoteFilesystemBrowser
+          initCurrentPath={formValues.remoteScript || formValues.workingDirectory}
+          initSystemName={formValues.system}
+          onBrowseSelection={handleOnBrowseRemoteScriptSelection}
+          mode={RemoteFilesystemBrowserMode.FILE}
+        />
+      </BaseSlideOver>
       <div className='sm:overflow-hidden'>
         <div>
           <div className='grid grid-cols-6 gap-6'>
-            <div className='col-span-6 sm:col-span-2'>
-              <label htmlFor='system' className='block text-sm font-medium text-gray-700'>
-                System <span className='italic text-red-400'>:</span>
-              </label>
-              <input
-                type='text'
-                name='system'
-                value={formValues.system}
-                readOnly
-                className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed'
-              />
-            </div>
-            <div className='col-span-6 sm:col-span-2'>
-              <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
-                Account
-              </label>
-              <input
-                type='text'
-                name='account'
-                value={formData.accountName}
-                readOnly
-                className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
-              />
-              {showInputValidation({
-                fieldName: 'name',
-                formErrorFields: formErrorFields,
-              })}
-              <div className='flex mt-1'>
-                <div className='flex-shrink-0'>
-                  <InformationCircleIcon className='text-blue-400 h-5 w-5' />
-                </div>
-                <div className='ml-1 text-xs text-blue-400'>
-                  Charge job resources to specified account
-                </div>
+            <div className='col-span-6 sm:col-span-6'>
+              <div className='border-b border-gray-200 mb-3'>
+                <nav className='-mb-px flex space-x-8'>
+                  <button
+                    type='button'
+                    onClick={() => setScriptMode('local')}
+                    className={classNames(
+                      'whitespace-nowrap border-b-2 py-2 px-1 text-sm font-medium transition-colors',
+                      scriptMode === 'local'
+                        ? 'border-gray-800 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                    )}
+                  >
+                    Upload local script
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setScriptMode('remote')}
+                    className={classNames(
+                      'whitespace-nowrap border-b-2 py-2 px-1 text-sm font-medium transition-colors',
+                      scriptMode === 'remote'
+                        ? 'border-gray-800 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                    )}
+                  >
+                    Use remote script
+                  </button>
+                </nav>
               </div>
-            </div>
+              <input type='hidden' name='scriptMode' value={scriptMode} />
+              <input type='hidden' name='system' value={formValues.system} />
+              <input type='hidden' name='account' value={formValues.account} />
+              {scriptMode === 'local' && (
+                <>
+                  <SingleDraggableFileUpload
+                    ref={singleDraggableFileUploadRef}
+                    onFileSelected={handleFileSelected}
+                    fieldError={hasErrorForField({
+                      fieldName: 'file',
+                      formErrorFields: formErrorFields,
+                    })}
+                  />
+                  {showInputValidation({
+                    fieldName: 'file',
+                    formErrorFields: formErrorFields,
+                  })}
+                </>
+              )}
+              {scriptMode === 'remote' && (
+                <>
+                  <div className='flex rounded-md shadow-sm'>
+                    <div className='relative flex flex-grow items-stretch focus-within:z-10'>
+                      <input
+                        type='text'
+                        name='remoteScript'
+                        value={formValues.remoteScript}
+                        onChange={(e) =>
+                          setFormValues({ ...formValues, remoteScript: e.target.value })
+                        }
+                        className={classNames(
+                          hasErrorForField({
+                            fieldName: 'remoteScript',
+                            formErrorFields: formErrorFields,
+                          })
+                            ? 'border-red-300 focus:border-red-300 focus:ring-red-300'
+                            : 'border-gray-300 focus:border-blue-300 focus:ring-blue-300',
+                          'block w-full rounded-l-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none',
+                        )}
+                        placeholder='/path/to/your/job.sh'
+                      />
+                    </div>
+                    <button
+                      type='button'
+                      onClick={handleOnRemoteScriptBrowse}
+                      className='relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                    >
+                      <FolderOpenIcon className='-ml-0.5 h-5 w-5 text-gray-400' aria-hidden='true' />
+                      Browse remote filesystem
+                    </button>
+                  </div>
+                  {showInputValidation({
+                    fieldName: 'remoteScript',
+                    formErrorFields: formErrorFields,
+                  })}
+                </>
+              )}
+        </div>
             <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
-                Name
+                Job Name
               </label>
               <input
                 type='text'
@@ -194,15 +272,9 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 fieldName: 'name',
                 formErrorFields: formErrorFields,
               })}
-              <div className='flex mt-1'>
-                <div className='flex-shrink-0'>
-                  <InformationCircleIcon className='text-blue-400 h-5 w-5' />
-                </div>
-                <div className='ml-1 text-xs text-blue-400'>
-                  Name of the job, if not set, the name of the sbatch file is taken.
-                </div>
-              </div>
+
             </div>
+            
             <div className='col-span-6 sm:col-span-6'>
               <label htmlFor='workingDirectory' className='block text-sm font-medium text-gray-700'>
                 Working directory <span className='italic text-red-400'>*</span>
@@ -243,24 +315,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 </button>
               </div>
             </div>
-            <div className='col-span-6 sm:col-span-6'>
-              <label htmlFor='sbatchFile' className='block text-sm font-medium text-gray-700'>
-                SBATCH script file to be submitted to SLURM{' '}
-                <span className='italic text-red-400'>*</span>
-              </label>
-              <SingleDraggableFileUpload
-                ref={singleDraggableFileUploadRef}
-                onFileSelected={handleFileSelected}
-                fieldError={hasErrorForField({
-                  fieldName: 'system',
-                  formErrorFields: formErrorFields,
-                })}
-              />
-              {showInputValidation({
-                fieldName: 'file',
-                formErrorFields: formErrorFields,
-              })}
-            </div>
+            
             <div className='col-span-6 sm:col-span-6'>
               <div className='text-sm'>
                 <button

@@ -16,6 +16,7 @@ const oidc = {
   clientSecret: getEnvVariable(env, 'OIDC_CLIENT_SECRET'),
   callbackUrl: getEnvVariable(env, 'OIDC_CALLBACK_URL'),
   postLogoutRedirectUrl: getEnvVariable(env, 'OIDC_POST_LOGOUT_REDIRECT_URL'),
+  tokenExpirationBuffer: parseInt(getEnvVariable(env, 'OIDC_TOKEN_EXPIRATION_BUFFER', false, '60'), 10),
 }
 
 export default oidc

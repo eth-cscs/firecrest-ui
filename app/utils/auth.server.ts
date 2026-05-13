@@ -120,7 +120,7 @@ export async function getAuthenticator(): Promise<Authenticator<Auth>> {
       const { expires_in } = extraParams as unknown as { expires_in: number }
       const expirationDate = new Date()
       const refreshExpirationDate = new Date()
-      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - 30)
+      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
       return {
         user: {
           username: (profile._json.preferred_username as string) || profile.id || '',
@@ -205,7 +205,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
         auth.tokens.refreshToken,
       )
       const expirationDate = new Date()
-      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - 30)
+      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
       auth.tokens = {
         accessToken: access_token,
         refreshToken: refresh_token,

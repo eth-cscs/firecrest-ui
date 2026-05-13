@@ -18,7 +18,7 @@ import JobSubmitForm from '~/modules/compute/components/forms/JobSubmitForm'
 const JobSubmitView: React.FC<any> = ({ formData, error }: any) => {
   return (
     <SimpleView title='Compute'>
-      <SimplePanel title='Submit job by uploading a local sbatch file' className='mb-4'>
+      <SimplePanel title='Submit Job' className='mb-4'>
         <AlertError error={error} />
         <JobSubmitForm formError={error} formData={formData} />
       </SimplePanel>

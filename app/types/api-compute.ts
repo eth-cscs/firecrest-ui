@@ -6,7 +6,9 @@
 *************************************************************************/
 
 export type JobDescritpion = {
-  script: string
+  script?: string
+  script_local_path?: string
+  script_remote_path?: string
   account?: string
   name?: string
   working_directory: string
@@ -26,9 +28,9 @@ export type PostJobResponse = {
 
 // Form
 export type PostJobFormPayload = {
-  system: string
-  file: any
-  account?: string
+  scriptMode: 'local' | 'remote'
+  file?: any
+  remoteScript?: string
   name?: string
   workingDirectory: string
   standardInput?: string
@@ -40,13 +42,19 @@ export type PostJobFormPayload = {
 export const convertPostJobFormToApiPayload = async (
   payload: PostJobFormPayload,
 ): Promise<PostJobPayload> => {
-  const script = await payload.file.text()
+  const isRemote = payload.scriptMode === 'remote'
+  const script = isRemote ? undefined : await payload.file.text()
   return {
     job: {
       script: script,
+      script_remote_path: isRemote ? payload.remoteScript : undefined,
       working_directory: payload.workingDirectory,
       account: payload.account,
-      name: payload.name ? payload.name : payload.file.name,
+      name: payload.name
+        ? payload.name
+        : isRemote
+          ? payload.remoteScript?.split('/').pop()
+          : payload.file.name,
       standard_input: payload.standardInput,
       standard_output: payload.standardOutput,
       standard_error: payload.standardError,

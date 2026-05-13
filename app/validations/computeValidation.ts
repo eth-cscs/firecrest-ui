@@ -22,16 +22,28 @@ const isValidFileType = (fileName: string, fileType: string) => {
 
 const jobSchema: Yup.ObjectSchema<PostJobFormPayload> = Yup.object({
   system: Yup.string().required('System is required'),
-  file: Yup.mixed()
-    .required('Batch file is required')
-    .test('is-valid-type', 'Not a valid batch file type (.sh)', (value: any) => {
-      return isValidFileType(value && value.name.toLowerCase(), 'sbatch')
-    })
-    .test(
-      'is-valid-size',
-      'Max allowed size is 100KB',
-      (value: any) => value && value.size <= MAX_FILE_SIZE,
-    ),
+  scriptMode: Yup.string<'local' | 'remote'>().required().oneOf(['local', 'remote']),
+  file: Yup.mixed().when('scriptMode', {
+    is: 'local',
+    then: (schema) =>
+      schema
+        .required('Batch file is required')
+        .test('is-valid-type', 'Not a valid batch file type (.sh)', (value: any) => {
+          return isValidFileType(value && value.name.toLowerCase(), 'sbatch')
+        })
+        .test(
+          'is-valid-size',
+          'Max allowed size is 100KB',
+          (value: any) => value && value.size <= MAX_FILE_SIZE,
+        ),
+    otherwise: (schema) => schema.optional(),
+  }),
+  remoteScript: Yup.string().when('scriptMode', {
+    is: 'remote',
+    then: (schema) => schema.required('Remote script path is required'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  account: Yup.string().optional(),
   name: Yup.string().optional(),
   workingDirectory: Yup.string().required('Working directory is required'),
   standardInput: Yup.string().optional(),

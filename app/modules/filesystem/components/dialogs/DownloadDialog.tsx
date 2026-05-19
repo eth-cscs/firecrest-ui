@@ -16,6 +16,8 @@ import SimpleDialog from '~/components/dialogs/SimpleDialog'
 import CodeBlock from '~/components/codes/CodeBlock'
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import { postLocalTransferDownload } from '~/apis/filesystem-api'
+// errors
+import AlertError from '~/components/alerts/AlertError'
 
 interface DownloadDialogProps {
   system: string
@@ -84,9 +86,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       onClose()
       window.location.href = downloadEndpoint
     } else {
-      postFileTransferDownload(system, getFilePath(), formValues.account).catch((response) => {
-        console.log(response)
-      })
+      postFileTransferDownload(system, getFilePath(), formValues.account)
     }
   }
 
@@ -100,6 +100,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       {loading && <LoadingSpinner title='Preparing download...' className='py-10' />}
       {!loading && (
         <>
+          <AlertError error={downloadError ? { message: downloadError } : null} />
           {!downloadUrl && (
             <div className='flex flex-col w-full space-y-4'>
               {needTransferDownload() && (

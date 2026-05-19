@@ -22,7 +22,6 @@ import stylesheet from '~/tailwind.css?url'
 import base from './configs/base.config'
 // pages
 import ErrorPage from './components/pages/ErrorPage'
-import logger from './logger/logger'
 
 export async function loader({ context }: LoaderFunctionArgs) {
   return json({
@@ -87,7 +86,7 @@ export default function App() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return (
     <Document title='FirecREST Web UI - v2'>
       <ErrorPage />

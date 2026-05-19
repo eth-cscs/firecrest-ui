@@ -28,4 +28,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
+  ssr: {
+    // pino uses worker threads (thread-stream) internally; Vite 6's SSR
+    // transform pipeline breaks CJS packages with native internals, so both
+    // must be resolved by Node directly rather than bundled by Vite.
+    external: ['pino', 'thread-stream'],
+  },
 })

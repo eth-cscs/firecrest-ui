@@ -15,6 +15,7 @@ import {
 import { PostFileUploadPayload } from '~/types/api-filesystem'
 // helpers
 import { StatusCodes } from 'http-status-codes'
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -68,7 +69,15 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
     console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
-    await postFileUpload(accessToken, system, payloadData.path, payloadData.file, originalFileName)
+    await postFileUpload(
+      accessToken,
+      system,
+      payloadData.path,
+      payloadData.file,
+      originalFileName,
+      request,
+    )
+    logInfoHttp({ message: 'fs.upload', request, extraInfo: { system, operation: 'upload' } })
     await notifySuccessMessage(
       {
         title: 'File upload',

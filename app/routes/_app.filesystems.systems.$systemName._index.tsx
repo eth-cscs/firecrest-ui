@@ -9,7 +9,6 @@ import { useEffect } from 'react'
 import { useLoaderData, useLocation, useNavigate, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 // utils
@@ -54,6 +53,6 @@ export default function AppFilesystemsSystemIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

@@ -9,7 +9,7 @@ import _ from 'lodash'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // helpers
 import {
   searchSystemByName,
@@ -123,6 +123,6 @@ export default function AppComputeIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

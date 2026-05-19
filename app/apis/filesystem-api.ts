@@ -20,7 +20,7 @@ import type {
   GetTransferDownloadResponse,
 } from '~/types/api-filesystem'
 // apis
-import api, { ApiTarget, ResponseBodyType } from './api'
+import api, { ApiTarget, ResponseBodyType, withRequestId } from './api'
 
 export const getOpsLs = async (
   accessToken: string,
@@ -34,9 +34,7 @@ export const getOpsLs = async (
   const apiResponse = await api.get<GetOpsLsResponse>(
     `/filesystem/${system}/ops/ls?${urlSearchParams}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     },
   )
   return apiResponse
@@ -56,9 +54,7 @@ export const getOpsTail = async (
   const apiResponse = await api.get<GetOpsTailResponse>(
     `/filesystem/${system}/ops/tail?${urlSearchParams}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     },
   )
   return apiResponse
@@ -68,6 +64,7 @@ export const getOpsChecksum = async (
   accessToken: string,
   system: string,
   targetPath: string,
+  request: Request | null = null,
 ): Promise<GetOpsChecksumResponse> => {
   const urlSearchParams = new URLSearchParams({
     path: targetPath,
@@ -75,9 +72,7 @@ export const getOpsChecksum = async (
   const apiResponse = await api.get<GetOpsChecksumResponse>(
     `/filesystem/${system}/ops/checksum?` + urlSearchParams,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     },
   )
   return apiResponse
@@ -87,6 +82,7 @@ export const getOpsDownload = async (
   accessToken: string,
   system: string,
   targetPath: string,
+  request: Request | null = null,
 ): Promise<any> => {
   const urlSearchParams = new URLSearchParams({
     path: targetPath,
@@ -94,9 +90,7 @@ export const getOpsDownload = async (
   const apiResponse = await api.get<any>(
     `/filesystem/${system}/ops/download?` + urlSearchParams,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     },
     ApiTarget.API_REMOTE,
     ResponseBodyType.BLOB,
@@ -109,15 +103,16 @@ export const postOpsSymlink = async (
   system: string,
   targetPath: string,
   linkPath: string,
+  request: Request | null = null,
 ): Promise<GetOpsSymlinkResponse> => {
   const apiResponse = await api.post<any, GetOpsSymlinkResponse>(
     `/filesystem/${system}/ops/symlink`,
     JSON.stringify({ path: targetPath, linkPath }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -129,15 +124,16 @@ export const putOpsChown = async (
   targetPath: string,
   owner: string | null,
   group: string | null,
+  request: Request | null = null,
 ): Promise<GetOpsChownResponse> => {
   const apiResponse = await api.put<any, GetOpsChownResponse>(
     `/filesystem/${system}/ops/chown`,
     JSON.stringify({ path: targetPath, owner, group }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -148,15 +144,16 @@ export const putOpsChmod = async (
   system: string,
   targetPath: string,
   mode: string,
+  request: Request | null = null,
 ): Promise<GetOpsChmodResponse> => {
   const apiResponse = await api.put<any, GetOpsChmodResponse>(
     `/filesystem/${system}/ops/chmod`,
     JSON.stringify({ path: targetPath, mode }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -167,15 +164,16 @@ export const postOpsMkdir = async (
   system: string,
   path: string,
   parent: boolean = false,
+  request: Request | null = null,
 ): Promise<GetOpsMkdirResponse> => {
   const apiResponse = await api.post<any, GetOpsMkdirResponse>(
     `/filesystem/${system}/ops/mkdir`,
     JSON.stringify({ path, parent }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -185,12 +183,13 @@ export const deleteOpsRm = async (
   accessToken: string,
   system: string,
   targetPath: string,
+  request: Request | null = null,
 ): Promise<any> => {
   await api.delete<any, any>(`/filesystem/${system}/ops/rm?path=${targetPath}`, null, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: withRequestId(
+      { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      request,
+    ),
   })
 }
 
@@ -199,15 +198,16 @@ export const postTransferCp = async (
   system: string,
   sourcePath: string,
   targetPath: string,
+  request: Request | null = null,
 ): Promise<GetTransferCpResponse> => {
   const apiResponse = await api.post<any, GetTransferCpResponse>(
     `/filesystem/${system}/transfer/cp`,
     JSON.stringify({ sourcePath, targetPath }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -218,15 +218,16 @@ export const postTransferMv = async (
   system: string,
   sourcePath: string,
   targetPath: string,
+  request: Request | null = null,
 ): Promise<GetTransferMvResponse> => {
   const apiResponse = await api.post<any, GetTransferMvResponse>(
     `/filesystem/${system}/transfer/mv`,
     JSON.stringify({ sourcePath, targetPath }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -238,6 +239,7 @@ export const postFileUpload = async (
   path: string,
   fileData: any,
   fileName?: string,
+  request: Request | null = null,
 ): Promise<any> => {
   const formData = new FormData()
   if (fileName) {
@@ -252,9 +254,7 @@ export const postFileUpload = async (
     `/filesystem/${system}/ops/upload?${urlSearchParams}`,
     formData,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     },
   )
   return result
@@ -267,6 +267,7 @@ export const postTransferUpload = async (
   fileName: string,
   fileSize: number,
   account: string | null = null,
+  request: Request | null = null,
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
     sourcePath: `${path}/${fileName}`,
@@ -280,10 +281,10 @@ export const postTransferUpload = async (
     `/filesystem/${system}/transfer/upload`,
     JSON.stringify(payload),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse
@@ -293,15 +294,16 @@ export const postTransferDownload = async (
   accessToken: string,
   system: string,
   path: string,
+  request: Request | null = null,
 ): Promise<GetTransferDownloadResponse> => {
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
     JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse

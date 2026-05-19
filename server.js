@@ -5,6 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { randomUUID } from 'crypto'
 import express from 'express'
 import pino from 'pino'
 import { createRequestHandler } from '@remix-run/express'
@@ -55,6 +56,12 @@ if (isProd) {
   // dev: Vite middleware first
   app.use(vite.middlewares)
 }
+
+// Assign X-Request-ID to every request (respect upstream value if already set)
+app.use((req, _res, next) => {
+  req.headers['x-request-id'] ??= randomUUID()
+  next()
+})
 
 // Remix handler
 app.all(

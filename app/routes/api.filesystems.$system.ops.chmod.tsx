@@ -10,6 +10,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // types
 import { PutOpsChmodRequest } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -39,7 +40,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       system,
       payloadData.targetPath,
       payloadData.mode,
+      request,
     )
+    logInfoHttp({ message: 'fs.chmod', request, extraInfo: { system, operation: 'chmod' } })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -10,6 +10,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // types
 import { PostTransferMvRequest } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -39,7 +40,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       system,
       payloadData.sourcePath,
       payloadData.targetPath,
+      request,
     )
+    logInfoHttp({ message: 'fs.transfer.mv', request, extraInfo: { system, operation: 'transfer.mv' } })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -10,6 +10,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // types
 import { PostOpsMkdirRequest } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -34,7 +35,8 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostOpsMkdirRequest = await validateOpsMkdir(formData)
     // Put data
-    const response = await postOpsMkdir(accessToken, system, payloadData.path)
+    const response = await postOpsMkdir(accessToken, system, payloadData.path, false, request)
+    logInfoHttp({ message: 'fs.mkdir', request, extraInfo: { system, operation: 'mkdir' } })
     // Notify success message
     await notifySuccessMessage(
       {

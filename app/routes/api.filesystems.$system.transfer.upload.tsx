@@ -10,6 +10,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // types
 import { PostTransferUploadRequest } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -41,7 +42,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.fileName,
       payloadData.fileSize,
       payloadData.account,
+      request,
     )
+    logInfoHttp({ message: 'fs.transfer.upload', request, extraInfo: { system, operation: 'transfer.upload' } })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

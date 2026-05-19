@@ -9,6 +9,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // types
 import { GetOpsTailResponse } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -30,7 +31,14 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const targetPath = url.searchParams.get('targetPath') || ''
     const lines = url.searchParams.get('lines') || ''
     // Get data
-    const response: GetOpsTailResponse = await getOpsTail(accessToken, system, targetPath, lines)
+    const response: GetOpsTailResponse = await getOpsTail(
+      accessToken,
+      system,
+      targetPath,
+      lines,
+      request,
+    )
+    logInfoHttp({ message: 'fs.tail', request, extraInfo: { system, operation: 'tail' } })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

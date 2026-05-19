@@ -9,7 +9,6 @@ import { redirect } from '@remix-run/node'
 import { useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
@@ -67,6 +66,6 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

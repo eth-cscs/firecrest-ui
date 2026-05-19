@@ -17,7 +17,7 @@ import { useRouteError, useLoaderData, redirect, useActionData } from '@remix-ru
 import { GetJobMetadataResponse, GetJobResponse } from '~/types/api-job'
 import { GetSystemsResponse, System } from '~/types/api-status'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // errors
 import { HttpError } from '~/errors/HttpError'
 // helpers
@@ -152,6 +152,6 @@ export default function ComputeJobDetailsRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

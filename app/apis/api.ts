@@ -69,6 +69,14 @@ async function handleReponse(
   })
 }
 
+export function withRequestId(
+  headers: Record<string, string>,
+  request: Request | null | undefined,
+): Record<string, string> {
+  const id = request?.headers?.get('x-request-id')
+  return id ? { ...headers, 'X-Request-ID': id } : headers
+}
+
 const api = {
   url: (url: string) => buildUrl(url),
   get: <TResponse>(

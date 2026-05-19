@@ -12,7 +12,7 @@ import { createRedisSessionStorage } from '@mcansh/remix-redis-session-storage'
 import base from '~/configs/base.config'
 import redisConfig from '~/configs/redis.config'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 
 export const returnToCookie = createCookie('__return-to', {
   path: '/',

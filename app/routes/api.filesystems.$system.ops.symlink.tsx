@@ -10,6 +10,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // types
 import { PostOpsSymlinkRequest } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -39,7 +40,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       system,
       payloadData.targetPath,
       payloadData.linkPath,
+      request,
     )
+    logInfoHttp({ message: 'fs.symlink', request, extraInfo: { system, operation: 'symlink' } })
     // Notify success message
     await notifySuccessMessage(
       {

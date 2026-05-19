@@ -9,6 +9,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // types
 import { GetOpsChecksumResponse } from '~/types/api-filesystem'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -29,7 +30,13 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const url = new URL(request.url)
     const targetPath = url.searchParams.get('targetPath') || ''
     // Get data
-    const response: GetOpsChecksumResponse = await getOpsChecksum(accessToken, system, targetPath)
+    const response: GetOpsChecksumResponse = await getOpsChecksum(
+      accessToken,
+      system,
+      targetPath,
+      request,
+    )
+    logInfoHttp({ message: 'fs.checksum', request, extraInfo: { system, operation: 'checksum' } })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

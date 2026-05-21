@@ -8,6 +8,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 // dialogs
 import CodeBlock from '~/components/codes/CodeBlock'
 import TemplatedCodeBlock from '~/components/codes/TemplatedCodeBlock'
+// errors
+import AlertError from '~/components/alerts/AlertError'
 // types
 import { GetTransferUploadResponse } from '~/types/api-filesystem'
 // dialogs
@@ -37,6 +39,7 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
   const [templateRaw, setTemplateRaw] = useState<string>('')
   const [scriptFilled, setScriptFilled] = useState<string>('')
   const [filePath, setFilePath] = useState<string>(DEFAULT_PATH)
+  const [templateError, setTemplateError] = useState<string | null>(null)
 
   // ---------------------------
   // 📦 Helpers
@@ -59,12 +62,14 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
   useEffect(() => {
     const loadTemplate = async () => {
       if (!transferResult) return
+      setTemplateError(null)
       try {
         const res = await fetch('/file_upload_script_template.txt')
         const txt = await res.text()
         setTemplateRaw(txt)
       } catch (err) {
         console.error('Failed to load template:', err)
+        setTemplateError('Failed to load the upload script template. Please try again.')
       }
     }
     loadTemplate()
@@ -241,7 +246,11 @@ const TransferUploadResultDialog: React.FC<TransferUploadResultDialogProps> = ({
             </button>
           </div>
 
-          <TemplatedCodeBlock code={scriptFilled} />
+          {templateError ? (
+            <AlertError error={{ message: templateError }} />
+          ) : (
+            <TemplatedCodeBlock code={scriptFilled} />
+          )}
         </section>
 
         {/* 💡 How to use */}

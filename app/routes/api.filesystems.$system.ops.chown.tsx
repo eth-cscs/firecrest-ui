@@ -11,6 +11,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import { PutOpsChownRequest } from '~/types/api-filesystem'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -43,7 +44,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.group || '',
       request,
     )
-    logInfoHttp({ message: 'fs.chown', request, extraInfo: { system, operation: 'chown' } })
+    logInfoHttp({ message: LogAction.FS_CHOWN, request, extraInfo: { system, operation: 'chown' } })
     // Notify success message
     await notifySuccessMessage(
       {

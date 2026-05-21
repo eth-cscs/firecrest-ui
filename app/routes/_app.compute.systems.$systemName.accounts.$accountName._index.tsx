@@ -12,6 +12,7 @@ import { defer } from '@remix-run/node'
 import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { logPageLabel } from '~/helpers/log-labels'
 import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -32,9 +33,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check if allUsers is set
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
   logInfoHttp({
-    message: `Compute system ${systemName} account ${accountName} index page`,
+    message: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

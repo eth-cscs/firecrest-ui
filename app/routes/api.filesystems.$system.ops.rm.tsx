@@ -9,6 +9,7 @@ import { StatusCodes } from 'http-status-codes'
 import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -38,7 +39,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
     await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
-    logInfoHttp({ message: 'fs.rm', request, extraInfo: { system, operation: 'rm' } })
+    logInfoHttp({ message: LogAction.FS_RM, request, extraInfo: { system, operation: 'rm' } })
     // Notify success message
     await notifySuccessMessage(
       {

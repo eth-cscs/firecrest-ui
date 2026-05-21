@@ -11,6 +11,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import { PostTransferDownloadRequest } from '~/types/api-filesystem'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -40,7 +41,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.path,
       request,
     )
-    logInfoHttp({ message: 'fs.transfer.download', request, extraInfo: { system, operation: 'transfer.download' } })
+    logInfoHttp({ message: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { system, operation: 'transfer.download' } })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

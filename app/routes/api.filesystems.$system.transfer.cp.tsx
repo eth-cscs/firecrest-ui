@@ -11,6 +11,7 @@ import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 import { PostTransferCpRequest } from '~/types/api-filesystem'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -42,7 +43,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.targetPath,
       request,
     )
-    logInfoHttp({ message: 'fs.transfer.cp', request, extraInfo: { system, operation: 'transfer.cp' } })
+    logInfoHttp({ message: LogAction.FS_TRANSFER_CP, request, extraInfo: { system, operation: 'transfer.cp' } })
     // Notify success message
     await notifySuccessMessage(
       {

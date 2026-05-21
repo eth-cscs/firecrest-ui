@@ -16,6 +16,7 @@ import {
   getFileSystemByTargetPath,
 } from '~/modules/status/helpers/system-helper'
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -34,9 +35,9 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Filesystem index page',
+    message: LogPage.FILESYSTEM_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

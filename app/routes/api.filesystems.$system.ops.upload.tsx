@@ -16,6 +16,7 @@ import { PostFileUploadPayload } from '~/types/api-filesystem'
 // helpers
 import { StatusCodes } from 'http-status-codes'
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -77,7 +78,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       originalFileName,
       request,
     )
-    logInfoHttp({ message: 'fs.upload', request, extraInfo: { system, operation: 'upload' } })
+    logInfoHttp({ message: LogAction.FS_UPLOAD, request, extraInfo: { system, operation: 'upload' } })
     await notifySuccessMessage(
       {
         title: 'File upload',

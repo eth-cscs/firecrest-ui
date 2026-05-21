@@ -13,6 +13,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { logPageLabel } from '~/helpers/log-labels'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -32,9 +33,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
-    message: `Filesystems system ${systemName} layout page`,
+    message: logPageLabel.filesystemLayout(systemName),
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

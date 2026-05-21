@@ -12,6 +12,7 @@ import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
@@ -29,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Index page',
+    message: LogPage.INDEX,
     request: request,
     extraInfo: { username: auth.user.username },
   })

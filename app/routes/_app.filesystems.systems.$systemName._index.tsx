@@ -11,6 +11,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 // utils
 import { requireAuth } from '~/utils/auth.server'
 // contexts
@@ -26,9 +27,9 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
-    message: 'Filesystem index page',
+    message: LogPage.FILESYSTEM_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName },
   })
   return { systemName }
 }

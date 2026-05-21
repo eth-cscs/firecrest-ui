@@ -19,6 +19,7 @@ import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
 import { handleFormErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
@@ -35,9 +36,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Compute submit page',
+    message: LogPage.COMPUTE_SUBMIT,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

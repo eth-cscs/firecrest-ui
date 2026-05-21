@@ -10,6 +10,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import { GetOpsTailResponse } from '~/types/api-filesystem'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -38,7 +39,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       lines,
       request,
     )
-    logInfoHttp({ message: 'fs.tail', request, extraInfo: { system, operation: 'tail' } })
+    logInfoHttp({ message: LogAction.FS_TAIL, request, extraInfo: { system, operation: 'tail' } })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

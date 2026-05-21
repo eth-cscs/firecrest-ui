@@ -22,6 +22,7 @@ import logger from '~/logger/logger.server'
 import { HttpError } from '~/errors/HttpError'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
 import { handleErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
@@ -41,9 +42,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Compute job detail page',
+    message: LogPage.COMPUTE_JOB_DETAIL,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Layout
   let layoutMode = 'standard'

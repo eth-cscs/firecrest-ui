@@ -11,6 +11,7 @@ import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 import {
   getDefaultFileSystemFromSystem,
@@ -28,9 +29,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Filesystem transfer index page',
+    message: LogPage.FILESYSTEM_TRANSFER_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get path params
   const systemName = params.systemName!

@@ -39,7 +39,7 @@ const FileItem: React.FC<FileItemProps> = ({
   mode = RemoteFilesystemBrowserMode.FILE_AND_DIRECTORY,
 }: FileItemProps) => {
   const handleOnSelectTarget = () => {
-    onSelectTarget(system.name, `${currentPath}/${file.name}`)
+    onSelectTarget(system.name, `${currentPath.replace(/\/+$/, '')}/${file.name}`)
   }
   return (
     <tr className='even:bg-blue-50'>
@@ -101,10 +101,10 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
   mode = RemoteFilesystemBrowserMode.FILE_AND_DIRECTORY,
 }: DirectoryItemProps) => {
   const handleNavigateTo = () => {
-    onNavigateTo(system.name, `${currentPath}/${file.name}`)
+    onNavigateTo(system.name, `${currentPath.replace(/\/+$/, '')}/${file.name}`)
   }
   const handleOnSelectTarget = () => {
-    onSelectTarget(system.name, `${currentPath}/${file.name}`)
+    onSelectTarget(system.name, `${currentPath.replace(/\/+$/, '')}/${file.name}`)
   }
   return (
     <tr className='even:bg-blue-50'>

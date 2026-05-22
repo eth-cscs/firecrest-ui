@@ -7,8 +7,7 @@
 
 export type JobDescritpion = {
   script?: string
-  script_local_path?: string
-  script_remote_path?: string
+  script_path?: string
   account?: string
   name?: string
   working_directory: string
@@ -47,7 +46,7 @@ export const convertPostJobFormToApiPayload = async (
   return {
     job: {
       script: script,
-      script_remote_path: isRemote ? payload.remoteScript : undefined,
+      script_path: isRemote ? payload.remoteScript : undefined,
       working_directory: payload.workingDirectory,
       account: payload.account,
       name: payload.name

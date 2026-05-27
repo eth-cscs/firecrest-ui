@@ -6,7 +6,13 @@
 *************************************************************************/
 
 // types
-import type { GetSystemNodesResponse, GetSystemsResponse, GetUserInfoResponse } from '~/types/api-status'
+import type {
+  GetPartitionsResponse,
+  GetReservationsResponse,
+  GetSystemNodesResponse,
+  GetSystemsResponse,
+  GetUserInfoResponse,
+} from '~/types/api-status'
 // apis
 import api from './api'
 
@@ -32,6 +38,30 @@ export const getSystemNodes = async (
   systemName: string,
 ): Promise<GetSystemNodesResponse> => {
   const apiResponse = await api.get<GetSystemNodesResponse>(`/status/${systemName}/nodes`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  return apiResponse
+}
+
+export const getPartitions = async (
+  accessToken: string,
+  systemName: string,
+): Promise<GetPartitionsResponse> => {
+  const apiResponse = await api.get<GetPartitionsResponse>(`/status/${systemName}/partitions`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  return apiResponse
+}
+
+export const getReservations = async (
+  accessToken: string,
+  systemName: string,
+): Promise<GetReservationsResponse> => {
+  const apiResponse = await api.get<GetReservationsResponse>(`/status/${systemName}/reservations`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

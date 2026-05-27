@@ -32,7 +32,6 @@ export type PostJobFormPayload = {
   scriptMode: 'local' | 'remote'
   file?: any
   remoteScript?: string
-  system?: string
   account?: string
   name?: string
   workingDirectory: string

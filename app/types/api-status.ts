@@ -167,10 +167,16 @@ export interface GetUserInfoResponse extends UserInfo {}
 
 export interface Partition {
   name: string
+  cpus: number
+  totalNodes: number
+  partition: string
 }
 
 export interface Reservation {
   name: string
+  nodeList: string
+  endTime: number
+  startTime: number
 }
 
 export interface GetPartitionsResponse {

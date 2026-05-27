@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { ChevronRightIcon, ChevronDownIcon, FolderOpenIcon } from '@heroicons/react/20/solid'
-import { useSubmit } from '@remix-run/react'
+import { useSubmit, useFetcher } from '@remix-run/react'
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 // helpers
 import { classNames } from '~/helpers/class-helper'
@@ -54,6 +54,8 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const [isOpenTargetBrowse, setIsOpenTargetBrowse] = useState(false)
   const [isOpenRemoteScriptBrowse, setIsOpenRemoteScriptBrowse] = useState(false)
   const [loading, setLoading] = useState(false)
+  const partitionsFetcher = useFetcher<{ partitions: { name: string }[] }>()
+  const reservationsFetcher = useFetcher<{ reservations: { name: string }[] }>()
   const { systems, username, systemName, accountName } = formData
   const formErrorFields = getFormErrorFieldsFromError(formError)
   const [formValues, setFormValues] = useState({
@@ -65,6 +67,8 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
     standardOutput: '',
     standardError: '',
     environment: '',
+    reservation: '',
+    partition: '',
   })
 
   useEffect(() => {
@@ -89,6 +93,13 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       setLoading(false)
     }
   }, [formError])
+
+  useEffect(() => {
+    if (formValues.system) {
+      partitionsFetcher.load(`/api/status/${formValues.system}/partitions`)
+      reservationsFetcher.load(`/api/status/${formValues.system}/reservations`)
+    }
+  }, [formValues.system])
 
   const handleOnSubmit = (event: any) => {
     event.preventDefault()
@@ -117,6 +128,8 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       standardOutput: '',
       standardError: '',
       environment: '',
+      reservation: '',
+      partition: '',
     })
     if (singleDraggableFileUploadRef.current) {
       singleDraggableFileUploadRef.current.reset()
@@ -339,6 +352,56 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
             </div>
             {showAdvancedOptions && (
               <>
+                <div className='col-span-6 sm:col-span-3'>
+                  <label htmlFor='partition' className='block text-sm font-medium text-gray-700'>
+                    Partition
+                  </label>
+                  <select
+                    name='partition'
+                    value={formValues.partition}
+                    onChange={(e) => setFormValues({ ...formValues, partition: e.target.value })}
+                    disabled={partitionsFetcher.state === 'loading'}
+                    className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500'
+                  >
+                    <option value=''>
+                      {partitionsFetcher.state === 'loading' ? 'Loading…' : 'Select a partition'}
+                    </option>
+                    {(partitionsFetcher.data?.partitions ?? []).map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {showInputValidation({
+                    fieldName: 'partition',
+                    formErrorFields: formErrorFields,
+                  })}
+                </div>
+                <div className='col-span-6 sm:col-span-3'>
+                  <label htmlFor='reservation' className='block text-sm font-medium text-gray-700'>
+                    Reservation
+                  </label>
+                  <select
+                    name='reservation'
+                    value={formValues.reservation}
+                    onChange={(e) => setFormValues({ ...formValues, reservation: e.target.value })}
+                    disabled={reservationsFetcher.state === 'loading'}
+                    className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500'
+                  >
+                    <option value=''>
+                      {reservationsFetcher.state === 'loading' ? 'Loading…' : 'Select a reservation'}
+                    </option>
+                    {(reservationsFetcher.data?.reservations ?? []).map((r) => (
+                      <option key={r.name} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  {showInputValidation({
+                    fieldName: 'reservation',
+                    formErrorFields: formErrorFields,
+                  })}
+                </div>
                 <div className='col-span-6 sm:col-span-2'>
                   <label
                     htmlFor='standardInput'

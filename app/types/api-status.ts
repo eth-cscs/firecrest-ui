@@ -164,3 +164,19 @@ export type GetStatusFilesystemResponse = {
 }
 
 export interface GetUserInfoResponse extends UserInfo {}
+
+export interface Partition {
+  name: string
+}
+
+export interface Reservation {
+  name: string
+}
+
+export interface GetPartitionsResponse {
+  partitions: Partition[]
+}
+
+export interface GetReservationsResponse {
+  reservations: Reservation[]
+}

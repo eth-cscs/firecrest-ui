@@ -360,11 +360,20 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     name='partition'
                     value={formValues.partition}
                     onChange={(e) => setFormValues({ ...formValues, partition: e.target.value })}
-                    disabled={partitionsFetcher.state === 'loading'}
+                    disabled={
+                      partitionsFetcher.state === 'loading' ||
+                      (partitionsFetcher.data !== undefined &&
+                        (partitionsFetcher.data?.partitions ?? []).length === 0)
+                    }
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500'
                   >
                     <option value=''>
-                      {partitionsFetcher.state === 'loading' ? 'Loading…' : 'Select a partition'}
+                      {partitionsFetcher.state === 'loading'
+                        ? 'Loading…'
+                        : partitionsFetcher.data !== undefined &&
+                            (partitionsFetcher.data?.partitions ?? []).length === 0
+                          ? 'No partitions available'
+                          : 'Select a partition'}
                     </option>
                     {(partitionsFetcher.data?.partitions ?? []).map((p) => (
                       <option key={p.name} value={p.name}>
@@ -385,11 +394,20 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     name='reservation'
                     value={formValues.reservation}
                     onChange={(e) => setFormValues({ ...formValues, reservation: e.target.value })}
-                    disabled={reservationsFetcher.state === 'loading'}
+                    disabled={
+                      reservationsFetcher.state === 'loading' ||
+                      (reservationsFetcher.data !== undefined &&
+                        (reservationsFetcher.data?.reservations ?? []).length === 0)
+                    }
                     className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500'
                   >
                     <option value=''>
-                      {reservationsFetcher.state === 'loading' ? 'Loading…' : 'Select a reservation'}
+                      {reservationsFetcher.state === 'loading'
+                        ? 'Loading…'
+                        : reservationsFetcher.data !== undefined &&
+                            (reservationsFetcher.data?.reservations ?? []).length === 0
+                          ? 'No reservations available'
+                          : 'Select a reservation'}
                     </option>
                     {(reservationsFetcher.data?.reservations ?? []).map((r) => (
                       <option key={r.name} value={r.name}>

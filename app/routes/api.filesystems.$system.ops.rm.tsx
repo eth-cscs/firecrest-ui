@@ -39,7 +39,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
     await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
-    logInfoHttp({ message: LogAction.FS_RM, request, extraInfo: { system, operation: 'rm' } })
+    logInfoHttp({ eventAction: LogAction.FS_RM, request, extraInfo: { system, operation: 'rm' } })
     // Notify success message
     await notifySuccessMessage(
       {

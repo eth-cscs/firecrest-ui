@@ -33,7 +33,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check if allUsers is set
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
   logInfoHttp({
-    message: logPageLabel.computeAccountIndex(systemName, accountName),
+    eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
     extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })

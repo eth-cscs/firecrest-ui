@@ -43,7 +43,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.mode,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_CHMOD, request, extraInfo: { system, operation: 'chmod' } })
+    logInfoHttp({ eventAction: LogAction.FS_CHMOD, request, extraInfo: { system, operation: 'chmod' } })
     // Notify success message
     await notifySuccessMessage(
       {

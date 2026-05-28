@@ -7,11 +7,13 @@
 
 // logger
 import logger from '~/logger/logger.server'
+import { LogActionMessage } from '~/helpers/log-labels'
 
-const logInfoHttp = ({ message, request, extraInfo }: any) => {
+const logInfoHttp = ({ eventAction, request, extraInfo }: any) => {
   const { username, ...rest } = extraInfo || {}
   logger.info({
-    message,
+    message: LogActionMessage[eventAction] ?? eventAction,
+    'event.action': eventAction.includes(' ') ? 'page.view' : eventAction,
     'request.id': request?.headers?.get('x-request-id') ?? undefined,
     'user.id': username ?? undefined,
     'http.request.method': request?.method ?? undefined,

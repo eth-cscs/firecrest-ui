@@ -27,7 +27,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
-    message: LogPage.FILESYSTEM_INDEX,
+    eventAction: LogPage.FILESYSTEM_INDEX,
     request: request,
     extraInfo: { username: auth.user.username, system: systemName },
   })

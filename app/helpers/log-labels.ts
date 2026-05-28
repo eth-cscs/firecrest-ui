@@ -18,7 +18,26 @@ export const LogAction = {
   FS_TRANSFER_MV: 'fs.transfer.mv',
   FS_TRANSFER_DOWNLOAD: 'fs.transfer.download',
   FS_TRANSFER_UPLOAD: 'fs.transfer.upload',
+  COMPUTE_JOB_SUBMIT_LOCAL: 'compute.job.submit.local',
+  COMPUTE_JOB_SUBMIT_REMOTE: 'compute.job.submit.remote',
 } as const
+
+export const LogActionMessage: Record<string, string> = {
+  'fs.chmod': 'File permission changed',
+  'fs.chown': 'File ownership changed',
+  'fs.mkdir': 'Directory created',
+  'fs.rm': 'File removed',
+  'fs.symlink': 'Symbolic link created',
+  'fs.tail': 'File tail retrieved',
+  'fs.upload': 'File uploaded',
+  'fs.checksum': 'File checksum computed',
+  'fs.transfer.cp': 'File transfer: copy',
+  'fs.transfer.mv': 'File transfer: move',
+  'fs.transfer.download': 'File transfer: download',
+  'fs.transfer.upload': 'File transfer: upload (async)',
+  'compute.job.submit.local': 'Job submitted via local script upload',
+  'compute.job.submit.remote': 'Job submitted via remote script',
+}
 
 export const LogPage = {
   INDEX: 'Index page',

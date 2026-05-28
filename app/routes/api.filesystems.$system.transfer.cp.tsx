@@ -43,7 +43,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.targetPath,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_TRANSFER_CP, request, extraInfo: { system, operation: 'transfer.cp' } })
+    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_CP, request, extraInfo: { system, operation: 'transfer.cp' } })
     // Notify success message
     await notifySuccessMessage(
       {

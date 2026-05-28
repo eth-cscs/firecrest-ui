@@ -78,7 +78,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       originalFileName,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_UPLOAD, request, extraInfo: { system, operation: 'upload' } })
+    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { system, operation: 'upload' } })
     await notifySuccessMessage(
       {
         title: 'File upload',

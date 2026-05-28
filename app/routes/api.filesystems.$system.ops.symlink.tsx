@@ -43,7 +43,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.linkPath,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_SYMLINK, request, extraInfo: { system, operation: 'symlink' } })
+    logInfoHttp({ eventAction: LogAction.FS_SYMLINK, request, extraInfo: { system, operation: 'symlink' } })
     // Notify success message
     await notifySuccessMessage(
       {

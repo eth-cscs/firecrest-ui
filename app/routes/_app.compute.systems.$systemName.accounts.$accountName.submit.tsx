@@ -19,7 +19,7 @@ import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
-import { LogPage } from '~/helpers/log-labels'
+import { LogAction, LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
 import { handleFormErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
@@ -36,7 +36,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: LogPage.COMPUTE_SUBMIT,
+    eventAction: LogPage.COMPUTE_SUBMIT,
     request: request,
     extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
@@ -84,6 +84,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Post data
     const responseJob = await postJob(accessToken, formPayload.system, payload)
     const jobId = responseJob.jobId
+    logInfoHttp({
+      eventAction:
+        formPayload.scriptMode === 'remote'
+          ? LogAction.COMPUTE_JOB_SUBMIT_REMOTE
+          : LogAction.COMPUTE_JOB_SUBMIT_LOCAL,
+      request,
+      extraInfo: { system: systemName, account: accountName, jobId },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -37,7 +37,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       targetPath,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_CHECKSUM, request, extraInfo: { system, operation: 'checksum' } })
+    logInfoHttp({ eventAction: LogAction.FS_CHECKSUM, request, extraInfo: { system, operation: 'checksum' } })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

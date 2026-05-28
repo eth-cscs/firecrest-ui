@@ -44,7 +44,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.group || '',
       request,
     )
-    logInfoHttp({ message: LogAction.FS_CHOWN, request, extraInfo: { system, operation: 'chown' } })
+    logInfoHttp({ eventAction: LogAction.FS_CHOWN, request, extraInfo: { system, operation: 'chown' } })
     // Notify success message
     await notifySuccessMessage(
       {

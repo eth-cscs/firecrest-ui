@@ -39,7 +39,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       lines,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_TAIL, request, extraInfo: { system, operation: 'tail' } })
+    logInfoHttp({ eventAction: LogAction.FS_TAIL, request, extraInfo: { system, operation: 'tail' } })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

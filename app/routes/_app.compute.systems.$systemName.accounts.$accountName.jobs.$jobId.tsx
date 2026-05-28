@@ -42,7 +42,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: LogPage.COMPUTE_JOB_DETAIL,
+    eventAction: LogPage.COMPUTE_JOB_DETAIL,
     request: request,
     extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })

@@ -30,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: LogPage.INDEX,
+    eventAction: LogPage.INDEX,
     request: request,
     extraInfo: { username: auth.user.username },
   })

@@ -41,7 +41,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.path,
       request,
     )
-    logInfoHttp({ message: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { system, operation: 'transfer.download' } })
+    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { system, operation: 'transfer.download' } })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

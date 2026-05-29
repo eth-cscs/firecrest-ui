@@ -18,11 +18,14 @@ spec:
         co.elastic.logs/json.keys_under_root: "true"
         co.elastic.logs/json.expand_keys: "true"
         co.elastic.logs/json.add_error_key: "true"
-        co.elastic.logs/data_stream.dataset: "firecrest-ui"
         co.elastic.logs/processors.1.add_fields.target: "app.environment"
         co.elastic.logs/processors.1.add_fields.fields.name: "{{ .Values.global.environment }}"
         co.elastic.logs/processors.2.add_fields.target: "app.version"
         co.elastic.logs/processors.2.add_fields.fields.name: "{{ .Chart.AppVersion }}"
+        co.elastic.logs/processors.3.add_fields.target: ""
+        co.elastic.logs/processors.3.add_fields.fields.data_stream.type: "logs"
+        co.elastic.logs/processors.3.add_fields.fields.data_stream.dataset: "{{ .Values.elastic.dataStream.dataset }}"
+        co.elastic.logs/processors.3.add_fields.fields.data_stream.namespace: "{{ .Values.global.environment }}"
     spec:
       containers:
         - name: firecrest-web-ui

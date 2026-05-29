@@ -33,3 +33,8 @@ supportUrl: "https://support.example.com"
 docUrl: "https://docs.example.com"
 repoUrl: "https://github.com/eth-cscs/firecrest-ui"
 uiObservabilityDashboard: ""
+
+# Elastic/Observability settings
+elastic:
+  dataStream:
+    dataset: "firecrest-ui"

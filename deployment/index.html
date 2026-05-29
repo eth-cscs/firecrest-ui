@@ -752,6 +752,67 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structured-log-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured log fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#platform-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elasticsearch-data-stream-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elasticsearch data stream routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grafana-dashboard-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grafana dashboard link
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#session-store-for-multiple-replicas" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -866,6 +927,9 @@
 </span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
 </span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="c1"># Optional: URL of an observability/monitoring dashboard to link from the UI</span>
 </span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="c1"># Observability settings</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-platform&quot;</span><span class="w">  </span><span class="c1"># optional — logical name of the deployment platform (e.g. &#39;stp&#39;, &#39;prod&#39;)</span>
 </span></code></pre></div>
 <h3 id="file-upload-and-download-limits">File upload and download limits<a class="headerlink" href="#file-upload-and-download-limits" title="Permanent link">&para;</a></h3>
 <p>Upload and download size limits are <strong>not configured in the UI</strong>. They are read at runtime from the <code>max_ops_file_size</code> field returned by the FirecREST backend for each system. Make sure your ingress <code>proxy-body-size</code> (or equivalent) is set to at least the backend limit plus some overhead for multipart framing — e.g. if the backend allows 5 MB, set the ingress limit to <code>6m</code>.</p>
@@ -993,37 +1057,134 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>firecrest
 </span></code></pre></div>
 <hr />
+<h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
+<p>The FirecREST UI emits structured JSON logs in <a href="https://www.elastic.co/guide/en/ecs/current/index.html">Elastic Common Schema (ECS)</a> format, suitable for ingestion by Filebeat and storage in Elasticsearch.</p>
+<h3 id="structured-log-fields">Structured log fields<a class="headerlink" href="#structured-log-fields" title="Permanent link">&para;</a></h3>
+<p>Every log line includes the following fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>log.level</code></td>
+<td>Log level (<code>info</code>, <code>warn</code>, <code>error</code>, <code>debug</code>)</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>Human-readable description of the event</td>
+</tr>
+<tr>
+<td><code>event.action</code></td>
+<td>Machine-readable event identifier (e.g. <code>fs.chmod</code>, <code>compute.job.submit.local</code>)</td>
+</tr>
+<tr>
+<td><code>@timestamp</code></td>
+<td>ISO-8601 timestamp</td>
+</tr>
+<tr>
+<td><code>service.name</code></td>
+<td>Always <code>firecrest-web-ui</code></td>
+</tr>
+<tr>
+<td><code>service.version</code></td>
+<td>Application version</td>
+</tr>
+<tr>
+<td><code>service.environment</code></td>
+<td>Value of the <code>ENVIRONMENT</code> variable</td>
+</tr>
+<tr>
+<td><code>host.name</code></td>
+<td>Pod hostname</td>
+</tr>
+<tr>
+<td><code>user.id</code></td>
+<td>Authenticated username (present on all requests after login)</td>
+</tr>
+<tr>
+<td><code>request.id</code></td>
+<td>Request correlation ID from the <code>x-request-id</code> header</td>
+</tr>
+<tr>
+<td><code>http.request.method</code></td>
+<td>HTTP method</td>
+</tr>
+<tr>
+<td><code>url.path</code></td>
+<td>Request path</td>
+</tr>
+<tr>
+<td><code>firecrest.system</code></td>
+<td>HPC system name targeted by the request</td>
+</tr>
+<tr>
+<td><code>firecrest.account</code></td>
+<td>HPC account used (compute routes only)</td>
+</tr>
+<tr>
+<td><code>firecrest.jobId</code></td>
+<td>Job ID returned by a submission (compute submit only)</td>
+</tr>
+<tr>
+<td><code>firecrest.platform</code></td>
+<td>Platform name, if <code>PLATFORM</code> is set (see below)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="platform-label">Platform label<a class="headerlink" href="#platform-label" title="Permanent link">&para;</a></h3>
+<p>The optional <code>PLATFORM</code> environment variable sets the <code>firecrest.platform</code> field on every log line. Use it to distinguish logs from different deployment platforms (e.g. <code>stp</code>, <code>prod</code>) when multiple instances share the same Elasticsearch cluster.</p>
+<p>Set it via <code>values.yaml</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stp&quot;</span>
+</span></code></pre></div>
+<p>When unset (default), the field is omitted from logs.</p>
+<h3 id="elasticsearch-data-stream-routing">Elasticsearch data stream routing<a class="headerlink" href="#elasticsearch-data-stream-routing" title="Permanent link">&para;</a></h3>
+<p>When using Filebeat with the <code>co.elastic.logs</code> pod annotations (included in the Helm chart), logs are routed to a dedicated data stream with:</p>
+<ul>
+<li><strong>dataset</strong>: <code>&lt;environment&gt;.firecrest</code> — e.g. <code>tds.firecrest</code> or <code>prod.firecrest</code></li>
+<li><strong>namespace</strong>: <code>firecrest-ui</code> (fixed)</li>
+</ul>
+<p>This results in an index name of the form <code>.ds-logs-&lt;environment&gt;.firecrest-firecrest-ui-&lt;date&gt;-NNNNNN</code>.</p>
+<p>The namespace is fixed so that Grafana dashboard queries can use <code>data_stream.namespace:"firecrest-ui"</code> as a stable filter across all environments.</p>
+<h3 id="grafana-dashboard-link">Grafana dashboard link<a class="headerlink" href="#grafana-dashboard-link" title="Permanent link">&para;</a></h3>
+<p>Set <code>uiObservabilityDashboard</code> to a Grafana panel URL to expose a direct link to the monitoring dashboard from within the UI:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://grafana.example.com/d/abc123/firecrest-ui&quot;</span>
+</span></code></pre></div>
+<hr />
 <h2 id="session-store-for-multiple-replicas">Session Store for Multiple Replicas<a class="headerlink" href="#session-store-for-multiple-replicas" title="Permanent link">&para;</a></h2>
 <p>When deploying with more than one replica (<code>replicas &gt; 1</code>), a shared session store must be configured. Without it, users will lose their session when requests are routed to different replicas.</p>
 <p>Set <code>redisActive: "true"</code> and point <code>redisHost</code> to a Valkey (or Redis) instance. A minimal example using the <a href="https://charts.bitnami.com/bitnami">Bitnami Valkey Helm chart</a> as a dependency:</p>
 <p><code>Chart.yaml</code>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">dependencies</span><span class="p">:</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">valkey</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.4.9</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://charts.bitnami.com/bitnami</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">dependencies</span><span class="p">:</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">valkey</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.4.9</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://charts.bitnami.com/bitnami</span>
 </span></code></pre></div></p>
 <p><code>values.yaml</code>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">global</span><span class="p">:</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">security</span><span class="p">:</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">allowInsecureImages</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># required when using a non-Bitnami image</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="nt">firecrest-web-ui-v2</span><span class="p">:</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;release-name&gt;-valkey-primary&quot;</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="nt">valkey</span><span class="p">:</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span><span class="nt">registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io</span>
-</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">valkey/valkey</span>
-</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.1.6</span>
-</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">  </span><span class="nt">architecture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standalone</span>
-</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
-</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">    </span><span class="nt">existingSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;secret-name&gt;</span>
-</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">    </span><span class="nt">existingSecretPasswordKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;password-key&gt;</span>
-</span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">  </span><span class="nt">primary</span><span class="p">:</span>
-</span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">    </span><span class="nt">persistence</span><span class="p">:</span>
-</span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">global</span><span class="p">:</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">security</span><span class="p">:</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">allowInsecureImages</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># required when using a non-Bitnami image</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nt">firecrest-web-ui-v2</span><span class="p">:</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;release-name&gt;-valkey-primary&quot;</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="nt">valkey</span><span class="p">:</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">    </span><span class="nt">registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker.io</span>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">    </span><span class="nt">repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">valkey/valkey</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.1.6</span>
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">  </span><span class="nt">architecture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standalone</span>
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="w">    </span><span class="nt">existingSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;secret-name&gt;</span>
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a><span class="w">    </span><span class="nt">existingSecretPasswordKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;password-key&gt;</span>
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a><span class="w">  </span><span class="nt">primary</span><span class="p">:</span>
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a><span class="w">    </span><span class="nt">persistence</span><span class="p">:</span>
+</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </span></code></pre></div></p>
 <blockquote>
 <p><strong>Note:</strong> The official <a href="https://hub.docker.com/r/valkey/valkey">valkey/valkey</a> image is used here as it provides versioned tags. The <code>allowInsecureImages</code> flag is required by the Bitnami chart when using a non-Bitnami image.</p>

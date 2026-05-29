@@ -16,6 +16,7 @@ const logInfoHttp = ({ eventAction, request, extraInfo }: any) => {
     'event.action': eventAction.includes(' ') ? 'page.view' : eventAction,
     'request.id': request?.headers?.get('x-request-id') ?? undefined,
     'user.id': username ?? undefined,
+    'firecrest.username': username ?? undefined,
     'http.request.method': request?.method ?? undefined,
     'url.path': request?.url ? new URL(request.url).pathname : undefined,
     'firecrest.system': system ?? undefined,

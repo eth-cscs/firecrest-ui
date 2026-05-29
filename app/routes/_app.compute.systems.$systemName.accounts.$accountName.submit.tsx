@@ -16,7 +16,7 @@ import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // types
 import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types/api-compute'
 // utils
-import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser, requireAuth } from '~/utils/auth.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction, LogPage } from '~/helpers/log-labels'
@@ -65,6 +65,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   // Get params
   const systemName = params.systemName!
   const accountName = params.accountName!
@@ -90,7 +91,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           ? LogAction.COMPUTE_JOB_SUBMIT_REMOTE
           : LogAction.COMPUTE_JOB_SUBMIT_LOCAL,
       request,
-      extraInfo: { system: systemName, account: accountName, jobId },
+      extraInfo: { username: authUser?.username, system: systemName, account: accountName, jobId },
     })
     // Notify success message
     await notifySuccessMessage(

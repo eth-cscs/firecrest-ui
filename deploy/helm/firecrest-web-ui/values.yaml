@@ -8,6 +8,7 @@ global:
 replicas: 2
 image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
+platform: ""
 
 # Logo settings
 companyName: "MyCompany"
@@ -36,5 +37,4 @@ uiObservabilityDashboard: ""
 
 # Elastic/Observability settings
 elastic:
-  dataStream:
-    dataset: "firecrest-ui"
+  dataStream: {}

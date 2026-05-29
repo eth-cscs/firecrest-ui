@@ -20,7 +20,7 @@ import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
-import { getAuthAccessToken } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
 import { postFileUpload } from '~/apis/filesystem-api'
 import { getSystems } from '~/apis/status-api'
@@ -34,6 +34,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   const system: string = params.system || ''
   const { systems } = await getSystems(accessToken)
   const maxOpsFileSize = systems.find((s) => s.name === system)?.dataOperation?.max_ops_file_size
@@ -78,7 +79,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       originalFileName,
       request,
     )
-    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { system, operation: 'upload' } })
+    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { username: authUser?.username, system } })
     await notifySuccessMessage(
       {
         title: 'File upload',

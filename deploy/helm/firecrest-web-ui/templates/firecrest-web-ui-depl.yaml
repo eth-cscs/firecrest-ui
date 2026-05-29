@@ -24,8 +24,8 @@ spec:
         co.elastic.logs/processors.2.add_fields.fields.name: "{{ .Chart.AppVersion }}"
         co.elastic.logs/processors.3.add_fields.target: ""
         co.elastic.logs/processors.3.add_fields.fields.data_stream.type: "logs"
-        co.elastic.logs/processors.3.add_fields.fields.data_stream.dataset: "{{ .Values.elastic.dataStream.dataset }}"
-        co.elastic.logs/processors.3.add_fields.fields.data_stream.namespace: "{{ .Values.global.environment }}"
+        co.elastic.logs/processors.3.add_fields.fields.data_stream.dataset: "{{ .Values.global.environment }}.firecrest"
+        co.elastic.logs/processors.3.add_fields.fields.data_stream.namespace: "firecrest-ui"
     spec:
       containers:
         - name: firecrest-web-ui
@@ -35,6 +35,8 @@ spec:
               value: "firecrest-web-ui"
             - name: ENVIRONMENT
               value: "{{ .Values.global.environment }}"
+            - name: PLATFORM
+              value: "{{ .Values.platform }}"
             - name: UI_HOSTNAME
               value: "{{ .Values.global.dns.webUI }}"
             - name: COMPANY_NAME

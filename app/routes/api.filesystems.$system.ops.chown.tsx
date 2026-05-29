@@ -15,7 +15,7 @@ import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
-import { getAuthAccessToken } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
 import { putOpsChown } from '~/apis/filesystem-api'
 // validations
@@ -28,6 +28,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   // Get form data
   const formData: FormData = await request.formData()
   try {
@@ -44,7 +45,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.group || '',
       request,
     )
-    logInfoHttp({ eventAction: LogAction.FS_CHOWN, request, extraInfo: { system, operation: 'chown' } })
+    logInfoHttp({ eventAction: LogAction.FS_CHOWN, request, extraInfo: { username: authUser?.username, system } })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -18,10 +18,11 @@ const logger = pino({
     'service.name': base.serviceName,
     'service.version': base.appVersion ?? 'unknown',
     'service.environment': base.environment,
+    ...(base.platform ? { 'firecrest.platform': base.platform } : {}),
   },
   formatters: {
     level: (label) => ({ 'log.level': label }),
-    bindings: (b) => ({ 'host.name': b.hostname }),
+    bindings: ({ pid, hostname, ...rest }) => ({ ...rest, 'host.name': hostname }),
   },
 })
 

@@ -10,7 +10,7 @@ import logger from '~/logger/logger.server'
 import { LogActionMessage } from '~/helpers/log-labels'
 
 const logInfoHttp = ({ eventAction, request, extraInfo }: any) => {
-  const { username, ...rest } = extraInfo || {}
+  const { username, system, account, jobId, ...rest } = extraInfo || {}
   logger.info({
     message: LogActionMessage[eventAction] ?? eventAction,
     'event.action': eventAction.includes(' ') ? 'page.view' : eventAction,
@@ -18,6 +18,9 @@ const logInfoHttp = ({ eventAction, request, extraInfo }: any) => {
     'user.id': username ?? undefined,
     'http.request.method': request?.method ?? undefined,
     'url.path': request?.url ? new URL(request.url).pathname : undefined,
+    'firecrest.system': system ?? undefined,
+    'firecrest.account': account ?? undefined,
+    'firecrest.jobId': jobId ?? undefined,
     ...rest,
   })
 }

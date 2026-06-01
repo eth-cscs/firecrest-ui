@@ -29,7 +29,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const url = new URL(request.url)
     const targetPath = url.searchParams.get('targetPath') || ''
     // Get data
-    const response: GetOpsLsResponse = await getOpsLs(accessToken, system, targetPath)
+    const response: GetOpsLsResponse = await getOpsLs(accessToken, system, targetPath, request)
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

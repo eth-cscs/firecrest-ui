@@ -43,7 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Resolves with an error object on timeout so the job list view renders inline
   // rather than triggering the route ErrorBoundary.
   const jobsPromise = promiseWithTimeoutOrDefault(
-    getJobs(accessToken, systemName, accountName, allUsers),
+    getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
     {
       system: systemName,

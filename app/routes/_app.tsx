@@ -36,7 +36,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Get notification messages
   const notificationMessages = await getNotificationMessage(request, headers)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   // Return json
   return json(
     {

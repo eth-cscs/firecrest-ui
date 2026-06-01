@@ -34,7 +34,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const sourcePath = url.searchParams.get('sourcePath') || ''
   const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
   try {
-    const blob: Blob = await getOpsDownload(accessToken, system, sourcePath)
+    const blob: Blob = await getOpsDownload(accessToken, system, sourcePath, request)
     const content = await blob.text()
     return json<LoaderData>({ ok: true, content, fileName, sourcePath })
   } catch (error) {

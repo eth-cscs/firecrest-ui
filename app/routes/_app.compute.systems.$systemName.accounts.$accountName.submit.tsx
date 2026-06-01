@@ -46,7 +46,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const systemName = params.systemName!
   const accountName = params.accountName!
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   // Return response (deferred response)
   return {
     formData: {
@@ -83,7 +83,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Payload
     const payload = await convertPostJobFormToApiPayload(formPayload)
     // Post data
-    const responseJob = await postJob(accessToken, formPayload.system, payload)
+    const responseJob = await postJob(accessToken, formPayload.system, payload, request)
     const jobId = responseJob.jobId
     logInfoHttp({
       eventAction:

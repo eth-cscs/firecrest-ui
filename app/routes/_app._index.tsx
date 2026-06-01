@@ -37,7 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   // Defer nodes fetching — resolves to a map of system name → nodes health
   const systemsNodesPromise = Promise.all(
     systems.map(async (system) => {

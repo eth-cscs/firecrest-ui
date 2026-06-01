@@ -58,9 +58,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     GetJobResponse,
     GetJobMetadataResponse,
   ] = await Promise.all([
-    getSystems(accessToken),
-    getJob(accessToken, systemName, jobId),
-    getJobMetadata(accessToken, systemName, jobId),
+    getSystems(accessToken, request),
+    getJob(accessToken, systemName, jobId, request),
+    getJobMetadata(accessToken, systemName, jobId, request),
   ])
   // Filtering data
   const { jobs } = jobMetadataResponse

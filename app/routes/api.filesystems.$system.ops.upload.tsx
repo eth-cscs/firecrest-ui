@@ -36,7 +36,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   const accessToken = await getAuthAccessToken(request, headers)
   const authUser = await getAuthUser(request)
   const system: string = params.system || ''
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   const maxOpsFileSize = systems.find((s) => s.name === system)?.dataOperation?.max_ops_file_size
   if (!maxOpsFileSize) {
     throw new Error(`System "${system}" not found or has no file size limit configured`)

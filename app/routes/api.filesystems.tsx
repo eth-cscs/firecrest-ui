@@ -30,7 +30,7 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
     const user = await getAuthUser(request)
     const username = user.username
     // Call api/s and fetch data
-    const { systems } = await getSystems(accessToken)
+    const { systems } = await getSystems(accessToken, request)
     const activeSystems = getHealthyFileSystemSystems(systems)
     // Check if there is at least on system
     if (activeSystems && activeSystems.length <= 0) {

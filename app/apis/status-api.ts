@@ -28,11 +28,10 @@ const userInfoCache = new Map<string, { data: GetUserInfoResponse; expiresAt: nu
 export const getSystemNodes = async (
   accessToken: string,
   systemName: string,
+  request: Request | null = null,
 ): Promise<GetSystemNodesResponse> => {
   const apiResponse = await api.get<GetSystemNodesResponse>(`/status/${systemName}/nodes`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
   })
   return apiResponse
 }
@@ -55,9 +54,7 @@ export const getUserInfo = async (
     }
   }
   const apiResponse = await api.get<GetUserInfoResponse>(`/status/${systemName}/userinfo`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
   })
   userInfoCache.set(cacheKey, { data: apiResponse, expiresAt: now + USER_INFO_TTL_MS })
   return apiResponse

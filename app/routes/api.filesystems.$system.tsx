@@ -43,7 +43,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       throw new Error('System not specified')
     }
     // Call api/s and fetch data
-    const { systems } = await getSystems(accessToken)
+    const { systems } = await getSystems(accessToken, request)
     const activeSystems = getHealthyFileSystemSystems(systems)
     // Get system
     const system = searchSystemByName(activeSystems, systemName)

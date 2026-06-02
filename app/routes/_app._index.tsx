@@ -43,7 +43,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     systems.map(async (system) => {
       try {
         const { nodes } = await promiseWithTimeout(
-          getSystemNodes(accessToken, system.name),
+          getSystemNodes(accessToken, system.name, request),
           DEFERRED_PROMISE_TIMEOUT_MS,
           `Loading nodes for ${system.name} timed out.`,
         )

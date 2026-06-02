@@ -45,7 +45,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Resolve with null on any failure (timeout, HTTP error) rather than rejecting —
   // the page still works because groups are seeded from the URL.
   const userInfoPromise = promiseWithTimeout(
-    getUserInfo(accessToken, systemName),
+    getUserInfo(accessToken, systemName, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
   ).catch((error) => {
     logger.warn({ error }, `Failed to load user info for system ${systemName}`)

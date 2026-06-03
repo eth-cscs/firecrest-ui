@@ -10,9 +10,10 @@ import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
 import { defer } from '@remix-run/node'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { logPageLabel } from '~/helpers/log-labels'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -32,9 +33,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
-    message: `Compute system ${systemName} layout page`,
+    eventAction: logPageLabel.computeLayout(systemName),
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
@@ -45,7 +46,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // the page still works because groups are seeded from the URL, and DeferredGroupsLoader
   // uses optional chaining so null userInfo is handled gracefully.
   const userInfoPromise = promiseWithTimeout(
-    getUserInfo(accessToken, systemName),
+    getUserInfo(accessToken, systemName, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
   ).catch((error) => {
     logger.warn({ error }, `Failed to load user info for system ${systemName}`)
@@ -103,6 +104,6 @@ export default function AppComputeIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

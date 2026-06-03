@@ -8,6 +8,7 @@ global:
 replicas: 2
 image: "ghcr.io/eth-cscs/firecrest-ui"
 loggingLevel: "info"
+platform: ""
 
 # Logo settings
 companyName: "MyCompany"
@@ -33,3 +34,7 @@ supportUrl: "https://support.example.com"
 docUrl: "https://docs.example.com"
 repoUrl: "https://github.com/eth-cscs/firecrest-ui"
 uiObservabilityDashboard: ""
+
+# Elastic/Observability settings
+elastic:
+  dataStream: {}

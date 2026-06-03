@@ -27,7 +27,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     const jobId: any = params.jobId
     const systemName: string = params.systemName || ''
     // Get data
-    const response: GetJobResponse = await getJob(accessToken, systemName, jobId)
+    const response: GetJobResponse = await getJob(accessToken, systemName, jobId, request)
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

@@ -16,9 +16,10 @@ import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // types
 import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types/api-compute'
 // utils
-import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser, requireAuth } from '~/utils/auth.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction, LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
 import { handleFormErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
@@ -35,9 +36,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Compute submit page',
+    eventAction: LogPage.COMPUTE_SUBMIT,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
@@ -45,7 +46,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const systemName = params.systemName!
   const accountName = params.accountName!
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   // Return response (deferred response)
   return {
     formData: {
@@ -64,6 +65,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   // Get params
   const systemName = params.systemName!
   const accountName = params.accountName!
@@ -81,8 +83,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Payload
     const payload = await convertPostJobFormToApiPayload(formPayload)
     // Post data
-    const responseJob = await postJob(accessToken, formPayload.system, payload)
+    const responseJob = await postJob(accessToken, formPayload.system, payload, request)
     const jobId = responseJob.jobId
+    logInfoHttp({
+      eventAction:
+        formPayload.scriptMode === 'remote'
+          ? LogAction.COMPUTE_JOB_SUBMIT_REMOTE
+          : LogAction.COMPUTE_JOB_SUBMIT_LOCAL,
+      request,
+      extraInfo: { username: authUser?.username, system: systemName, account: accountName, jobId },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

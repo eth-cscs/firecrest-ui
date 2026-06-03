@@ -15,10 +15,12 @@ import {
 import { PostFileUploadPayload } from '~/types/api-filesystem'
 // helpers
 import { StatusCodes } from 'http-status-codes'
+import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
-import { getAuthAccessToken } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
 import { postFileUpload } from '~/apis/filesystem-api'
 import { getSystems } from '~/apis/status-api'
@@ -32,8 +34,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   const system: string = params.system || ''
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   const maxOpsFileSize = systems.find((s) => s.name === system)?.dataOperation?.max_ops_file_size
   if (!maxOpsFileSize) {
     throw new Error(`System "${system}" not found or has no file size limit configured`)
@@ -68,7 +71,15 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
     console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
-    await postFileUpload(accessToken, system, payloadData.path, payloadData.file, originalFileName)
+    await postFileUpload(
+      accessToken,
+      system,
+      payloadData.path,
+      payloadData.file,
+      originalFileName,
+      request,
+    )
+    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { username: authUser?.username, system } })
     await notifySuccessMessage(
       {
         title: 'File upload',

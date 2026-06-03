@@ -38,6 +38,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       systemName,
       accountName,
       allUsers,
+      request,
     )
     return json(response, { headers })
   } catch (error) {

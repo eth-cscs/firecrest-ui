@@ -17,11 +17,12 @@ import { useRouteError, useLoaderData, redirect, useActionData } from '@remix-ru
 import { GetJobMetadataResponse, GetJobResponse } from '~/types/api-job'
 import { GetSystemsResponse, System } from '~/types/api-status'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // errors
 import { HttpError } from '~/errors/HttpError'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
 import { handleErrorResponse } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
@@ -41,9 +42,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Compute job detail page',
+    eventAction: LogPage.COMPUTE_JOB_DETAIL,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Layout
   let layoutMode = 'standard'
@@ -57,9 +58,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     GetJobResponse,
     GetJobMetadataResponse,
   ] = await Promise.all([
-    getSystems(accessToken),
-    getJob(accessToken, systemName, jobId),
-    getJobMetadata(accessToken, systemName, jobId),
+    getSystems(accessToken, request),
+    getJob(accessToken, systemName, jobId, request),
+    getJobMetadata(accessToken, systemName, jobId, request),
   ])
   // Filtering data
   const { jobs } = jobMetadataResponse
@@ -152,6 +153,6 @@ export default function ComputeJobDetailsRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

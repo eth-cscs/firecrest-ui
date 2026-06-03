@@ -10,9 +10,9 @@ import { useLoaderData, useRouteError } from '@remix-run/react'
 import { defer } from '@remix-run/node'
 import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
@@ -30,20 +30,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Index page',
+    eventAction: LogPage.INDEX,
     request: request,
     extraInfo: { username: auth.user.username },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   // Defer nodes fetching — resolves to a map of system name → nodes health
   const systemsNodesPromise = Promise.all(
     systems.map(async (system) => {
       try {
         const { nodes } = await promiseWithTimeout(
-          getSystemNodes(accessToken, system.name),
+          getSystemNodes(accessToken, system.name, request),
           DEFERRED_PROMISE_TIMEOUT_MS,
           `Loading nodes for ${system.name} timed out.`,
         )
@@ -87,6 +87,6 @@ export default function AppIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

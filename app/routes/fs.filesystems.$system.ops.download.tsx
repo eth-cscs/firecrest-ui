@@ -29,7 +29,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const sourcePath = url.searchParams.get('sourcePath') || ''
     const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
     // Download file
-    const fileDownloaded = await getOpsDownload(accessToken, system, sourcePath)
+    const fileDownloaded = await getOpsDownload(accessToken, system, sourcePath, request)
     // Return response
     return new Response(fileDownloaded, {
       status: StatusCodes.OK,

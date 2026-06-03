@@ -20,6 +20,7 @@ const base = {
   sessionFileDirPath: getEnvVariable(env, 'SESSION_FILE_DIR_PATH', false),
   logoPath: getEnvVariable(env, 'LOGO_PATH', false, '/logo.svg'),
   serviceName: getEnvVariable(env, 'SERVICE_NAME', false, 'firecrest-web-ui'),
+  platform: getEnvVariable(env, 'PLATFORM', false),
   supportUrl: getEnvVariable(env, 'SUPPORT_URL', false),
   repoUrl: getEnvVariable(env, 'REPO_URL', false),
   docUrl: getEnvVariable(env, 'DOC_URL', false),

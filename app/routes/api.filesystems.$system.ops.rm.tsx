@@ -8,10 +8,12 @@
 import { StatusCodes } from 'http-status-codes'
 import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
 // helpers
+import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
-import { getAuthAccessToken } from '~/utils/auth.server'
+import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
 import { deleteOpsRm } from '~/apis/filesystem-api'
 // types
@@ -26,6 +28,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
   // Get form data
   const formData: FormData = await request.formData()
   try {
@@ -36,7 +39,8 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
-    await deleteOpsRm(accessToken, system, payload.fileTargetPath)
+    await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
+    logInfoHttp({ eventAction: LogAction.FS_RM, request, extraInfo: { username: authUser?.username, system } })
     // Notify success message
     await notifySuccessMessage(
       {

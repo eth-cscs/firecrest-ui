@@ -92,6 +92,9 @@ repoUrl: "https://github.com/example/repo"
 
 # Optional: URL of an observability/monitoring dashboard to link from the UI
 uiObservabilityDashboard: ""
+
+# Observability settings
+platform: "my-platform"  # optional — logical name of the deployment platform (e.g. 'stp', 'prod')
 ```
 
 ### File upload and download limits
@@ -232,6 +235,66 @@ To uninstall the Helm chart:
 
 ```bash
 helm uninstall firecrest
+```
+
+---
+
+## Observability
+
+The FirecREST UI emits structured JSON logs in [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html) format, suitable for ingestion by Filebeat and storage in Elasticsearch.
+
+### Structured log fields
+
+Every log line includes the following fields:
+
+| Field | Description |
+|---|---|
+| `log.level` | Log level (`info`, `warn`, `error`, `debug`) |
+| `message` | Human-readable description of the event |
+| `event.action` | Machine-readable event identifier (e.g. `fs.chmod`, `compute.job.submit.local`) |
+| `@timestamp` | ISO-8601 timestamp |
+| `service.name` | Always `firecrest-web-ui` |
+| `service.version` | Application version |
+| `service.environment` | Value of the `ENVIRONMENT` variable |
+| `host.name` | Pod hostname |
+| `user.id` | Authenticated username (present on all requests after login) |
+| `request.id` | Request correlation ID from the `x-request-id` header |
+| `http.request.method` | HTTP method |
+| `url.path` | Request path |
+| `firecrest.system` | HPC system name targeted by the request |
+| `firecrest.account` | HPC account used (compute routes only) |
+| `firecrest.jobId` | Job ID returned by a submission (compute submit only) |
+| `firecrest.platform` | Platform name, if `PLATFORM` is set (see below) |
+
+### Platform label
+
+The optional `PLATFORM` environment variable sets the `firecrest.platform` field on every log line. Use it to distinguish logs from different deployment platforms (e.g. `stp`, `prod`) when multiple instances share the same Elasticsearch cluster.
+
+Set it via `values.yaml`:
+
+```yaml
+platform: "stp"
+```
+
+When unset (default), the field is omitted from logs.
+
+### Elasticsearch data stream routing
+
+When using Filebeat with the `co.elastic.logs` pod annotations (included in the Helm chart), logs are routed to a dedicated data stream with:
+
+* **dataset**: `<environment>.firecrest` — e.g. `tds.firecrest` or `prod.firecrest`
+* **namespace**: `firecrest-ui` (fixed)
+
+This results in an index name of the form `.ds-logs-<environment>.firecrest-firecrest-ui-<date>-NNNNNN`.
+
+The namespace is fixed so that Grafana dashboard queries can use `data_stream.namespace:"firecrest-ui"` as a stable filter across all environments.
+
+### Grafana dashboard link
+
+Set `uiObservabilityDashboard` to a Grafana panel URL to expose a direct link to the monitoring dashboard from within the UI:
+
+```yaml
+uiObservabilityDashboard: "https://grafana.example.com/d/abc123/firecrest-ui"
 ```
 
 ---

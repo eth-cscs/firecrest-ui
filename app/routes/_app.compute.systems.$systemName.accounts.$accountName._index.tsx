@@ -9,9 +9,10 @@ import { useLoaderData, useRouteError } from '@remix-run/react'
 import type { LoaderFunctionArgs } from '@remix-run/node'
 import { defer } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { logPageLabel } from '~/helpers/log-labels'
 import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -32,9 +33,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check if allUsers is set
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
   logInfoHttp({
-    message: `Compute system ${systemName} account ${accountName} index page`,
+    eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
@@ -42,7 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Resolves with an error object on timeout so the job list view renders inline
   // rather than triggering the route ErrorBoundary.
   const jobsPromise = promiseWithTimeoutOrDefault(
-    getJobs(accessToken, systemName, accountName, allUsers),
+    getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
     {
       system: systemName,
@@ -63,6 +64,6 @@ export default function AppComputeIandexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

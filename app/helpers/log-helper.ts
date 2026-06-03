@@ -6,30 +6,24 @@
 *************************************************************************/
 
 // logger
-import logger from '~/logger/logger'
-// config
-import base from '~/configs/base.config'
-import loggerConfig from '~/configs/logger.config'
+import logger from '~/logger/logger.server'
+import { LogActionMessage } from '~/helpers/log-labels'
 
-const getHttpJsonData = ({ message, request, extraInfo }: any) => {
-  return {
-    message,
-    appVersion: process.env.APP_VERSION,
-    timestamp: new Date(),
-    loggingLevel: loggerConfig.loggingLevel,
-    environment: base.environment,
-    serviceName: base.serviceName,
-    request: {
-      originalUrl: request.originalUrl,
-      path: request.path,
-      contentType: request.headers.get('Content-Type'),
-    },
-    ...extraInfo,
-  }
-}
-
-const logInfoHttp = ({ message, request, extraInfo }: any) => {
-  logger.info(getHttpJsonData({ message, request, extraInfo }))
+const logInfoHttp = ({ eventAction, request, extraInfo }: any) => {
+  const { username, system, account, jobId, ...rest } = extraInfo || {}
+  logger.info({
+    message: LogActionMessage[eventAction] ?? eventAction,
+    'event.action': eventAction.includes(' ') ? 'page.view' : eventAction,
+    'request.id': request?.headers?.get('x-request-id') ?? undefined,
+    'user.id': username ?? undefined,
+    'firecrest.username': username ?? undefined,
+    'http.request.method': request?.method ?? undefined,
+    'url.path': request?.url ? new URL(request.url).pathname : undefined,
+    'firecrest.system': system ?? undefined,
+    'firecrest.account': account ?? undefined,
+    'firecrest.jobId': jobId ?? undefined,
+    ...rest,
+  })
 }
 
 export { logInfoHttp }

@@ -9,13 +9,14 @@ import _ from 'lodash'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
 // loggers
-import logger from '~/logger/logger'
+import logger from '~/logger/logger.server'
 // helpers
 import {
   searchSystemByName,
   getFileSystemByTargetPath,
 } from '~/modules/status/helpers/system-helper'
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
@@ -34,9 +35,9 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Filesystem index page',
+    eventAction: LogPage.FILESYSTEM_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
@@ -51,7 +52,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     throw new Error('System not specified')
   }
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   const activeSystems = getHealthyFileSystemSystems(systems)
   // Check if there is at least on system
   if (activeSystems && activeSystems.length <= 0) {
@@ -123,6 +124,6 @@ export default function AppComputeIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

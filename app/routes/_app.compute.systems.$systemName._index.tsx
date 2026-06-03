@@ -9,9 +9,9 @@ import { useEffect } from 'react'
 import { useLoaderData, useNavigate, useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { logPageLabel } from '~/helpers/log-labels'
 // utils
 import { requireAuth } from '~/utils/auth.server'
 // contexts
@@ -27,9 +27,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
-    message: `Compute system ${systemName} index page`,
+    eventAction: logPageLabel.computeSystemIndex(systemName),
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: systemName },
   })
   return { systemName }
 }
@@ -50,6 +50,6 @@ export default function AppComputeSystemIndexRoute() {
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

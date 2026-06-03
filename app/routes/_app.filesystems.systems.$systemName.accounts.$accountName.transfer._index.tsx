@@ -9,9 +9,9 @@ import { redirect } from '@remix-run/node'
 import { useRouteError } from '@remix-run/react'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // loggers
-import logger from '~/logger/logger'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
+import { LogPage } from '~/helpers/log-labels'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 import {
   getDefaultFileSystemFromSystem,
@@ -29,9 +29,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
-    message: 'Filesystem transfer index page',
+    eventAction: LogPage.FILESYSTEM_TRANSFER_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username },
+    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
   })
   // Get path params
   const systemName = params.systemName!
@@ -39,7 +39,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken)
+  const { systems } = await getSystems(accessToken, request)
   const activeSystems = getHealthyFileSystemSystems(systems)
   // Check if there is at least on system
   if (activeSystems && activeSystems.length <= 0) {
@@ -67,6 +67,6 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
 
 export function ErrorBoundary() {
   const error = useRouteError()
-  logger.error(error)
+  console.error(error)
   return <ErrorView error={error} />
 }

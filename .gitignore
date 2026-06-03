@@ -31,6 +31,9 @@ node_modules
 node_modules*
 
 
+# local-only files (not committed)
+observability/**/local/
+
 # Yarn Berry
 .yarn/*
 !.yarn/patches

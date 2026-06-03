@@ -14,21 +14,20 @@ import type {
 } from '~/types/api-job'
 
 // apis
-import api, { ApiTarget } from './api'
+import api, { ApiTarget, withRequestId } from './api'
 
 export const getJobs = async (
   accessToken: string,
   system: string = '',
   account: string = '',
   allUsers: boolean = false,
+  request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
     const apiResponse = await api.get<GetJobsResponse>(
       `/compute/${system}/jobs?account=${account}&allusers=${allUsers}`,
       {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
       },
     )
     return {
@@ -61,9 +60,7 @@ export const getJob = async (
 ): Promise<GetJobResponse> => {
   try {
     const apiResponse = await api.get<GetJobResponse>(`/compute/${systemName}/jobs/${jobId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
     })
     return { jobs: apiResponse.jobs, error: undefined }
   } catch (error) {
@@ -81,9 +78,7 @@ export const getJobMetadata = async (
     const apiResponse = await api.get<GetJobMetadataResponse>(
       `/compute/${systemName}/jobs/${jobId}/metadata`,
       {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
       },
     )
     return { jobs: apiResponse.jobs, error: undefined }
@@ -99,9 +94,7 @@ export const cancelJob = async (
   request: Request | null = null,
 ): Promise<any> => {
   await api.delete<any, any>(`/compute/${systemName}/jobs/${jobId}`, null, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
   })
 }
 
@@ -115,10 +108,10 @@ export const postJob = async (
     `/compute/${systemName}/jobs`,
     JSON.stringify(jobPayload),
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: withRequestId(
+        { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        request,
+      ),
     },
   )
   return apiResponse

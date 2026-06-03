@@ -214,7 +214,7 @@
         "y": 1
       },
       "id": 3,
-      "description": "Cardinality of firecrest.username per time bucket \u2014 shows peak unique users within a single interval. See Top Users table for the full list.",
+      "description": "Distinct users active within the selected time range.\n\nNote: uses a fixed 1-year bucket internally \u2014 the count reflects the dashboard time range filter, but if the selected range spans more than one year the value shown is the peak per year, not the total.",
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -231,7 +231,7 @@
         "wideLayout": true
       },
       "pluginVersion": "12.2.0",
-      "title": "Active Users (peak/interval)",
+      "title": "Unique Active Users (last year)",
       "type": "stat",
       "targets": [
         {
@@ -244,7 +244,7 @@
               "field": "@timestamp",
               "id": "2",
               "settings": {
-                "interval": "auto",
+                "interval": "1y",
                 "min_doc_count": "0",
                 "trimEdges": "0"
               },

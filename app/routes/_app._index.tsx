@@ -38,51 +38,46 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data
   const { systems } = await getSystems(accessToken, request)
-  // Defer nodes fetching — resolves to a map of system name → nodes health
-  const systemsNodesPromise = Promise.all(
-    systems.map(async (system) => {
-      try {
-        const { nodes } = await promiseWithTimeout(
+  // Defer nodes fetching per system — each resolves independently so fast systems
+  // render immediately without waiting for slow ones (e.g. a single slow /nodes endpoint).
+  const nodeState = (n: { state: string | string[] }) =>
+    (Array.isArray(n.state) ? n.state[0] : n.state).toLowerCase()
+  const systemsNodesPromises: Record<string, Promise<SystemNodesOverview | null>> =
+    Object.fromEntries(
+      systems.map((system) => [
+        system.name,
+        promiseWithTimeout(
           getSystemNodes(accessToken, system.name, request),
           DEFERRED_PROMISE_TIMEOUT_MS,
           `Loading nodes for ${system.name} timed out.`,
         )
-        const nodeState = (n: { state: string | string[] }) =>
-          (Array.isArray(n.state) ? n.state[0] : n.state).toLowerCase()
-        return {
-          name: system.name,
-          nodes: {
+          .then(({ nodes }) => ({
             available: nodes.filter((n) => nodeState(n) === 'idle').length,
             allocated: nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length,
-            unavailable: nodes.length - (nodes.filter((n) => nodeState(n) === 'idle').length + nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length),
+            unavailable:
+              nodes.length -
+              nodes.filter((n) => nodeState(n) === 'idle').length -
+              nodes.filter((n) => ['alloc', 'allocated'].includes(nodeState(n))).length,
             total: nodes.length,
-          } as SystemNodesOverview,
-        }
-      } catch (error) {
-        const msg = error instanceof Response ? `${error.status} ${error.statusText}` : error
-        console.warn(`Failed to load nodes for system ${system.name}:`, msg)
-        return { name: system.name, nodes: null }
-      }
-    }),
-  ).then((results) => {
-    const systemsNodes: Record<string, SystemNodesOverview | null> = {}
-    for (const result of results) {
-      systemsNodes[result.name] = result.nodes
-    }
-    return systemsNodes
-  })
-  // Return response with deferred promise (defer is needed for Remix v2 streaming)
+          } as SystemNodesOverview))
+          .catch((error) => {
+            const msg = error instanceof Response ? `${error.status} ${error.statusText}` : error
+            console.warn(`Failed to load nodes for system ${system.name}:`, msg)
+            return null
+          }),
+      ]),
+    )
   // eslint-disable-next-line @typescript-eslint/no-deprecated
-  return defer({
-    systems,
-    systemsNodesPromise,
-  })
+  return defer({ systemsNodesPromises })
 }
 
 export default function AppIndexRoute() {
   const { systems } = useSystem()
-  const { systemsNodesPromise } = useLoaderData<typeof loader>()
-  return <DashboardView systems={systems} systemsNodesPromise={systemsNodesPromise} />
+  // Cast needed: Remix's JsonifyObject strips Promise wrappers from deferred loader data
+  const { systemsNodesPromises } = useLoaderData<typeof loader>() as {
+    systemsNodesPromises: Record<string, Promise<SystemNodesOverview | null>>
+  }
+  return <DashboardView systems={systems} systemsNodesPromises={systemsNodesPromises} />
 }
 
 export function ErrorBoundary() {

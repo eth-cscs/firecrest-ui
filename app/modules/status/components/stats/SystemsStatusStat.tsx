@@ -6,7 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
+import { Await } from '@remix-run/react'
 import prettyMilliseconds from 'pretty-ms'
 import {
   CheckCircleIcon,
@@ -310,27 +311,32 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
   )
 }
 
-const SystemsStatusStatList: React.FC<any> = ({ systems, systemsNodes }) => {
+const SystemsStatusStatList: React.FC<any> = ({ systems, systemsNodesPromises }) => {
   return (
     <div className='mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 items-start'>
       {systems &&
         systems.length > 0 &&
         systems.map((system: any) => (
-          <SystemStatusStat
-            system={system}
-            nodes={systemsNodes?.[system.name]}
-            key={system.name}
-          />
+          <Suspense key={system.name} fallback={<SystemStatusStat system={system} />}>
+            <Await
+              resolve={systemsNodesPromises?.[system.name]}
+              errorElement={<SystemStatusStat system={system} />}
+            >
+              {(nodes: SystemNodesOverview | null) => (
+                <SystemStatusStat system={system} nodes={nodes ?? undefined} />
+              )}
+            </Await>
+          </Suspense>
         ))}
     </div>
   )
 }
 
-const SystemsStatusStat: React.FC<any> = ({ systems, systemsNodes, className = '' }: any) => {
+const SystemsStatusStat: React.FC<any> = ({ systems, systemsNodesPromises, className = '' }: any) => {
   return (
     <div className={classNames('mb-4', className)}>
       <h3 className='text-base font-semibold leading-6 text-gray-900'>Systems status</h3>
-      <SystemsStatusStatList systems={systems} systemsNodes={systemsNodes} />
+      <SystemsStatusStatList systems={systems} systemsNodesPromises={systemsNodesPromises} />
     </div>
   )
 }

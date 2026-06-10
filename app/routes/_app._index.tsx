@@ -5,9 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useLoaderData, useRouteError } from '@remix-run/react'
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-import { defer } from '@remix-run/node'
+import { Suspense } from 'react'
+import { useLoaderData, useRouteError, Await } from '@remix-run/react'
+import { data } from '@remix-run/node'
 import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
 // helpers
@@ -25,6 +25,8 @@ import type { SystemNodesOverview } from '~/types/api-status'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import DashboardView from '~/modules/dashboard/components/views/DashboardView'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Check authentication
@@ -36,13 +38,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
-  // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken, request)
-  // Defer nodes fetching per system — each resolves independently so fast systems
-  // render immediately without waiting for slow ones (e.g. a single slow /nodes endpoint).
+  // Chain getSystems (shared deduped promise) into per-system node promises without
+  // awaiting — loader returns immediately so the shell renders before the HTTP call.
   const nodeState = (n: { state: string | string[] }) =>
     (Array.isArray(n.state) ? n.state[0] : n.state).toLowerCase()
-  const systemsNodesPromises: Record<string, Promise<SystemNodesOverview | null>> =
+  const systemsNodesPromise = getSystems(accessToken, request).then(({ systems }) =>
     Object.fromEntries(
       systems.map((system) => [
         system.name,
@@ -66,18 +66,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             return null
           }),
       ]),
-    )
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  return defer({ systemsNodesPromises })
+    ) as Record<string, Promise<SystemNodesOverview | null>>,
+  )
+  return data({ systemsNodesPromise })
 }
 
 export default function AppIndexRoute() {
   const { systems } = useSystem()
   // Cast needed: Remix's JsonifyObject strips Promise wrappers from deferred loader data
-  const { systemsNodesPromises } = useLoaderData<typeof loader>() as {
-    systemsNodesPromises: Record<string, Promise<SystemNodesOverview | null>>
+  const { systemsNodesPromise } = useLoaderData<typeof loader>() as unknown as {
+    systemsNodesPromise: Promise<Record<string, Promise<SystemNodesOverview | null>>>
   }
-  return <DashboardView systems={systems} systemsNodesPromises={systemsNodesPromises} />
+  return (
+    <Suspense fallback={<LoadingSpinner className='h-full' />}>
+      <Await resolve={systemsNodesPromise}>
+        {(systemsNodesPromises) => (
+          <DashboardView systems={systems} systemsNodesPromises={systemsNodesPromises} />
+        )}
+      </Await>
+    </Suspense>
+  )
 }
 
 export function ErrorBoundary() {

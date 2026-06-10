@@ -49,6 +49,8 @@ const jobSchema: Yup.ObjectSchema<PostJobFormPayload> = Yup.object({
   standardInput: Yup.string().optional(),
   standardOutput: Yup.string().optional(),
   standardError: Yup.string().optional(),
+  reservation: Yup.string().optional(),
+  partition: Yup.string().optional(),
   environment: Yup.string()
     .optional()
     .test('json', 'Invalid environment dictionary. Expected <string,string> format', (value) => {

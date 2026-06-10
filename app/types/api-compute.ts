@@ -15,6 +15,8 @@ export type JobDescritpion = {
   standard_output?: string
   standard_error?: string
   environment?: Record<string, string>
+  reservation?: string
+  partition?: string
 }
 
 export type PostJobPayload = {
@@ -30,12 +32,15 @@ export type PostJobFormPayload = {
   scriptMode: 'local' | 'remote'
   file?: any
   remoteScript?: string
+  account?: string
   name?: string
   workingDirectory: string
   standardInput?: string
   standardOutput?: string
   standardError?: string
   environment?: string
+  reservation?: string
+  partition?: string
 }
 
 export const convertPostJobFormToApiPayload = async (
@@ -58,6 +63,8 @@ export const convertPostJobFormToApiPayload = async (
       standard_output: payload.standardOutput,
       standard_error: payload.standardError,
       environment: payload.environment ? JSON.parse(payload.environment) : undefined,
+      reservation: payload.reservation || undefined,
+      partition: payload.partition || undefined,
     },
   }
 }

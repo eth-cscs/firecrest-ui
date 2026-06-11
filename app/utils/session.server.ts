@@ -38,6 +38,7 @@ if (redisConfig.active) {
     port: parseInt(redisConfig.port),
     host: redisConfig.host,
     password: redisConfig.authPassword,
+    maxRetriesPerRequest: 3,
   })
   redis.on('connect', () => logger.info({ component: 'valkey' }, 'Valkey connected'))
   redis.on('ready', () => logger.info({ component: 'valkey' }, 'Valkey ready'))

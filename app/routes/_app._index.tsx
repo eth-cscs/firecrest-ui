@@ -5,8 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Suspense } from 'react'
-import { useLoaderData, useRouteError, Await } from '@remix-run/react'
+import { useLoaderData, useRouteError } from '@remix-run/react'
 import { data } from '@remix-run/node'
 import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
@@ -26,8 +25,6 @@ import type { SystemNodesOverview } from '~/types/api-status'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import DashboardView from '~/modules/dashboard/components/views/DashboardView'
-// spinners
-import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const loaderStart = performance.now()
@@ -85,15 +82,9 @@ export default function AppIndexRoute() {
   const { systemsNodesPromise } = useLoaderData<typeof loader>() as unknown as {
     systemsNodesPromise: Promise<Record<string, Promise<SystemNodesOverview | null>>>
   }
-  return (
-    <Suspense fallback={<LoadingSpinner className='h-full' />}>
-      <Await resolve={systemsNodesPromise}>
-        {(systemsNodesPromises) => (
-          <DashboardView systems={systems} systemsNodesPromises={systemsNodesPromises} />
-        )}
-      </Await>
-    </Suspense>
-  )
+  // Pass the outer promise directly — each system card chains its own per-system
+  // promise so the card grid renders immediately without an outer Suspense boundary.
+  return <DashboardView systems={systems} systemsNodesPromise={systemsNodesPromise} />
 }
 
 export function ErrorBoundary() {

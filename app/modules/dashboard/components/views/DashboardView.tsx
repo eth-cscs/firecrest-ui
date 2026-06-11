@@ -15,13 +15,13 @@ import SystemsStatusStat from '~/modules/status/components/stats/SystemsStatusSt
 
 interface DashboardViewProps {
   systems: any[]
-  systemsNodesPromises: Record<string, Promise<SystemNodesOverview | null>>
+  systemsNodesPromise: Promise<Record<string, Promise<SystemNodesOverview | null>>>
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ systems, systemsNodesPromises }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ systems, systemsNodesPromise }) => {
   return (
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
-      <SystemsStatusStat systems={systems} systemsNodesPromises={systemsNodesPromises} />
+      <SystemsStatusStat systems={systems} systemsNodesPromise={systemsNodesPromise} />
     </SimpleView>
   )
 }

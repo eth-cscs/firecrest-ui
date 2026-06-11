@@ -6,7 +6,9 @@
 *************************************************************************/
 
 export const ABORT_DELAY_MS = 35_000
-export const DEFERRED_PROMISE_TIMEOUT_MS = Math.floor(ABORT_DELAY_MS * 0.95)
+// Timeout for per-system deferred data (nodes, etc). Kept well below ABORT_DELAY_MS
+// so the card shows "unavailable" quickly rather than blocking the stream.
+export const DEFERRED_PROMISE_TIMEOUT_MS = 10_000
 
 export async function promiseWithTimeout<T>(
   promise: Promise<T>,

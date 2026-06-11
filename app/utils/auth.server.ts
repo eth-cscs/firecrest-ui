@@ -260,7 +260,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
         return access_token
       })()
       _pendingRefresh.set(cookieKey, refreshPromise)
-      refreshPromise.finally(() => _pendingRefresh.delete(cookieKey))
+      refreshPromise.finally(() => _pendingRefresh.delete(cookieKey)).catch(() => {})
       return refreshPromise
     }
     throw error

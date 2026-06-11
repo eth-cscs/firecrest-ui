@@ -225,8 +225,10 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
       )
     }
     if (new Date(authTokens.expirationDate) <= new Date()) {
+      logger.debug({ 'event.action': 'auth.token_expired', component: 'oidc' }, 'auth.token_expired')
       throw new AuthorizationError('Token expired')
     }
+    logger.debug({ 'event.action': 'auth.token_valid', component: 'oidc' }, 'auth.token_valid')
     return authTokens.accessToken
   } catch (error) {
     if (error instanceof AuthorizationError) {

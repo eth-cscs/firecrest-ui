@@ -10,6 +10,7 @@ import { useLoaderData, useRouteError, Await } from '@remix-run/react'
 import { data } from '@remix-run/node'
 import type { LoaderFunctionArgs } from '@remix-run/node'
 // loggers
+import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogPage } from '~/helpers/log-labels'
@@ -19,7 +20,7 @@ import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 // apis
-import { getSystems, getSystemNodes } from '~/apis/status-api'
+import { getSystems, getSystemNodes } from '~/apis/status-api.server'
 // types
 import type { SystemNodesOverview } from '~/types/api-status'
 // views
@@ -29,6 +30,7 @@ import DashboardView from '~/modules/dashboard/components/views/DashboardView'
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const loaderStart = performance.now()
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
@@ -68,6 +70,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ]),
     ) as Record<string, Promise<SystemNodesOverview | null>>,
   )
+  logger.debug({
+    'event.action': 'loader.complete',
+    'event.duration': Math.round(performance.now() - loaderStart) * 1_000_000,
+    'url.path': '/_app/_index',
+    component: 'loader',
+  }, 'loader.complete')
   return data({ systemsNodesPromise })
 }
 

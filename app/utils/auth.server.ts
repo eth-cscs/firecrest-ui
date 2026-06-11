@@ -14,7 +14,9 @@ import type { Auth } from '~/types/auth'
 // configs
 import oidc from '~/configs/oidc.config'
 // utils
-import { getSession, sessionStorage } from './session.server'
+import { getSession, commitSession, destroySession, sessionStorage } from './session.server'
+// logger
+import logger from '~/logger/logger.server'
 // errors
 import { HttpError } from '~/errors/HttpError'
 import { ReasonErrors } from '~/errors/reason-errors'
@@ -38,10 +40,33 @@ interface OidcProfile extends OAuth2Profile {
 let _discovery: OidcDiscoveryDocument | null = null
 let _authenticator: Authenticator<Auth> | null = null
 
+// Per-request session cache: eliminates duplicate Valkey GETs when requireAuth and
+// getAuthAccessToken are called sequentially in the same loader.
+const _sessionCache = new WeakMap<Request, Promise<any>>()
+
+function getCachedSession(request: Request): Promise<any> {
+  if (!_sessionCache.has(request)) {
+    _sessionCache.set(request, getSession(request.headers.get('Cookie')))
+  }
+  return _sessionCache.get(request)!
+}
+
+function logOidcOp(action: string, startMs: number) {
+  const durationMs = Math.round(performance.now() - startMs)
+  const fields = { 'event.action': action, 'event.duration': durationMs * 1_000_000, component: 'oidc' }
+  if (durationMs > 1_000) {
+    logger.warn(fields, `Slow ${action}: ${durationMs}ms`)
+  } else {
+    logger.debug(fields, action)
+  }
+}
+
 async function fetchDiscovery(): Promise<OidcDiscoveryDocument> {
   if (_discovery) return _discovery
   const url = `${oidc.issuerUrl}/.well-known/openid-configuration`
+  const t = performance.now()
   const response = await fetch(url)
+  logOidcOp('oidc.discovery', t)
   if (!response.ok) {
     throw new Error(
       `Failed to fetch OIDC discovery document from ${url}: ${response.statusText}`,
@@ -81,9 +106,11 @@ class OidcStrategy extends OAuth2Strategy<Auth, OidcProfile> {
   }
 
   protected async userProfile(accessToken: string): Promise<OidcProfile> {
+    const t = performance.now()
     const response = await fetch(this.userinfoURL, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
+    logOidcOp('oidc.userinfo', t)
     if (!response.ok) {
       throw new Error(`Failed to fetch OIDC userinfo: ${response.statusText}`)
     }
@@ -149,7 +176,7 @@ export async function getLogoutUrl(): Promise<string> {
 }
 
 export async function getAuth(request: Request) {
-  const session = await getSession(request.headers.get('Cookie'))
+  const session = await getCachedSession(request)
   return session.get(AUTH_SESSION_KEY)
 }
 
@@ -166,12 +193,10 @@ export async function getAuthTokens(request: Request) {
 }
 
 export async function requireAuth(request: Request, failureRedirect = '/login') {
-  const authenticator = await getAuthenticator()
+  const auth = await getAuth(request)
   const url = new URL(request.url)
   const returnTo = `${url.pathname}${url.search}`
-  const auth = await authenticator.isAuthenticated(request, {
-    failureRedirect: `${failureRedirect}?returnTo=${encodeURIComponent(returnTo)}`,
-  })
+  if (!auth) throw redirect(`${failureRedirect}?returnTo=${encodeURIComponent(returnTo)}`)
   return { auth, returnTo }
 }
 
@@ -186,8 +211,8 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
   try {
     const authTokens = await getAuthTokens(request)
     if (!authTokens || !authTokens.accessToken) {
-      const session = await getSession(request.headers.get('Cookie'))
-      headers.append('Set-Cookie', await sessionStorage.destroySession(session))
+      const session = await getCachedSession(request)
+      headers.append('Set-Cookie', await destroySession(session))
       if (request.method === 'GET') {
         const url = request.url
         if (url.indexOf('/api/') < 0) {
@@ -223,9 +248,9 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
           refreshToken: refresh_token,
           expirationDate: expirationDate,
         }
-        const session = await getSession(request.headers.get('Cookie'))
+        const session = await getCachedSession(request)
         session.set(AUTH_SESSION_KEY, auth)
-        headers.append('Set-Cookie', await sessionStorage.commitSession(session))
+        headers.append('Set-Cookie', await commitSession(session))
         if (request.method === 'GET') {
           const url = request.url
           if (url.indexOf('/api/') < 0) {
@@ -254,13 +279,13 @@ const refreshAccessToken = async (request: Request, refreshToken: string) => {
   const body = Object.keys(params)
     .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(params[key]))
     .join('&')
+  const t = performance.now()
   const response = await fetch(discovery.token_endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
     body: body,
   })
+  logOidcOp('oidc.token_refresh', t)
   if (!response.ok) {
     const authenticator = await getAuthenticator()
     const logoutUrl = await getLogoutUrl()

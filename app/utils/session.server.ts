@@ -38,20 +38,56 @@ if (redisConfig.active) {
     port: parseInt(redisConfig.port),
     host: redisConfig.host,
     password: redisConfig.authPassword,
+    connectTimeout: 3_000,
+    commandTimeout: 3_000,
+    maxRetriesPerRequest: 2,
   })
-  sessionStorage = createRedisSessionStorage({
-    redis,
-    cookie: sessionCookie,
-  })
-  logger.info('REDIS session')
+  redis.on('connect', () => logger.info({ component: 'valkey' }, 'Valkey connected'))
+  redis.on('ready', () => logger.info({ component: 'valkey' }, 'Valkey ready'))
+  redis.on('error', (err: Error) => logger.error({ err, component: 'valkey' }, 'Valkey error'))
+  redis.on('reconnecting', () => logger.warn({ component: 'valkey' }, 'Valkey reconnecting'))
+  redis.on('close', () => logger.warn({ component: 'valkey' }, 'Valkey connection closed'))
+  sessionStorage = createRedisSessionStorage({ redis, cookie: sessionCookie })
+  logger.info({ component: 'valkey' }, 'Valkey session storage initialised')
 } else {
   sessionStorage = createFileSessionStorage({
-    // The root directory where you want to store the files.
-    // Make sure it's writable!
     dir: base.sessionFileDirPath,
     cookie: sessionCookie,
   })
-  logger.info('FILE session')
+  logger.info('File session storage initialised')
 }
 
-export const { getSession, commitSession, destroySession } = sessionStorage
+function logSessionOp(action: string, startMs: number) {
+  const durationMs = Math.round(performance.now() - startMs)
+  const fields = {
+    'event.action': action,
+    'event.duration': durationMs * 1_000_000,
+    component: 'valkey',
+  }
+  if (durationMs > 500) {
+    logger.warn(fields, `Slow ${action}: ${durationMs}ms`)
+  } else {
+    logger.debug(fields, action)
+  }
+}
+
+export async function getSession(cookie: string | null) {
+  const t = performance.now()
+  const session = await sessionStorage.getSession(cookie)
+  logSessionOp('session.read', t)
+  return session
+}
+
+export async function commitSession(session: any) {
+  const t = performance.now()
+  const cookie = await sessionStorage.commitSession(session)
+  logSessionOp('session.commit', t)
+  return cookie
+}
+
+export async function destroySession(session: any) {
+  const t = performance.now()
+  const cookie = await sessionStorage.destroySession(session)
+  logSessionOp('session.destroy', t)
+  return cookie
+}

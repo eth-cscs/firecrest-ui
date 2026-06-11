@@ -8,6 +8,8 @@
 import { ReasonPhrases, StatusCodes, getReasonPhrase } from 'http-status-codes'
 // configs
 import firecrest from '~/configs/firecrest.config'
+// logger
+import logger from '~/logger/logger.server'
 
 export enum ApiTarget {
   API_LOCAL = 0,
@@ -32,7 +34,21 @@ async function request<TResponse>(
   config: RequestInit = {},
   jsonResponse: ResponseBodyType = ResponseBodyType.JSON,
 ): Promise<TResponse> {
+  const t = performance.now()
   const response = await fetch(buildUrl(url, target), config)
+  const durationMs = Math.round(performance.now() - t)
+  const fields = {
+    'event.action': 'api.request',
+    'event.duration': durationMs * 1_000_000,
+    'url.path': url,
+    'http.response.status_code': response.status,
+    component: 'firecrest',
+  }
+  if (durationMs > 2_000) {
+    logger.warn(fields, `Slow api.request: ${url} ${durationMs}ms`)
+  } else {
+    logger.debug(fields, `api.request`)
+  }
   return await handleReponse(response, target, jsonResponse)
 }
 

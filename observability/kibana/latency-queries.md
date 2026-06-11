@@ -67,19 +67,22 @@ the UI server and Keycloak.
 
 ## 3. Backend API (FirecREST) latency
 
-### Requests by endpoint (slow >5 s → timeout boundary)
+### All FirecREST calls with duration
 
 ```kql
-event.action: "http.request" AND http.request.method: *
+component: "firecrest"
 ```
 
-Filter to `event.duration > 5000000000` (5 s in ns) to find calls that hit the `AbortSignal.timeout`
-boundary defined in `app/apis/api.ts`.
+### Slow calls (>2 s, promoted to warn)
+
+```kql
+component: "firecrest" AND log.level: "warn"
+```
 
 ### `/nodes` endpoint latency (dashboard bottleneck)
 
 ```kql
-url.path: *nodes* AND component: "api"
+url.path: *nodes* AND component: "firecrest"
 ```
 
 The `/v2/status/{system}/nodes` endpoints are the primary dashboard bottleneck (one deferred
@@ -111,7 +114,7 @@ This pulls every log line (session read, OIDC check, API call, response) that sh
 ## 5. Composite: session + OIDC + API for the same request
 
 ```kql
-http.request.id: "<paste x-request-id here>" AND component: ("valkey" OR "oidc" OR "api")
+http.request.id: "<paste x-request-id here>" AND component: ("valkey" OR "oidc" OR "firecrest")
 ```
 
 Sort by `@timestamp` ascending to see the waterfall: session.read → oidc check → API call(s).

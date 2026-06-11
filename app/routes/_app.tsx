@@ -5,8 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
+import { Suspense } from 'react'
+import { data } from '@remix-run/node'
+import { useLoaderData, Await } from '@remix-run/react'
 import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
 // styles
 import stylesheet from '~/styles/app.css?url'
@@ -21,6 +22,10 @@ import { getNotificationMessage } from '~/helpers/notification-helper'
 // utils
 import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 import { SystemProvider } from '~/contexts/SystemContext'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
+// types
+import type { System } from '~/types/api-status'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
@@ -35,10 +40,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const headers = new Headers()
   // Get notification messages
   const notificationMessages = await getNotificationMessage(request, headers)
-  // Call api/s and fetch data
-  const { systems } = await getSystems(accessToken, request)
-  // Return json
-  return json(
+  // Fire getSystems without awaiting — page renders immediately, systems stream in
+  const systemsPromise = getSystems(accessToken, request).then(({ systems }) => systems)
+  return data(
     {
       environment: base.environment,
       appName: base.appName,
@@ -50,17 +54,14 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       logoPath: base.logoPath,
       authUser: auth.user,
       notificationMessages: notificationMessages,
-      systems: systems,
       systemName,
+      systemsPromise,
     },
-    {
-      headers: headers,
-    },
+    { headers },
   )
 }
 
 export default function AppLayoutRoute() {
-  const data = useLoaderData()
   const {
     appName,
     appVersion,
@@ -72,23 +73,30 @@ export default function AppLayoutRoute() {
     environment,
     authUser,
     notificationMessages,
-    systems,
     systemName,
-  }: any = data
+    systemsPromise,
+  }: any = useLoaderData()
+
   return (
-    <SystemProvider systems={systems} systemName={systemName}>
-      <AppLayout
-        appName={appName}
-        environment={environment}
-        appVersion={appVersion}
-        companyName={companyName}
-        logoPath={logoPath}
-        supportUrl={supportUrl}
-        repoUrl={repoUrl}
-        docUrl={docUrl}
-        authUser={authUser}
-        notificationMessages={notificationMessages}
-      />
-    </SystemProvider>
+    <Suspense fallback={<LoadingSpinner title='Loading systems...' className='h-screen' />}>
+      <Await resolve={systemsPromise}>
+        {(systems: System[]) => (
+          <SystemProvider systems={systems} systemName={systemName}>
+            <AppLayout
+              appName={appName}
+              environment={environment}
+              appVersion={appVersion}
+              companyName={companyName}
+              logoPath={logoPath}
+              supportUrl={supportUrl}
+              repoUrl={repoUrl}
+              docUrl={docUrl}
+              authUser={authUser}
+              notificationMessages={notificationMessages}
+            />
+          </SystemProvider>
+        )}
+      </Await>
+    </Suspense>
   )
 }

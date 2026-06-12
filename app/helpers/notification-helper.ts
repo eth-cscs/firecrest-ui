@@ -120,10 +120,10 @@ export const notifyErrorMessage = async (
 
 export const getNotificationMessage = async (request: Request, headers: Headers) => {
   const session = await getSession(request.headers.get('Cookie'))
-  let notificationMessages = []
-  if (session.has(SESSION_KEY)) {
-    notificationMessages = session.get(SESSION_KEY)
+  if (!session.has(SESSION_KEY)) {
+    return []
   }
+  const notificationMessages = session.get(SESSION_KEY)
   headers.append('Set-Cookie', await commitSession(session))
   return notificationMessages
 }

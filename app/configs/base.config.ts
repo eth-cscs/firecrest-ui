@@ -12,6 +12,7 @@ import { getEnvVariable } from '~/helpers/env-helper'
 
 const base = {
   nodeEnv: getEnvVariable(env, 'NODE_ENV'),
+  cookieSecure: getEnvVariable(env, 'COOKIE_SECURE', false, 'true') !== 'false',
   appName: getEnvVariable(env, 'APP_NAME', false, 'App name'),
   companyName: getEnvVariable(env, 'COMPANY_NAME', false, 'Company name'),
   appVersion: getEnvVariable(env, 'APP_VERSION'),

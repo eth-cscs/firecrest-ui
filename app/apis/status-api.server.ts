@@ -44,6 +44,10 @@ export const getSystemNodes = async (
   systemName: string,
   request: Request | null = null,
 ): Promise<GetSystemNodesResponse> => {
+  logger.debug(
+    { 'event.action': 'api.request.start', 'url.path': `/status/${systemName}/nodes`, component: 'firecrest' },
+    `api.request.start: /status/${systemName}/nodes`,
+  )
   const t = performance.now()
   const result = await _getSystemNodes(accessToken, systemName, request)
   logCall(`/status/${systemName}/nodes`, t)

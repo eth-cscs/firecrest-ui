@@ -6,8 +6,6 @@
 *************************************************************************/
 
 import React from 'react'
-// types
-import type { SystemNodesOverview } from '~/types/api-status'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // stats
@@ -15,13 +13,12 @@ import SystemsStatusStat from '~/modules/status/components/stats/SystemsStatusSt
 
 interface DashboardViewProps {
   systems: any[]
-  systemsNodesPromise: Promise<Record<string, Promise<SystemNodesOverview | null>>>
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ systems, systemsNodesPromise }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ systems }) => {
   return (
     <SimpleView title='Dashboard' size={SimpleViewSize.FULL}>
-      <SystemsStatusStat systems={systems} systemsNodesPromise={systemsNodesPromise} />
+      <SystemsStatusStat systems={systems} />
     </SimpleView>
   )
 }

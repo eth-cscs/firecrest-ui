@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import React, { Suspense, useState } from 'react'
-import { Await } from '@remix-run/react'
+import React, { useEffect, useState } from 'react'
+import { useFetcher } from '@remix-run/react'
 import prettyMilliseconds from 'pretty-ms'
 import {
   CheckCircleIcon,
@@ -311,34 +311,45 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
   )
 }
 
-const SystemsStatusStatList: React.FC<any> = ({ systems, systemsNodesPromise }) => {
+const NODES_RETRY_INTERVAL_MS = 30_000
+
+const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
+  const fetcher = useFetcher<SystemNodesOverview | null>()
+
+  // Initial load on mount
+  useEffect(() => {
+    fetcher.load(`/api/status/${system.name}/nodes`)
+  }, [system.name])
+
+  // Retry after NODES_RETRY_INTERVAL_MS if the last response was null (unavailable)
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || fetcher.data !== null) return
+    const timer = setTimeout(() => {
+      fetcher.load(`/api/status/${system.name}/nodes`)
+    }, NODES_RETRY_INTERVAL_MS)
+    return () => clearTimeout(timer)
+  }, [fetcher.state, fetcher.data, system.name])
+
+  // Show loading skeleton while a request is in flight (initial load or retry)
+  const nodes = fetcher.state === 'loading' ? undefined : fetcher.data
+  return <SystemStatusStat system={system} nodes={nodes} />
+}
+
+const SystemsStatusStatList: React.FC<{ systems: any[] }> = ({ systems }) => {
   return (
     <div className='mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 items-start'>
       {systems &&
         systems.length > 0 &&
-        systems.map((system: any) => (
-          <Suspense key={system.name} fallback={<SystemStatusStat system={system} />}>
-            <Await
-              resolve={systemsNodesPromise.then(
-                (map: Record<string, Promise<SystemNodesOverview | null>>) => map[system.name],
-              )}
-              errorElement={<SystemStatusStat system={system} nodes={null} />}
-            >
-              {(nodes: SystemNodesOverview | null) => (
-                <SystemStatusStat system={system} nodes={nodes ?? undefined} />
-              )}
-            </Await>
-          </Suspense>
-        ))}
+        systems.map((system: any) => <SystemStatusStatCard key={system.name} system={system} />)}
     </div>
   )
 }
 
-const SystemsStatusStat: React.FC<any> = ({ systems, systemsNodesPromise, className = '' }: any) => {
+const SystemsStatusStat: React.FC<{ systems: any[]; className?: string }> = ({ systems, className = '' }) => {
   return (
     <div className={classNames('mb-4', className)}>
       <h3 className='text-base font-semibold leading-6 text-gray-900'>Systems status</h3>
-      <SystemsStatusStatList systems={systems} systemsNodesPromise={systemsNodesPromise} />
+      <SystemsStatusStatList systems={systems} />
     </div>
   )
 }

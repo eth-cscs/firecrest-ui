@@ -18,7 +18,7 @@ export const returnToCookie = createCookie('__return-to', {
   path: '/',
   httpOnly: true,
   sameSite: 'lax',
-  secure: base.nodeEnv === 'production', // enable this in prod only
+  secure: base.cookieSecure,
   maxAge: 60, // 1 min: is enough for the round-trip of login
 })
 
@@ -28,7 +28,7 @@ export const sessionCookie = createCookie('__session', {
   path: '/', // remember to add this so the cookie will work in all routes
   httpOnly: true, // for security reasons, make this cookie http only
   secrets: [base.sessionSecret], // replace this with an actual secret
-  secure: base.nodeEnv === 'production', // enable this in prod only
+  secure: base.cookieSecure,
 })
 
 export let sessionStorage: any

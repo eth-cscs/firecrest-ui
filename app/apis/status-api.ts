@@ -16,22 +16,14 @@ import type {
 // apis
 import api, { withRequestId } from './api'
 
-// Deduplicates concurrent calls with the same token (layout + index loaders both call
-// this in parallel for the same request — one HTTP fetch is enough).
-const _pendingSystems = new Map<string, Promise<GetSystemsResponse>>()
-
 export const getSystems = async (
   accessToken: string,
   request: Request | null = null,
 ): Promise<GetSystemsResponse> => {
-  const existing = _pendingSystems.get(accessToken)
-  if (existing) return existing
-  const promise = api.get<GetSystemsResponse>('/status/systems', {
+  const apiResponse = await api.get<GetSystemsResponse>('/status/systems', {
     headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
   })
-  _pendingSystems.set(accessToken, promise)
-  promise.finally(() => _pendingSystems.delete(accessToken))
-  return promise
+  return apiResponse
 }
 
 // Server-side TTL cache for getUserInfo. The data is user/system-specific but

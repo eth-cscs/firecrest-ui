@@ -189,12 +189,6 @@ export async function requireAuth(request: Request, failureRedirect = '/login') 
   return { auth, returnTo }
 }
 
-// Deduplicates concurrent token refresh attempts for the same session.
-// Remix runs all matched route loaders in parallel; without this, two loaders
-// hitting an expired token at the same time would both try to use the same
-// single-use refresh token — the second call would fail and trigger logout.
-const _pendingRefresh = new Map<string, Promise<string>>()
-
 // TODO: Refactoring and code optimization
 export async function getAuthAccessToken(request: Request, headers = new Headers()) {
   try {
@@ -221,38 +215,28 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
     return authTokens.accessToken
   } catch (error) {
     if (error instanceof AuthorizationError) {
-      const cookieKey = request.headers.get('Cookie') ?? ''
-      const existing = _pendingRefresh.get(cookieKey)
-      if (existing) {
-        return existing
+      const auth = await getAuth(request)
+      const { access_token, refresh_token, expires_in } = await refreshAccessToken(
+        request,
+        auth.tokens.refreshToken,
+      )
+      const expirationDate = new Date()
+      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
+      auth.tokens = {
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expirationDate: expirationDate,
       }
-      const refreshPromise = (async () => {
-        const auth = await getAuth(request)
-        const { access_token, refresh_token, expires_in } = await refreshAccessToken(
-          request,
-          auth.tokens.refreshToken,
-        )
-        const expirationDate = new Date()
-        expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
-        auth.tokens = {
-          accessToken: access_token,
-          refreshToken: refresh_token,
-          expirationDate: expirationDate,
+      const session = await getSession(request.headers.get('Cookie'))
+      session.set(AUTH_SESSION_KEY, auth)
+      headers.append('Set-Cookie', await sessionStorage.commitSession(session))
+      if (request.method === 'GET') {
+        const url = request.url
+        if (url.indexOf('/api/') < 0) {
+          throw redirect(url, { headers })
         }
-        const session = await getSession(request.headers.get('Cookie'))
-        session.set(AUTH_SESSION_KEY, auth)
-        headers.append('Set-Cookie', await commitSession(session))
-        if (request.method === 'GET') {
-          const url = request.url
-          if (url.indexOf('/api/') < 0) {
-            throw redirect(url, { headers })
-          }
-        }
-        return access_token
-      })()
-      _pendingRefresh.set(cookieKey, refreshPromise)
-      refreshPromise.finally(() => _pendingRefresh.delete(cookieKey)).catch(() => {})
-      return refreshPromise
+      }
+      return access_token
     }
     throw error
   }

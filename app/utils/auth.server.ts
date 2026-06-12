@@ -40,17 +40,6 @@ interface OidcProfile extends OAuth2Profile {
 let _discovery: OidcDiscoveryDocument | null = null
 let _authenticator: Authenticator<Auth> | null = null
 
-// Per-request session cache: eliminates duplicate Valkey GETs when requireAuth and
-// getAuthAccessToken are called sequentially in the same loader.
-const _sessionCache = new WeakMap<Request, Promise<any>>()
-
-function getCachedSession(request: Request): Promise<any> {
-  if (!_sessionCache.has(request)) {
-    _sessionCache.set(request, getSession(request.headers.get('Cookie')))
-  }
-  return _sessionCache.get(request)!
-}
-
 function logOidcOp(action: string, startMs: number) {
   const durationMs = Math.round(performance.now() - startMs)
   const fields = { 'event.action': action, 'event.duration': durationMs * 1_000_000, component: 'oidc' }
@@ -176,7 +165,7 @@ export async function getLogoutUrl(): Promise<string> {
 }
 
 export async function getAuth(request: Request) {
-  const session = await getCachedSession(request)
+  const session = await getSession(request.headers.get('Cookie'))
   return session.get(AUTH_SESSION_KEY)
 }
 
@@ -211,7 +200,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
   try {
     const authTokens = await getAuthTokens(request)
     if (!authTokens || !authTokens.accessToken) {
-      const session = await getCachedSession(request)
+      const session = await getSession(request.headers.get('Cookie'))
       headers.append('Set-Cookie', await destroySession(session))
       if (request.method === 'GET') {
         const url = request.url
@@ -250,7 +239,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
           refreshToken: refresh_token,
           expirationDate: expirationDate,
         }
-        const session = await getCachedSession(request)
+        const session = await getSession(request.headers.get('Cookie'))
         session.set(AUTH_SESSION_KEY, auth)
         headers.append('Set-Cookie', await commitSession(session))
         if (request.method === 'GET') {

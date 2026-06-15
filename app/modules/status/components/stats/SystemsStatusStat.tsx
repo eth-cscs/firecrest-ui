@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import React, { Suspense, useState } from 'react'
-import { Await } from '@remix-run/react'
+import React, { useEffect, useState } from 'react'
+import { useFetcher } from '@remix-run/react'
 import prettyMilliseconds from 'pretty-ms'
 import {
   CheckCircleIcon,
@@ -239,49 +239,49 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
           <LabelBadge color={LabelColor.BLUE}>{ssh.host}</LabelBadge>
         </div>
         <div className='ml-16 mt-3'>
-          <span className='text-sm text-gray-500 mb-6'>
-          Nodes status
-          </span>
-          <div className='flex justify-between text-xs text-gray-500 mb-1'>
-            <span className='flex items-center gap-3'>
-              <span className='flex items-center gap-1'>
-                <span className='inline-block w-2 h-2 rounded-full bg-green-500' />
-                {nodes?.available} Idle
-              </span>
-              <span className='flex items-center gap-1'>
-                <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
-                {nodes?.allocated} Allocated
-              </span>
-              <span className='flex items-center gap-1'>
-                <span className='inline-block w-2 h-2 rounded-full bg-gray-300' />
-                {nodes?.unavailable} Unavailable
-              </span>
-            </span>
-            {nodes === undefined && <span className='italic text-gray-400'>Loading...</span>}
-            {nodes === null && (
-              <span className='italic text-red-400'>Node data unavailable</span>
-            )}
-            {nodes != null && (
-              <span>
-                {nodes.total} Total
-              </span>
-            )}
-          </div>
-          <div className='w-full bg-gray-200 rounded-full h-2 flex overflow-hidden'>
-            {nodes === undefined && <div className='bg-gray-300 h-2 w-full animate-pulse' />}
-            {nodes != null && (
-              <>
-                <div
-                  className='bg-green-500 h-2 transition-all duration-300'
-                  style={{ width: `${idlePercent}%` }}
-                />
-                <div
-                  className='bg-yellow-400 h-2 transition-all duration-300'
-                  style={{ width: `${allocPercent}%` }}
-                />
-              </>
-            )}
-          </div>
+          <span className='text-sm text-gray-500 mb-6'>Nodes status</span>
+          {nodes === null ? (
+            <div className='flex items-center gap-2 text-sm text-amber-600 mt-1'>
+              <ExclamationCircleIcon className='h-4 w-4 flex-shrink-0' aria-hidden='true' />
+              <span>Node data unavailable — system may be slow or unreachable</span>
+            </div>
+          ) : (
+            <>
+              <div className='flex justify-between text-xs text-gray-500 mb-1'>
+                <span className='flex items-center gap-3'>
+                  <span className='flex items-center gap-1'>
+                    <span className='inline-block w-2 h-2 rounded-full bg-green-500' />
+                    {nodes?.available} Idle
+                  </span>
+                  <span className='flex items-center gap-1'>
+                    <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
+                    {nodes?.allocated} Allocated
+                  </span>
+                  <span className='flex items-center gap-1'>
+                    <span className='inline-block w-2 h-2 rounded-full bg-gray-300' />
+                    {nodes?.unavailable} Unavailable
+                  </span>
+                </span>
+                {nodes === undefined && <span className='italic text-gray-400'>Loading...</span>}
+                {nodes != null && <span>{nodes.total} Total</span>}
+              </div>
+              <div className='w-full bg-gray-200 rounded-full h-2 flex overflow-hidden'>
+                {nodes === undefined && <div className='bg-gray-300 h-2 w-full animate-pulse' />}
+                {nodes != null && (
+                  <>
+                    <div
+                      className='bg-green-500 h-2 transition-all duration-300'
+                      style={{ width: `${idlePercent}%` }}
+                    />
+                    <div
+                      className='bg-yellow-400 h-2 transition-all duration-300'
+                      style={{ width: `${allocPercent}%` }}
+                    />
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth} />}
@@ -311,32 +311,45 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
   )
 }
 
-const SystemsStatusStatList: React.FC<any> = ({ systems, systemsNodesPromises }) => {
+const NODES_RETRY_INTERVAL_MS = 30_000
+
+const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
+  const fetcher = useFetcher<SystemNodesOverview | null>()
+
+  // Initial load on mount
+  useEffect(() => {
+    fetcher.load(`/api/status/${system.name}/nodes`)
+  }, [system.name])
+
+  // Retry after NODES_RETRY_INTERVAL_MS if the last response was null (unavailable)
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || fetcher.data !== null) return
+    const timer = setTimeout(() => {
+      fetcher.load(`/api/status/${system.name}/nodes`)
+    }, NODES_RETRY_INTERVAL_MS)
+    return () => clearTimeout(timer)
+  }, [fetcher.state, fetcher.data, system.name])
+
+  // Show loading skeleton while a request is in flight (initial load or retry)
+  const nodes = fetcher.state === 'loading' ? undefined : fetcher.data
+  return <SystemStatusStat system={system} nodes={nodes} />
+}
+
+const SystemsStatusStatList: React.FC<{ systems: any[] }> = ({ systems }) => {
   return (
     <div className='mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 items-start'>
       {systems &&
         systems.length > 0 &&
-        systems.map((system: any) => (
-          <Suspense key={system.name} fallback={<SystemStatusStat system={system} />}>
-            <Await
-              resolve={systemsNodesPromises?.[system.name]}
-              errorElement={<SystemStatusStat system={system} />}
-            >
-              {(nodes: SystemNodesOverview | null) => (
-                <SystemStatusStat system={system} nodes={nodes ?? undefined} />
-              )}
-            </Await>
-          </Suspense>
-        ))}
+        systems.map((system: any) => <SystemStatusStatCard key={system.name} system={system} />)}
     </div>
   )
 }
 
-const SystemsStatusStat: React.FC<any> = ({ systems, systemsNodesPromises, className = '' }: any) => {
+const SystemsStatusStat: React.FC<{ systems: any[]; className?: string }> = ({ systems, className = '' }) => {
   return (
     <div className={classNames('mb-4', className)}>
       <h3 className='text-base font-semibold leading-6 text-gray-900'>Systems status</h3>
-      <SystemsStatusStatList systems={systems} systemsNodesPromises={systemsNodesPromises} />
+      <SystemsStatusStatList systems={systems} />
     </div>
   )
 }

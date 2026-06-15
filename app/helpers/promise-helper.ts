@@ -6,7 +6,8 @@
 *************************************************************************/
 
 export const ABORT_DELAY_MS = 35_000
-export const DEFERRED_PROMISE_TIMEOUT_MS = Math.floor(ABORT_DELAY_MS * 0.95)
+// Timeout for async data loading (deferred routes and client-side resource routes).
+export const DEFERRED_PROMISE_TIMEOUT_MS = 20_000
 
 export async function promiseWithTimeout<T>(
   promise: Promise<T>,

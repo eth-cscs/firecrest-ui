@@ -14,7 +14,7 @@ import stylesheet from '~/styles/app.css?url'
 // configs
 import base from '~/configs/base.config'
 // apis
-import { getSystems } from '~/apis/status-api'
+import { getSystems } from '~/apis/status-api.server'
 // layouts
 import AppLayout from '~/layouts/AppLayout'
 // helpers
@@ -22,6 +22,8 @@ import { getNotificationMessage } from '~/helpers/notification-helper'
 // utils
 import { requireAuth, getAuthAccessToken } from '~/utils/auth.server'
 import { SystemProvider } from '~/contexts/SystemContext'
+// logger
+import logger from '~/logger/logger.server'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // types
@@ -30,6 +32,7 @@ import type { System } from '~/types/api-status'
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
 export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+  const loaderStart = performance.now()
   // Check authentication
   const { auth } = await requireAuth(request)
   // Get auth access token
@@ -42,6 +45,12 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const notificationMessages = await getNotificationMessage(request, headers)
   // Fire getSystems without awaiting — page renders immediately, systems stream in
   const systemsPromise = getSystems(accessToken, request).then(({ systems }) => systems)
+  logger.debug({
+    'event.action': 'loader.complete',
+    'event.duration': Math.round(performance.now() - loaderStart) * 1_000_000,
+    'url.path': '/_app',
+    component: 'loader',
+  }, 'loader.complete')
   return data(
     {
       environment: base.environment,

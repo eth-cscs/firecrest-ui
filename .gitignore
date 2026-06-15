@@ -33,6 +33,8 @@ node_modules*
 
 # local-only files (not committed)
 observability/**/local/
+observability/grafana/grafana.env.*
+!observability/grafana/grafana.env.example
 
 # Yarn Berry
 .yarn/*

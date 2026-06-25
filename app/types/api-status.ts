@@ -177,6 +177,7 @@ export interface Reservation {
   nodeList: string
   endTime: number
   startTime: number
+  state: string
 }
 
 export interface GetPartitionsResponse {

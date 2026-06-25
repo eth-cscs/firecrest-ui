@@ -55,7 +55,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
   const [isOpenRemoteScriptBrowse, setIsOpenRemoteScriptBrowse] = useState(false)
   const [loading, setLoading] = useState(false)
   const partitionsFetcher = useFetcher<{ partitions: { name: string }[] }>()
-  const reservationsFetcher = useFetcher<{ reservations: { name: string }[] }>()
+  const reservationsFetcher = useFetcher<{ reservations: { name: string; state: string }[] }>()
   const { systems, username, systemName, accountName } = formData
   const formErrorFields = getFormErrorFieldsFromError(formError)
   const [formValues, setFormValues] = useState({
@@ -411,7 +411,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                     </option>
                     {(reservationsFetcher.data?.reservations ?? []).map((r) => (
                       <option key={r.name} value={r.name}>
-                        {r.name}
+                        {r.name} ({r.state})
                       </option>
                     ))}
                   </select>

@@ -16,6 +16,7 @@ import { logPageLabel } from '~/helpers/log-labels'
 import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
+import { jobsAllUsersCookie } from '~/utils/preferences.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 // views
@@ -30,8 +31,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const accountName = params.accountName!
   // Get request info
   const [, searchParams] = request.url.split('?')
-  // Check if allUsers is set
-  const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
+  const urlSearchParams = new URLSearchParams(searchParams)
+  // Check if allUsers is set on the URL; otherwise fall back to the remembered
+  // preference cookie so the toggle survives fresh navigations (not just back/forward).
+  const allUsers = urlSearchParams.has('allUsers')
+    ? urlSearchParams.get('allUsers') === 'true'
+    : (await jobsAllUsersCookie.parse(request.headers.get('Cookie'))) === true
   logInfoHttp({
     eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,

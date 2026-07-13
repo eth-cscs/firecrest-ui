@@ -13,6 +13,7 @@ import { GetSystemJobsResponse } from '~/types/api-job'
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
+import { jobsAllUsersCookie } from '~/utils/preferences.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from '~/apis/api'
@@ -34,6 +35,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const accountName = params.accountName!
   const [, searchParams] = request.url.split('?')
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
+  // Remember the toggle choice for the next time the jobs page is loaded fresh (e.g. via a nav
+  // link, which doesn't carry the query param). Every request/poll carries the current value.
+  headers.append('Set-Cookie', await jobsAllUsersCookie.serialize(allUsers))
   try {
     const response = await promiseWithTimeout(
       getJobs(accessToken, systemName, accountName, allUsers, request),

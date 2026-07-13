@@ -250,10 +250,13 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
 
 const JOBS_POLL_INTERVAL_MS = 2000
 
-const SystemJobList: React.FC = () => {
-  const [allUsers, setAllUsers] = useState<boolean>(
-    () => new URLSearchParams(window.location.search).get('allUsers') === 'true',
-  )
+interface SystemJobListProps {
+  // Resolved by the page loader: the URL's allUsers param if present, else the remembered cookie.
+  initialAllUsers: boolean
+}
+
+const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
+  const [allUsers, setAllUsers] = useState<boolean>(initialAllUsers)
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()

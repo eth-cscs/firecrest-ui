@@ -28,11 +28,13 @@ import DownloadDialog from '~/modules/filesystem/components/dialogs/DownloadDial
 // apis
 import { getLocalJob } from '~/apis/compute-api'
 import { getLocalOpsTail, getLocalOpsLs } from '~/apis/filesystem-api'
+import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
 // grafana
 import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
 
 // contexts
 import { useGroup } from '~/contexts/GroupContext'
+import { useMaintenance } from '~/contexts/MaintenanceContext'
 
 interface JobDetailsPanelProps {
   job?: Job
@@ -548,6 +550,15 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   const [jobStandardErrorFile, setJobStandardErrorFile] = useState<File | null>(null)
   const [localError, setLocalError] = useState<any>(error)
   const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
+  const { setMaintenance } = useMaintenance()
+
+  const handlePollingError = async (error: any) => {
+    if (isMaintenanceResponse(error)) {
+      setMaintenance(true, await getMaintenanceMessage(error))
+    } else {
+      setLocalError(error)
+    }
+  }
 
   const fetchJob = async (
     jobId: number,
@@ -558,7 +569,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       const [job] = response.jobs
       setter(job)
     } catch (error) {
-      setLocalError(error)
+      await handlePollingError(error)
     }
   }
 
@@ -570,7 +581,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       const response: GetOpsTailResponse = await getLocalOpsTail(system.name, filePath, '100')
       setter(response)
     } catch (error) {
-      setLocalError(error)
+      await handlePollingError(error)
     }
   }
 
@@ -593,7 +604,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
         setter(response.output[0])
       }
     } catch (error) {
-      setLocalError(error)
+      await handlePollingError(error)
     }
   }
 

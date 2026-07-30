@@ -6,8 +6,19 @@
 *************************************************************************/
 
 import { Link, isRouteErrorResponse } from '@remix-run/react'
+// apis
+import { isMaintenanceError, getMaintenanceErrorMessage } from '~/apis/api'
+// pages
+import MaintenancePage from '~/components/pages/MaintenancePage'
 
 const ErrorView: React.FC<any> = ({ error }: any) => {
+  if (isRouteErrorResponse(error) && error.status === 503) {
+    return <MaintenancePage message={error.data} />
+  }
+  if (isMaintenanceError(error)) {
+    return <MaintenancePage message={getMaintenanceErrorMessage(error)} />
+  }
+
   let title: any = 'Something went wrong'
   let message: any = 'Sorry, an error has occurred, please retry or contact our support.'
 

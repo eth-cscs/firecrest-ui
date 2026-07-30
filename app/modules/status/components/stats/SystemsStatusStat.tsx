@@ -34,6 +34,10 @@ import ServiceHealthStatusBadge from '~/modules/status/components/badges/Service
 // data
 import { isSystemHealthy } from '~/helpers/system-helper'
 import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
+// apis
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
+// contexts
+import { useMaintenance } from '~/contexts/MaintenanceContext'
 
 interface SystemStatusStatProps {
   system: System
@@ -314,14 +318,23 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
 const NODES_RETRY_INTERVAL_MS = 30_000
 
 const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
-  const fetcher = useFetcher<SystemNodesOverview | null>()
+  const fetcher = useFetcher<SystemNodesOverview | { maintenance: true; message: string | null } | null>()
+  const { setMaintenance } = useMaintenance()
 
   // Initial load on mount
   useEffect(() => {
     fetcher.load(`/api/status/${system.name}/nodes`)
   }, [system.name])
 
-  // Retry after NODES_RETRY_INTERVAL_MS if the last response was null (unavailable)
+  useEffect(() => {
+    if (isMaintenancePayload(fetcher.data)) {
+      setMaintenance(true, getMaintenancePayloadMessage(fetcher.data))
+    }
+  }, [fetcher.data])
+
+  // Retry after NODES_RETRY_INTERVAL_MS if the last response was null (unavailable). A
+  // maintenance payload is never null, so this loop naturally stops polling a route that's
+  // already known to be down.
   useEffect(() => {
     if (fetcher.state !== 'idle' || fetcher.data !== null) return
     const timer = setTimeout(() => {
@@ -331,7 +344,10 @@ const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
   }, [fetcher.state, fetcher.data, system.name])
 
   // Show loading skeleton while a request is in flight (initial load or retry)
-  const nodes = fetcher.state === 'loading' ? undefined : fetcher.data
+  const nodes =
+    fetcher.state === 'loading' || isMaintenancePayload(fetcher.data)
+      ? undefined
+      : (fetcher.data as SystemNodesOverview | null | undefined)
   return <SystemStatusStat system={system} nodes={nodes} />
 }
 

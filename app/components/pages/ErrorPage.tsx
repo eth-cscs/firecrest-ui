@@ -7,9 +7,22 @@
 
 import React from 'react'
 import { Link, useRouteError, isRouteErrorResponse } from '@remix-run/react'
+// apis
+import { isMaintenanceError, getMaintenanceErrorMessage } from '~/apis/api'
+// pages
+import MaintenancePage from './MaintenancePage'
 
 const ErrorPage: React.FC = () => {
   const error: any = useRouteError()
+
+  if (isRouteErrorResponse(error) && error.status === 503) {
+    return <MaintenancePage message={error.data} />
+  }
+  // Errors surfaced through a deferred loader value (defer()/<Await>) never reach here as a
+  // Response - see api.ts's toMaintenanceError for why.
+  if (isMaintenanceError(error)) {
+    return <MaintenancePage message={getMaintenanceErrorMessage(error)} />
+  }
 
   let status = 500
   let title: any = 'Uknonw error'

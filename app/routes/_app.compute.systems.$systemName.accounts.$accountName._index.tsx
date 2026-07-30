@@ -13,14 +13,17 @@ import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
-import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
+import { isMaintenanceResponse, toMaintenanceError } from '~/apis/api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobListView from '~/modules/compute/components/views/JobListView'
+// types
+import type { GetSystemJobsResponse } from '~/types/api-job'
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -41,18 +44,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data - deferred for better UX with timeout protection.
   // Resolves with an error object on timeout so the job list view renders inline
-  // rather than triggering the route ErrorBoundary.
-  const jobsPromise = promiseWithTimeoutOrDefault(
+  // rather than triggering the route ErrorBoundary. Maintenance is the one rejection that must
+  // escape that fallback - re-thrown as a plain Error (see api.ts's toMaintenanceError) since a
+  // raw Response can't cross the turbo-stream serialization boundary for deferred data.
+  const jobsPromise = promiseWithTimeout(
     getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
-    {
+  ).catch(async (error): Promise<GetSystemJobsResponse> => {
+    if (isMaintenanceResponse(error)) {
+      throw await toMaintenanceError(error)
+    }
+    return {
       system: systemName,
       jobs: [],
       account: accountName,
       allUsers,
       error: { message: 'Loading jobs took too long. The system might be busy or unavailable.' },
-    },
-  )
+    }
+  })
   // Return deferred response
   return defer({ jobsPromise })
 }

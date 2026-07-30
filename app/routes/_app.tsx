@@ -15,6 +15,7 @@ import stylesheet from '~/styles/app.css?url'
 import base from '~/configs/base.config'
 // apis
 import { getSystems } from '~/apis/status-api.server'
+import { isMaintenanceResponse, toMaintenanceError } from '~/apis/api'
 // layouts
 import AppLayout from '~/layouts/AppLayout'
 // helpers
@@ -43,8 +44,14 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const headers = new Headers()
   // Get notification messages
   const notificationMessages = await getNotificationMessage(request, headers)
-  // Fire getSystems without awaiting — page renders immediately, systems stream in
-  const systemsPromise = getSystems(accessToken, request).then(({ systems }) => systems)
+  // Fire getSystems without awaiting — page renders immediately, systems stream in. A rejection
+  // must never be a raw Response (see api.ts's toMaintenanceError) - it has to cross the
+  // turbo-stream serialization boundary for the deferred payload.
+  const systemsPromise = getSystems(accessToken, request)
+    .then(({ systems }) => systems)
+    .catch(async (error) => {
+      throw isMaintenanceResponse(error) ? await toMaintenanceError(error) : error
+    })
   logger.debug({
     'event.action': 'loader.complete',
     'event.duration': Math.round(performance.now() - loaderStart) * 1_000_000,

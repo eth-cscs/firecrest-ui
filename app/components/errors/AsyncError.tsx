@@ -5,31 +5,15 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useEffect } from 'react'
 import { useAsyncError } from '@remix-run/react'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
-// apis
-import { isMaintenanceError, getMaintenanceErrorMessage } from '~/apis/api'
-// contexts
-import { useMaintenance } from '~/contexts/MaintenanceContext'
 
+// Maintenance never reaches here: the deferred promises this backs resolve with a flagged
+// payload instead of rejecting (see api.ts's isMaintenancePayload), so <Await errorElement>
+// only ever sees genuine, unexpected errors.
 const AsyncError: React.FC = () => {
   const error: any = useAsyncError()
-  const { setMaintenance } = useMaintenance()
-
-  // <Await errorElement> renders this in place, inline, rather than bubbling to the route's
-  // ErrorBoundary - so maintenance has to be signalled through the same context the
-  // polling/fetcher call sites use, instead of relying on a thrown Response reaching a boundary.
-  useEffect(() => {
-    if (isMaintenanceError(error)) {
-      setMaintenance(true, getMaintenanceErrorMessage(error))
-    }
-  }, [error])
-
-  if (isMaintenanceError(error)) {
-    return null
-  }
   return <AlertError error={error} />
 }
 

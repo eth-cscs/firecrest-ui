@@ -15,7 +15,13 @@ import stylesheet from '~/styles/app.css?url'
 import base from '~/configs/base.config'
 // apis
 import { getSystems } from '~/apis/status-api.server'
-import { isMaintenanceResponse, toMaintenanceError } from '~/apis/api'
+import {
+  isMaintenanceResponse,
+  getMaintenanceMessage,
+  isMaintenancePayload,
+  getMaintenancePayloadMessage,
+} from '~/apis/api'
+import type { MaintenancePayload } from '~/apis/api'
 // layouts
 import AppLayout from '~/layouts/AppLayout'
 // helpers
@@ -27,6 +33,8 @@ import { SystemProvider } from '~/contexts/SystemContext'
 import logger from '~/logger/logger.server'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
+// pages
+import MaintenancePage from '~/components/pages/MaintenancePage'
 // types
 import type { System } from '~/types/api-status'
 
@@ -44,13 +52,20 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   const headers = new Headers()
   // Get notification messages
   const notificationMessages = await getNotificationMessage(request, headers)
-  // Fire getSystems without awaiting — page renders immediately, systems stream in. A rejection
-  // must never be a raw Response (see api.ts's toMaintenanceError) - it has to cross the
-  // turbo-stream serialization boundary for the deferred payload.
+  // Fire getSystems without awaiting — page renders immediately, systems stream in. Maintenance
+  // must resolve rather than reject (see api.ts's isMaintenancePayload for why a rejected Error
+  // can't carry the signal across the turbo-stream boundary in production).
   const systemsPromise = getSystems(accessToken, request)
     .then(({ systems }) => systems)
     .catch(async (error) => {
-      throw isMaintenanceResponse(error) ? await toMaintenanceError(error) : error
+      if (isMaintenanceResponse(error)) {
+        const payload: MaintenancePayload = {
+          maintenance: true,
+          message: await getMaintenanceMessage(error),
+        }
+        return payload
+      }
+      throw error
     })
   logger.debug({
     'event.action': 'loader.complete',
@@ -96,22 +111,26 @@ export default function AppLayoutRoute() {
   return (
     <Suspense fallback={<LoadingSpinner title='Loading systems...' className='h-screen' />}>
       <Await resolve={systemsPromise}>
-        {(systems: System[]) => (
-          <SystemProvider systems={systems} systemName={systemName}>
-            <AppLayout
-              appName={appName}
-              environment={environment}
-              appVersion={appVersion}
-              companyName={companyName}
-              logoPath={logoPath}
-              supportUrl={supportUrl}
-              repoUrl={repoUrl}
-              docUrl={docUrl}
-              authUser={authUser}
-              notificationMessages={notificationMessages}
-            />
-          </SystemProvider>
-        )}
+        {(result: System[] | MaintenancePayload) =>
+          isMaintenancePayload(result) ? (
+            <MaintenancePage message={getMaintenancePayloadMessage(result)} />
+          ) : (
+            <SystemProvider systems={result as System[]} systemName={systemName}>
+              <AppLayout
+                appName={appName}
+                environment={environment}
+                appVersion={appVersion}
+                companyName={companyName}
+                logoPath={logoPath}
+                supportUrl={supportUrl}
+                repoUrl={repoUrl}
+                docUrl={docUrl}
+                authUser={authUser}
+                notificationMessages={notificationMessages}
+              />
+            </SystemProvider>
+          )
+        }
       </Await>
     </Suspense>
   )

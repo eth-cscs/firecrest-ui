@@ -6,17 +6,15 @@
 *************************************************************************/
 
 import { Link, isRouteErrorResponse } from '@remix-run/react'
-// apis
-import { isMaintenanceError, getMaintenanceErrorMessage } from '~/apis/api'
 // pages
 import MaintenancePage from '~/components/pages/MaintenancePage'
 
 const ErrorView: React.FC<any> = ({ error }: any) => {
+  // Deferred loader values (defer()/<Await>) never surface maintenance here as a thrown
+  // Response - they resolve with a flagged payload instead (see api.ts's isMaintenancePayload)
+  // and are handled at the render site that owns the <Await>, not in this route ErrorBoundary.
   if (isRouteErrorResponse(error) && error.status === 503) {
     return <MaintenancePage message={error.data} />
-  }
-  if (isMaintenanceError(error)) {
-    return <MaintenancePage message={getMaintenanceErrorMessage(error)} />
   }
 
   let title: any = 'Something went wrong'

@@ -100,46 +100,28 @@ export async function getMaintenanceMessage(error: Response): Promise<string | n
   }
 }
 
-// Deferred loader data (defer()/<Await>) is streamed to the client via turbo-stream, which only
-// knows how to serialize plain Error instances (see @remix-run/server-runtime's
-// encodeViaTurboStream) - not a raw Response with a live body stream. Rejecting a deferred
-// promise with the Response thrown by handleReponse() above crashes the SSR stream instead of
-// reaching the ErrorBoundary. Deferred call sites must catch isMaintenanceResponse() and rethrow
-// this instead.
-//
-// The marker lives in the message, not `.name`: turbo-stream's decode side
-// (@remix-run/react/dist/single-fetch.js) only restores a custom `.name` when it happens to match
-// an actual global Error subclass (TypeError, RangeError, ...) - anything else, including
-// `.name = 'MaintenanceError'`, is silently dropped and reconstructed as a plain `Error`. `message`
-// is the one field preserved verbatim across that boundary.
-const MAINTENANCE_MESSAGE_PREFIX = '__MAINTENANCE__:'
+// Deferred loader data (defer()/<Await>) is streamed to the client via turbo-stream. Rejecting a
+// deferred promise doesn't work as a maintenance signal: a raw Response can't be serialized across
+// that boundary at all, and a plain Error fares no better - @remix-run/server-runtime's production
+// build unconditionally replaces any rejected Error's message/stack with a generic "Unexpected
+// Server Error" before it reaches the client (see single-fetch.js's encodeViaTurboStream, which
+// runs sanitizeError() on every Error value). That sanitization doesn't happen in dev, so a
+// message-tagged Error looks like it works locally and then breaks in every production build.
+// Deferred call sites must instead catch isMaintenanceResponse() and *resolve* the promise with a
+// flagged payload (see isMaintenancePayload() below) - only Error instances get sanitized, plain
+// resolved values pass through untouched.
 
-export async function toMaintenanceError(error: Response): Promise<Error> {
-  const message = await getMaintenanceMessage(error)
-  return new Error(`${MAINTENANCE_MESSAGE_PREFIX}${message ?? ''}`)
-}
-
-export function isMaintenanceError(error: unknown): boolean {
-  return (
-    isMaintenanceResponse(error) ||
-    (error instanceof Error && error.message.startsWith(MAINTENANCE_MESSAGE_PREFIX))
-  )
-}
-
-// Strips the marker back off - use this instead of `error.message` when rendering a maintenance
-// error produced by toMaintenanceError().
-export function getMaintenanceErrorMessage(error: Error): string {
-  return error.message.startsWith(MAINTENANCE_MESSAGE_PREFIX)
-    ? error.message.slice(MAINTENANCE_MESSAGE_PREFIX.length)
-    : error.message
-}
-
-// Same maintenance signal, but for fetcher-backed resource routes: those must never throw (a
-// thrown Response would bubble to whatever route currently owns the fetcher, not a clean
-// maintenance page - see api.status.$systemName.nodes.tsx), so they return a flagged 200 payload
-// instead. Two shapes can carry that flag: an explicit `{maintenance: true}` payload, or the
+// Fetcher-backed resource routes have the same constraint from the other direction: a thrown
+// Response would bubble to whatever route currently owns the fetcher, not a clean maintenance page
+// (see api.status.$systemName.nodes.tsx), so they also return a flagged 200 payload instead of
+// throwing. Two shapes can carry that flag: an explicit `{maintenance: true}` payload, or the
 // `{error: {statusCode}}` shape already produced by helpers/response-helper.ts for routes that go
 // through handleApiErrorResponse/handleFormErrorResponse.
+export interface MaintenancePayload {
+  maintenance: true
+  message: string | null
+}
+
 export function isMaintenancePayload(data: any): boolean {
   if (!data) return false
   return data.maintenance === true || data?.error?.statusCode === StatusCodes.SERVICE_UNAVAILABLE

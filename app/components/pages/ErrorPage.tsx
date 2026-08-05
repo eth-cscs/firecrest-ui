@@ -7,9 +7,18 @@
 
 import React from 'react'
 import { Link, useRouteError, isRouteErrorResponse } from '@remix-run/react'
+// pages
+import MaintenancePage from './MaintenancePage'
 
 const ErrorPage: React.FC = () => {
   const error: any = useRouteError()
+
+  // Deferred loader values (defer()/<Await>) never surface maintenance here as a thrown
+  // Response - they resolve with a flagged payload instead (see api.ts's isMaintenancePayload)
+  // and are handled at the render site that owns the <Await>, not in this route ErrorBoundary.
+  if (isRouteErrorResponse(error) && error.status === 503) {
+    return <MaintenancePage message={error.data} />
+  }
 
   let status = 500
   let title: any = 'Uknonw error'

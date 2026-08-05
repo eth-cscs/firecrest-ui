@@ -24,6 +24,10 @@ import AlertError from '~/components/alerts/AlertError'
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // tables
 import { FileSystemSelectableTable } from '~/modules/filesystem/components/tables/FileSystemSelectableTable'
+// apis
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
+// contexts
+import { useMaintenance } from '~/contexts/MaintenanceContext'
 
 export enum RemoteFilesystemBrowserMode {
   FILE = 0,
@@ -152,6 +156,7 @@ const RemoteFilesystemBrowser: React.FC<any> = ({
   const [loading, setLoading] = useState<boolean>(true)
   const [filesystemData, setFilesystemData] = useState<any>(null)
   const [error, setError] = useState<any>(null)
+  const { setMaintenance } = useMaintenance()
 
   useEffect(() => {
     if (initSystemName) {
@@ -171,7 +176,9 @@ const RemoteFilesystemBrowser: React.FC<any> = ({
     }
     if (fetcher.data) {
       const data = fetcher.data
-      if (data?.error) {
+      if (isMaintenancePayload(data)) {
+        setMaintenance(true, getMaintenancePayloadMessage(data))
+      } else if (data?.error) {
         setError(data.error)
       } else {
         setError(null)

@@ -34,12 +34,14 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 // apis
 import { getLocalJobs } from '~/apis/compute-api'
+import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
 import { useRefreshing } from '~/contexts/RefreshingContext'
+import { useMaintenance } from '~/contexts/MaintenanceContext'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
 
@@ -247,6 +249,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()
+  const { setMaintenance } = useMaintenance()
   const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
 
   const onChangeHandler = async (event: any) => {
@@ -282,7 +285,11 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
         await new Promise((resolve) => setTimeout(resolve, minDisplayTime - elapsed))
       }
     } catch (error) {
-      setLocalError(error)
+      if (isMaintenanceResponse(error)) {
+        setMaintenance(true, await getMaintenanceMessage(error))
+      } else {
+        setLocalError(error)
+      }
     } finally {
       setRefreshing(false)
     }

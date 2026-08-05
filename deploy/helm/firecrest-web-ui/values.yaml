@@ -33,6 +33,8 @@ redisHost: "redis-master"
 supportUrl: "https://support.example.com"
 docUrl: "https://docs.example.com"
 repoUrl: "https://github.com/eth-cscs/firecrest-ui"
+# Status page link shown on the maintenance screen - omitted entirely if left blank
+statusUrl: ""
 uiObservabilityDashboard: ""
 
 # Elastic/Observability settings

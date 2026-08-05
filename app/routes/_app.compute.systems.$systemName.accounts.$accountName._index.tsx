@@ -13,14 +13,18 @@ import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
-import { promiseWithTimeoutOrDefault, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
+import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobListView from '~/modules/compute/components/views/JobListView'
+// types
+import type { GetSystemJobsResponse } from '~/types/api-job'
+import type { MaintenancePayload } from '~/apis/api'
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
@@ -40,19 +44,26 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
   // Call api/s and fetch data - deferred for better UX with timeout protection.
-  // Resolves with an error object on timeout so the job list view renders inline
-  // rather than triggering the route ErrorBoundary.
-  const jobsPromise = promiseWithTimeoutOrDefault(
+  // Resolves with an error object on timeout so the job list view renders inline rather than
+  // triggering the route ErrorBoundary. Maintenance resolves too, with a flagged payload (see
+  // api.ts's isMaintenancePayload) - a rejected Error gets its message wiped by
+  // @remix-run/server-runtime's production sanitization before it crosses the turbo-stream
+  // boundary, so rejecting can't carry the signal.
+  const jobsPromise = promiseWithTimeout(
     getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
-    {
+  ).catch(async (error): Promise<GetSystemJobsResponse | MaintenancePayload> => {
+    if (isMaintenanceResponse(error)) {
+      return { maintenance: true, message: await getMaintenanceMessage(error) }
+    }
+    return {
       system: systemName,
       jobs: [],
       account: accountName,
       allUsers,
       error: { message: 'Loading jobs took too long. The system might be busy or unavailable.' },
-    },
-  )
+    }
+  })
   // Return deferred response
   return defer({ jobsPromise })
 }

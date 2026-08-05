@@ -12,6 +12,9 @@ import { PlusIcon } from '@heroicons/react/20/solid'
 import { LABEL_COMPUTE_TITLE } from '~/labels'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
+import type { MaintenancePayload } from '~/apis/api'
+// apis
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // panels
@@ -25,20 +28,30 @@ import { useGroup } from '~/contexts/GroupContext'
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // errors
 import AsyncError from '~/components/errors/AsyncError'
+// pages
+import MaintenancePage from '~/components/pages/MaintenancePage'
 
 // Isolated from GroupContext re-renders so the dehydrated <Await> boundary inside is
 // never traversed before it resolves, preventing React error #421.
-const JobsPanel = memo(({ jobsPromise }: { jobsPromise: Promise<GetSystemJobsResponse> }) => (
-  <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
-    <Await resolve={jobsPromise} errorElement={<AsyncError />}>
-      {(jobs: GetSystemJobsResponse) => <JobList jobs={jobs} />}
-    </Await>
-  </Suspense>
-))
+const JobsPanel = memo(
+  ({ jobsPromise }: { jobsPromise: Promise<GetSystemJobsResponse | MaintenancePayload> }) => (
+    <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
+      <Await resolve={jobsPromise} errorElement={<AsyncError />}>
+        {(result: GetSystemJobsResponse | MaintenancePayload) =>
+          isMaintenancePayload(result) ? (
+            <MaintenancePage message={getMaintenancePayloadMessage(result)} />
+          ) : (
+            <JobList jobs={result as GetSystemJobsResponse} />
+          )
+        }
+      </Await>
+    </Suspense>
+  ),
+)
 JobsPanel.displayName = 'JobsPanel'
 
 interface JobListViewProps {
-  jobsPromise: Promise<GetSystemJobsResponse>
+  jobsPromise: Promise<GetSystemJobsResponse | MaintenancePayload>
 }
 
 const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewProps) => {

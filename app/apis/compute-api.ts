@@ -14,7 +14,7 @@ import type {
 } from '~/types/api-job'
 
 // apis
-import api, { ApiTarget, withRequestId } from './api'
+import api, { ApiTarget, isMaintenanceResponse, withRequestId } from './api'
 
 export const getJobs = async (
   accessToken: string,
@@ -38,6 +38,9 @@ export const getJobs = async (
       error: undefined,
     }
   } catch (api_error: unknown) {
+    if (isMaintenanceResponse(api_error)) {
+      throw api_error
+    }
     let message = 'Unable to fetch jobs.'
     if (api_error instanceof Error) {
       message += ' ' + api_error.message
@@ -64,6 +67,9 @@ export const getJob = async (
     })
     return { jobs: apiResponse.jobs, error: undefined }
   } catch (error) {
+    if (isMaintenanceResponse(error)) {
+      throw error
+    }
     return { jobs: [], error: `Unable to fetch job (job id <${jobId}>)` }
   }
 }
@@ -83,6 +89,9 @@ export const getJobMetadata = async (
     )
     return { jobs: apiResponse.jobs, error: undefined }
   } catch (error) {
+    if (isMaintenanceResponse(error)) {
+      throw error
+    }
     return { jobs: [], error: `Unable to fetch job metadata (job id <${jobId}>)` }
   }
 }

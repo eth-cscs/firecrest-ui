@@ -18,6 +18,9 @@ import Footer from './Footer'
 import NotificationOverlay from '~/components/overlays/NotificationOverlay'
 // contexts
 import { RefreshingProvider } from '~/contexts/RefreshingContext'
+import { MaintenanceProvider, useMaintenance } from '~/contexts/MaintenanceContext'
+// pages
+import MaintenancePage from '~/components/pages/MaintenancePage'
 
 type LayoutMode = 'standard' | 'fixed-right'
 
@@ -47,7 +50,15 @@ interface AppLayoutProps {
   repoUrl: string | null
 }
 
-const AppLayout: React.FC<AppLayoutProps> = ({
+const AppLayout: React.FC<AppLayoutProps> = (props: AppLayoutProps) => {
+  return (
+    <MaintenanceProvider>
+      <AppLayoutContent {...props} />
+    </MaintenanceProvider>
+  )
+}
+
+const AppLayoutContent: React.FC<AppLayoutProps> = ({
   environment,
   appName,
   appVersion,
@@ -62,6 +73,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
   const layoutMode = useAppLayoutMode()
   const isFixedRight = layoutMode === 'fixed-right'
+  const { isMaintenance, maintenanceMessage } = useMaintenance()
+  if (isMaintenance) {
+    return <MaintenancePage message={maintenanceMessage} />
+  }
   if (isFixedRight) {
     return (
       <RefreshingProvider>

@@ -11,6 +11,7 @@ import type { LoaderFunctionArgs } from '@remix-run/node'
 import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { getSystemNodes } from '~/apis/status-api.server'
+import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
 // helpers
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // types
@@ -41,7 +42,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       },
       { headers },
     )
-  } catch {
+  } catch (error) {
+    if (isMaintenanceResponse(error)) {
+      return data({ maintenance: true, message: await getMaintenanceMessage(error) }, { headers })
+    }
     return data<null>(null, { headers })
   }
 }

@@ -25,6 +25,7 @@ const base = {
   supportUrl: getEnvVariable(env, 'SUPPORT_URL', false),
   repoUrl: getEnvVariable(env, 'REPO_URL', false),
   docUrl: getEnvVariable(env, 'DOC_URL', false),
+  statusUrl: getEnvVariable(env, 'STATUS_URL', false),
 }
 
 export default base

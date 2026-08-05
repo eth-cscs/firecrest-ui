@@ -83,6 +83,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       repoUrl: base.repoUrl,
       docUrl: base.docUrl,
       logoPath: base.logoPath,
+      statusUrl: base.statusUrl,
       authUser: auth.user,
       notificationMessages: notificationMessages,
       systemName,

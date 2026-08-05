@@ -27,6 +27,8 @@ export async function loader({ context }: LoaderFunctionArgs) {
   return json({
     nonce: context.nonce as string,
     appName: base.appName,
+    logoPath: base.logoPath,
+    statusUrl: base.statusUrl,
     ENV: {
       APP_NAME: base.appName,
       APP_VERSION: base.appVersion,

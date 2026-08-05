@@ -85,6 +85,8 @@ spec:
               value: "{{ .Values.docUrl }}"
             - name: REPO_URL
               value: "{{ .Values.repoUrl }}"
+            - name: STATUS_URL
+              value: "{{ .Values.statusUrl }}"
             {{- if .Values.uiObservabilityDashboard }}
             - name: UI_OBSERVABILITY_DASHBOARD
               value: "{{ .Values.uiObservabilityDashboard }}"

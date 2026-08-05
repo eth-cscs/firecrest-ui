@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json , useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
 import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
 import { useState } from 'react'
@@ -32,7 +32,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
   const mimeType = getMimeType(fileName)
   const previewUrl = `/fs/filesystems/systems/${params.systemName}/accounts/${params.accountName}/ops/preview?sourcePath=${sourcePath}`
-  return json({ fileName, sourcePath, mimeType, previewUrl })
+  return { fileName, sourcePath, mimeType, previewUrl }
 }
 
 export default function BinaryFileViewer() {

@@ -547,6 +547,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@edgefirst-dev/data@npm:^0.0.4":
+  version: 0.0.4
+  resolution: "@edgefirst-dev/data@npm:0.0.4"
+  checksum: 10c0/0de174cd5a3afe01e419b569fe3c66cf8aab6fa07b6216792aab55e54deeecd4513b6c039203f03eda34898172e8c01afdcdf0745a98842dfd40ae6b54bba33d
+  languageName: node
+  linkType: hard
+
 "@emnapi/core@npm:1.10.0":
   version: 1.10.0
   resolution: "@emnapi/core@npm:1.10.0"
@@ -1349,17 +1356,35 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mcansh/remix-redis-session-storage@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "@mcansh/remix-redis-session-storage@npm:0.1.1"
-  peerDependencies:
-    "@remix-run/node": ^1.15.0 || ^2.0.0
-    "@remix-run/server-runtime": ^1.15.0 || ^2.0.0
-    ioredis: ^5.3.1
-  peerDependenciesMeta:
-    "@remix-run/node":
-      optional: true
-  checksum: 10c0/47de1f02e58ff86a698ff7a60843983b2923168d96f4041a5514dbf8cf74e518ea26fa94c0a4c4358435de055234724699962db41956c96f3ac45b12b2e500c5
+"@mjackson/form-data-parser@npm:^0.9.1":
+  version: 0.9.1
+  resolution: "@mjackson/form-data-parser@npm:0.9.1"
+  dependencies:
+    "@mjackson/multipart-parser": "npm:^0.10.1"
+  checksum: 10c0/76eb84fd4aa374193aea158c38d5b31d3606ae385582024c540e337251678cd19e428cb63686fb8097e86876af123cb68345b7cdad39f0aea5601f0117927c2d
+  languageName: node
+  linkType: hard
+
+"@mjackson/headers@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@mjackson/headers@npm:0.10.0"
+  checksum: 10c0/eafc2c18aecc6bbd0905de8bec8e53ea3b2de840841cfac5892b6bbca3d9fd50573d0e248e10ba502264618ed0bdf5687b3282949ecc36a746a792d1d5d61752
+  languageName: node
+  linkType: hard
+
+"@mjackson/headers@npm:^0.11.1":
+  version: 0.11.1
+  resolution: "@mjackson/headers@npm:0.11.1"
+  checksum: 10c0/fd462e5b41221a7fd56020c8bb19f47ee93f78580f78e4dedda134f8fe0fdb18a77754144b7bb50888f3e697f32ab73ce25a26a96554359804920db30ac12047
+  languageName: node
+  linkType: hard
+
+"@mjackson/multipart-parser@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "@mjackson/multipart-parser@npm:0.10.1"
+  dependencies:
+    "@mjackson/headers": "npm:^0.11.1"
+  checksum: 10c0/cf693915c85a565c14dbf06e70102ee016b4efb726856d558df7664f27591e4a8de72e443ee8f2cda2977e2de3b48b080be8a907def777ab5692dd2cee9812f2
   languageName: node
   linkType: hard
 
@@ -1413,6 +1438,55 @@ __metadata:
   version: 1.0.39
   resolution: "@nolyfill/is-core-module@npm:1.0.39"
   checksum: 10c0/34ab85fdc2e0250879518841f74a30c276bca4f6c3e13526d2d1fe515e1adf6d46c25fcd5989d22ea056d76f7c39210945180b4859fc83b050e2da411aa86289
+  languageName: node
+  linkType: hard
+
+"@oslojs/asn1@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@oslojs/asn1@npm:1.0.0"
+  dependencies:
+    "@oslojs/binary": "npm:1.0.0"
+  checksum: 10c0/993856b931cb0087fa6a6323f09de388aa20fbab3322acdb178a7c35fcd05983c44c7a47bac7364cd96b45125c27586265e8fc9fec733d3183ffc56b6bec2634
+  languageName: node
+  linkType: hard
+
+"@oslojs/binary@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@oslojs/binary@npm:1.0.0"
+  checksum: 10c0/d416a393af23f42b50c6f8412a3a6d94a84707c2006511abce1c4bed680c22ed2247ccb442b09237fa78ca06c355875573d1c08ccba2942f292ec0534310e4f8
+  languageName: node
+  linkType: hard
+
+"@oslojs/crypto@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@oslojs/crypto@npm:1.0.1"
+  dependencies:
+    "@oslojs/asn1": "npm:1.0.0"
+    "@oslojs/binary": "npm:1.0.0"
+  checksum: 10c0/a1b3e4875f3df8bf357dd2b59e1d55ced099227bbeb0975b48bf8e001002780575c5df9e7c174bcc42f89713ed9ad4a965e181e835ff569ccaa3b258781a615b
+  languageName: node
+  linkType: hard
+
+"@oslojs/encoding@npm:0.4.1":
+  version: 0.4.1
+  resolution: "@oslojs/encoding@npm:0.4.1"
+  checksum: 10c0/e3ccee039f385cca8a53afb1584c85d66d3685e20142649aab8f6e7f71ea11e026861e60e3d61de8d34a78adf9049e6da6813e3de51ba2b86239a4200c08ee76
+  languageName: node
+  linkType: hard
+
+"@oslojs/encoding@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oslojs/encoding@npm:1.1.0"
+  checksum: 10c0/5553a0974dca60e1a8b247b7b97abcb141cc7ee4e22444f424a07921d6a5f76a43c316f3ee669222787fdef6549f8749cc6d68ff5a631e2542521c56fe36417f
+  languageName: node
+  linkType: hard
+
+"@oslojs/jwt@npm:0.2.0":
+  version: 0.2.0
+  resolution: "@oslojs/jwt@npm:0.2.0"
+  dependencies:
+    "@oslojs/encoding": "npm:0.4.1"
+  checksum: 10c0/aadcda3e5274293e07fca6842ef4f4dccecce11b1f7e655ad2f042983233eb5d121db981e9f64451b66abb417b66744371ce29743282df7319d40b420c3c93be
   languageName: node
   linkType: hard
 
@@ -2488,6 +2562,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"arctic@npm:^3.0.0":
+  version: 3.7.0
+  resolution: "arctic@npm:3.7.0"
+  dependencies:
+    "@oslojs/crypto": "npm:1.0.1"
+    "@oslojs/encoding": "npm:1.1.0"
+    "@oslojs/jwt": "npm:0.2.0"
+  checksum: 10c0/253b083289200d2bb956700cfe5faf9fbdf020941047808e70a1288d4b9c0c455a1807bf918eba600247e04428b42339e85ce7d520b4e2a4cecf50be76964adf
+  languageName: node
+  linkType: hard
+
 "arg@npm:^5.0.1, arg@npm:^5.0.2":
   version: 5.0.2
   resolution: "arg@npm:5.0.2"
@@ -3314,7 +3399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4.4.3, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.3.4, debug@npm:^4.4.0, debug@npm:^4.4.1, debug@npm:^4.4.3":
+"debug@npm:4.4.3, debug@npm:^4.1.0, debug@npm:^4.1.1, debug@npm:^4.3.1, debug@npm:^4.3.2, debug@npm:^4.4.0, debug@npm:^4.4.1, debug@npm:^4.4.3":
   version: 4.4.3
   resolution: "debug@npm:4.4.3"
   dependencies:
@@ -7116,28 +7201,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"remix-auth-oauth2@npm:^1.11.2":
-  version: 1.11.2
-  resolution: "remix-auth-oauth2@npm:1.11.2"
+"remix-auth-oauth2@npm:^3.4.1":
+  version: 3.4.1
+  resolution: "remix-auth-oauth2@npm:3.4.1"
   dependencies:
-    debug: "npm:^4.3.4"
-    uuid: "npm:^9.0.1"
+    "@edgefirst-dev/data": "npm:^0.0.4"
+    "@mjackson/headers": "npm:^0.10.0"
+    arctic: "npm:^3.0.0"
   peerDependencies:
-    "@remix-run/server-runtime": ^1.0.0 || ^2.0.0
-    remix-auth: ^3.6.0
-  checksum: 10c0/382cfcc05d4261d98f34b4d1af79f4b526718b2ff4713c374f4a811f08340b52903458b06d98266de40ab5b786326004417d48a05f38f8a10058ee5f0c2066f5
+    remix-auth: ^4.0.0
+  checksum: 10c0/e3e88bcfb682821a4f050879794ba04bb6c96c2d3d0f0d9ad3c84ac420a1457d0b7ffc544e3516d21dae1aae00669b7778ef8f2b7d1af5716bc58ed9c1f20ff4
   languageName: node
   linkType: hard
 
-"remix-auth@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "remix-auth@npm:3.7.0"
-  dependencies:
-    uuid: "npm:^8.3.2"
-  peerDependencies:
-    "@remix-run/react": ^1.0.0 || ^2.0.0
-    "@remix-run/server-runtime": ^1.0.0 || ^2.0.0
-  checksum: 10c0/25242a94a2de15b0efac2fd81d66af26778fbfd5f34de3de94ff72a9f828f6ec4cc631a23d1f96c8b8c0e6221a10a29e098a1d6c058e264ba06f8739189bcccf
+"remix-auth@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "remix-auth@npm:4.2.0"
+  checksum: 10c0/e01f6e18acbac801584c0a0127c29846923e229fe5f630065fc4b277e0721a34405dbb6bdb4736be578653d60600cbdef2f0e1920817fbcde559882e7b2e03af
   languageName: node
   linkType: hard
 
@@ -7359,7 +7439,7 @@ __metadata:
     "@eslint/js": "npm:^9.35.0"
     "@headlessui/react": "npm:^2.1.8"
     "@heroicons/react": "npm:^2.1.3"
-    "@mcansh/remix-redis-session-storage": "npm:^0.1.1"
+    "@mjackson/form-data-parser": "npm:^0.9.1"
     "@react-router/dev": "npm:^7.18.2"
     "@react-router/express": "npm:^7.18.2"
     "@react-router/fs-routes": "npm:^7.18.2"
@@ -7402,8 +7482,8 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router: "npm:^7.18.2"
-    remix-auth: "npm:^3.7.0"
-    remix-auth-oauth2: "npm:^1.11.2"
+    remix-auth: "npm:^4.2.0"
+    remix-auth-oauth2: "npm:^3.4.1"
     tailwindcss: "npm:^3.4.16"
     ts-jest: "npm:^29.4.1"
     typescript: "npm:^5.9.2"

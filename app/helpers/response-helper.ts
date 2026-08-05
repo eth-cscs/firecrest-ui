@@ -7,12 +7,23 @@
 
 import { ValidationError } from 'yup'
 import { StatusCodes } from 'http-status-codes'
-import { json, MaxPartSizeExceededError } from 'react-router'
 // types
 import { ErrorType } from '~/types/error'
 import type { HttpErrorResponse, ValidationErrorResponse } from '~/types/error'
 // helpers
 import { prettyBytes } from './file-helper'
+
+// react-router v7 dropped the built-in multipart upload handlers along with
+// MaxPartSizeExceededError; upload routes now use @mjackson/form-data-parser,
+// whose MaxFileSizeExceededError doesn't carry the byte count, so upload routes
+// catch it and construct this instead to keep the existing error response shape.
+export class MaxPartSizeExceededError extends Error {
+  maxBytes: number
+  constructor(maxBytes: number) {
+    super(`Part exceeded maximum allowed size of ${maxBytes} bytes`)
+    this.maxBytes = maxBytes
+  }
+}
 
 // Success responses
 export const handleSuccessResponse = (
@@ -24,16 +35,16 @@ export const handleSuccessResponse = (
     if (statusCode === StatusCodes.NO_CONTENT) {
       return new Response(null, { status: statusCode, headers })
     }
-    return json(data, { status: statusCode, headers: headers })
+    return Response.json(data, { status: statusCode, headers: headers })
   }
   if (statusCode === StatusCodes.NO_CONTENT) {
     return new Response(null, { status: statusCode })
   }
-  return json(data, { status: statusCode })
+  return Response.json(data, { status: statusCode })
 }
 
 const _errorResponse = (data: any, statusCode: number = StatusCodes.INTERNAL_SERVER_ERROR) => {
-  return json(
+  return Response.json(
     {
       error: data,
     },

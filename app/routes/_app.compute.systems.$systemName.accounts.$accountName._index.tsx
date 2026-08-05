@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useLoaderData, useRouteError , defer } from 'react-router'
+import { useLoaderData, useRouteError } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
@@ -64,7 +64,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   })
   // Return deferred response
-  return defer({ jobsPromise })
+  return { jobsPromise }
 }
 
 export default function AppComputeIandexRoute() {

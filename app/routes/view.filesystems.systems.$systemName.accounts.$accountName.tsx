@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json , useLoaderData } from 'react-router'
+import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
 import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
@@ -36,13 +36,13 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   try {
     const blob: Blob = await getOpsDownload(accessToken, system, sourcePath, request)
     const content = await blob.text()
-    return json<LoaderData>({ ok: true, content, fileName, sourcePath })
+    return { ok: true, content, fileName, sourcePath } satisfies LoaderData
   } catch (error) {
     if (error instanceof Response) {
       const statusCode = error.status
       const message =
         ERROR_MESSAGES[statusCode] ?? `An unexpected error occurred (HTTP ${statusCode}).`
-      return json<LoaderData>({ ok: false, statusCode, message, fileName, sourcePath })
+      return { ok: false, statusCode, message, fileName, sourcePath } satisfies LoaderData
     }
     throw error
   }

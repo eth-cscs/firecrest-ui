@@ -5,11 +5,21 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { redirect } from 'react-router'
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
 // utils
-import { getAuthenticator, getLogoutUrl } from '~/utils/auth.server'
+import { getLogoutUrl } from '~/utils/auth.server'
+import { getSession, destroySession } from '~/utils/session.server'
 
+// remix-auth v4's Authenticator has no built-in session/logout, so the session is
+// destroyed here directly (same as the plain /logout route) before redirecting to
+// the OIDC provider's end_session_endpoint.
 export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
-  const [authenticator, logoutUrl] = await Promise.all([getAuthenticator(), getLogoutUrl()])
-  await authenticator.logout(request, { redirectTo: logoutUrl })
+  const [logoutUrl, session] = await Promise.all([
+    getLogoutUrl(),
+    getSession(request.headers.get('Cookie')),
+  ])
+  return redirect(logoutUrl, {
+    headers: { 'Set-Cookie': await destroySession(session) },
+  })
 }

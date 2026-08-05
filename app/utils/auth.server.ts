@@ -7,12 +7,12 @@
 
 import { StatusCodes } from 'http-status-codes'
 import { OAuth2Strategy } from 'remix-auth-oauth2'
-import { Authenticator, AuthorizationError } from 'remix-auth'
-import type { OAuth2Profile } from 'remix-auth-oauth2'
+import { Authenticator } from 'remix-auth'
 // types
 import type { Auth } from '~/types/auth'
 // configs
 import oidc from '~/configs/oidc.config'
+import base from '~/configs/base.config'
 // utils
 import { getSession, commitSession, destroySession, sessionStorage } from './session.server'
 // logger
@@ -22,8 +22,8 @@ import { HttpError } from '~/errors/HttpError'
 import { ReasonErrors } from '~/errors/reason-errors'
 import { redirect } from 'react-router'
 
-// The session key remix-auth uses to store auth data (Authenticator default)
-const AUTH_SESSION_KEY = 'user'
+// The session key used to store auth data
+export const AUTH_SESSION_KEY = 'user'
 
 interface OidcDiscoveryDocument {
   authorization_endpoint: string
@@ -32,9 +32,10 @@ interface OidcDiscoveryDocument {
   end_session_endpoint?: string
 }
 
-interface OidcProfile extends OAuth2Profile {
-  _json: Record<string, unknown>
-}
+// remix-auth v4 dropped the AuthorizationError class it used to export — this is
+// used purely as an internal signal within getAuthAccessToken below to trigger a
+// token refresh, not part of remix-auth's own strategy flow.
+class TokenExpiredError extends Error {}
 
 // Module-level singletons — initialized lazily on first request
 let _discovery: OidcDiscoveryDocument | null = null
@@ -67,99 +68,57 @@ async function fetchDiscovery(): Promise<OidcDiscoveryDocument> {
   return _discovery
 }
 
-class OidcStrategy extends OAuth2Strategy<Auth, OidcProfile> {
-  private userinfoURL: string
-
-  constructor(
-    options: {
-      authorizationURL: string
-      tokenURL: string
-      userinfoURL: string
-      clientID: string
-      clientSecret: string
-      callbackURL: string
-    },
-    verify: ConstructorParameters<typeof OAuth2Strategy<Auth, OidcProfile>>[1],
-  ) {
-    super(
-      {
-        authorizationURL: options.authorizationURL,
-        tokenURL: options.tokenURL,
-        clientID: options.clientID,
-        clientSecret: options.clientSecret,
-        callbackURL: options.callbackURL,
-        scope: 'openid profile email',
-      },
-      verify,
-    )
-    this.name = 'oidc'
-    this.userinfoURL = options.userinfoURL
-  }
-
-  protected async userProfile(accessToken: string): Promise<OidcProfile> {
-    const t = performance.now()
-    const response = await fetch(this.userinfoURL, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-    logOidcOp('oidc.userinfo', t)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch OIDC userinfo: ${response.statusText}`)
-    }
-    const data = (await response.json()) as Record<string, unknown>
-    return {
-      provider: 'oidc',
-      displayName: data.name as string,
-      id: data.sub as string,
-      name: {
-        familyName: data.family_name as string,
-        givenName: data.given_name as string,
-      },
-      emails: [{ value: data.email as string }],
-      _json: data,
-    }
-  }
-}
-
 export async function getAuthenticator(): Promise<Authenticator<Auth>> {
   if (_authenticator) return _authenticator
 
   const discovery = await fetchDiscovery()
 
-  const strategy = new OidcStrategy(
+  const strategy = new OAuth2Strategy<Auth>(
     {
-      authorizationURL: discovery.authorization_endpoint,
-      tokenURL: discovery.token_endpoint,
-      userinfoURL: discovery.userinfo_endpoint,
-      clientID: oidc.clientId,
+      cookie: {
+        name: 'oauth2',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+        ...(base.cookieSecure ? { secure: true } : {}),
+      },
+      authorizationEndpoint: discovery.authorization_endpoint,
+      tokenEndpoint: discovery.token_endpoint,
+      clientId: oidc.clientId,
       clientSecret: oidc.clientSecret,
-      callbackURL: oidc.callbackUrl,
+      redirectURI: oidc.callbackUrl,
+      scopes: ['openid', 'profile', 'email'],
     },
-    async ({ accessToken, refreshToken, extraParams, profile }) => {
-      const { expires_in } = extraParams as unknown as { expires_in: number }
-      const expirationDate = new Date()
-      const refreshExpirationDate = new Date()
-      expirationDate.setSeconds(
-        expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer,
-      )
+    async ({ tokens }) => {
+      const t = performance.now()
+      const response = await fetch(discovery.userinfo_endpoint, {
+        headers: { Authorization: `Bearer ${tokens.accessToken()}` },
+      })
+      logOidcOp('oidc.userinfo', t)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch OIDC userinfo: ${response.statusText}`)
+      }
+      const profile = (await response.json()) as Record<string, unknown>
+      const expirationDate = tokens.accessTokenExpiresAt()
+      expirationDate.setSeconds(expirationDate.getSeconds() - oidc.tokenExpirationBuffer)
       return {
         user: {
-          username: (profile._json.preferred_username as string) || profile.id || '',
-          email: profile.emails?.[0]?.value || '',
-          firstName: profile.name?.givenName || '',
-          lastName: profile.name?.familyName || '',
+          username: (profile.preferred_username as string) || (profile.sub as string) || '',
+          email: (profile.email as string) || '',
+          firstName: (profile.given_name as string) || '',
+          lastName: (profile.family_name as string) || '',
         },
         tokens: {
-          accessToken: accessToken,
-          refreshToken: refreshToken || '',
+          accessToken: tokens.accessToken(),
+          refreshToken: tokens.hasRefreshToken() ? tokens.refreshToken() : '',
           expirationDate: expirationDate,
-          refreshExpirationDate: refreshExpirationDate,
+          refreshExpirationDate: new Date(),
         },
       }
     },
   )
-
-  _authenticator = new Authenticator<Auth>(sessionStorage)
-  _authenticator.use(strategy)
+  _authenticator = new Authenticator<Auth>()
+  _authenticator.use(strategy, 'oidc')
   return _authenticator
 }
 
@@ -216,12 +175,12 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
         { 'event.action': 'auth.token_expired', component: 'oidc' },
         'auth.token_expired',
       )
-      throw new AuthorizationError('Token expired')
+      throw new TokenExpiredError('Token expired')
     }
     logger.debug({ 'event.action': 'auth.token_valid', component: 'oidc' }, 'auth.token_valid')
     return authTokens.accessToken
   } catch (error) {
-    if (error instanceof AuthorizationError) {
+    if (error instanceof TokenExpiredError) {
       const auth = await getAuth(request)
       const { access_token, refresh_token, expires_in } = await refreshAccessToken(
         request,
@@ -271,10 +230,9 @@ const refreshAccessToken = async (request: Request, refreshToken: string) => {
   })
   logOidcOp('oidc.token_refresh', t)
   if (!response.ok) {
-    const authenticator = await getAuthenticator()
     const logoutUrl = await getLogoutUrl()
-    await authenticator.logout(request, { redirectTo: logoutUrl })
-    throw new Error('Invalid refresh token, authentication failed')
+    const session = await getSession(request.headers.get('Cookie'))
+    throw redirect(logoutUrl, { headers: { 'Set-Cookie': await destroySession(session) } })
   }
   return response.json() as Promise<{
     access_token: string

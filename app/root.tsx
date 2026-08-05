@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json ,
+import {
   Meta,
   Links,
   Outlet,
@@ -23,7 +23,7 @@ import base from './configs/base.config'
 import ErrorPage from './components/pages/ErrorPage'
 
 export async function loader({ context }: LoaderFunctionArgs) {
-  return json({
+  return {
     nonce: context.nonce as string,
     appName: base.appName,
     logoPath: base.logoPath,
@@ -33,7 +33,7 @@ export async function loader({ context }: LoaderFunctionArgs) {
       APP_VERSION: base.appVersion,
       ENVIRONMENT: base.environment,
     },
-  })
+  }
 }
 
 export const links: LinksFunction = () => [

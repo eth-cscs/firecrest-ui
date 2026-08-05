@@ -6,7 +6,6 @@
 *************************************************************************/
 
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
-import { json } from 'react-router'
 // types
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
@@ -40,7 +39,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       allUsers,
       request,
     )
-    return json(response, { headers })
+    return Response.json(response, { headers })
   } catch (error) {
     return handleApiErrorResponse(error)
   }

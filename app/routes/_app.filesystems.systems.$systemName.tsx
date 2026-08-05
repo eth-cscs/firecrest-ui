@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { useEffect, startTransition } from 'react'
-import { Outlet, useLoaderData, useRouteError , defer } from 'react-router'
+import { Outlet, useLoaderData, useRouteError } from 'react-router'
 import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
@@ -50,7 +50,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     logger.warn({ error }, `Failed to load user info for system ${systemName}`)
     return null
   })
-  return defer({ userInfoPromise, groupName, systemName })
+  return { userInfoPromise, groupName, systemName }
 }
 
 // Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,

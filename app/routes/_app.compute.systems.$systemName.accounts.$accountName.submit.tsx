@@ -6,12 +6,9 @@
 *************************************************************************/
 
 import type { LoaderFunction, ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
-import {
-  redirect,
-  unstable_composeUploadHandlers,
-  unstable_createMemoryUploadHandler,
-  unstable_parseMultipartFormData,
- useLoaderData, useActionData, useRouteError } from 'react-router'
+import { redirect, useLoaderData, useActionData, useRouteError } from 'react-router'
+import { parseFormData } from '@mjackson/form-data-parser'
+import { MaxFileSizeExceededError } from '@mjackson/multipart-parser'
 // types
 import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types/api-compute'
 // utils
@@ -20,7 +17,7 @@ import { getAuthAccessToken, getAuthUser, requireAuth } from '~/utils/auth.serve
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction, LogPage } from '~/helpers/log-labels'
 import { getErrorFromData } from '~/helpers/error-helper'
-import { handleFormErrorResponse } from '~/helpers/response-helper'
+import { handleFormErrorResponse, MaxPartSizeExceededError } from '~/helpers/response-helper'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
 // apis
 import { postJob } from '~/apis/compute-api'
@@ -73,14 +70,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const systemName = params.systemName!
   const accountName = params.accountName!
   try {
-    // Instance handler
-    const uploadHandler = unstable_composeUploadHandlers(
-      unstable_createMemoryUploadHandler({
-        maxPartSize: 1_000_000,
-      }),
-    )
     // Get form data
-    const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+    const formData = await parseFormData(request, { maxFileSize: 1_000_000 })
     // Validate
     const formPayload: PostJobFormPayload = await validateJob(formData)
     // Payload
@@ -110,6 +101,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       headers: headers,
     })
   } catch (error) {
+    if (error instanceof MaxFileSizeExceededError) {
+      return handleFormErrorResponse(new MaxPartSizeExceededError(1_000_000))
+    }
     return handleFormErrorResponse(error)
   }
 }

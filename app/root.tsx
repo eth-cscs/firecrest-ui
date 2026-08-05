@@ -5,9 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
-import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node'
-import {
+import { json ,
   Meta,
   Links,
   Outlet,
@@ -15,7 +13,8 @@ import {
   ScrollRestoration,
   useLoaderData,
   useRouteError,
-} from '@remix-run/react'
+} from 'react-router'
+import type { LinksFunction, LoaderFunctionArgs } from 'react-router'
 // styles
 import stylesheet from '~/tailwind.css?url'
 // configs

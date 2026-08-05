@@ -20,7 +20,7 @@ import logger from '~/logger/logger.server'
 // errors
 import { HttpError } from '~/errors/HttpError'
 import { ReasonErrors } from '~/errors/reason-errors'
-import { redirect } from '@remix-run/node'
+import { redirect } from 'react-router'
 
 // The session key remix-auth uses to store auth data (Authenticator default)
 const AUTH_SESSION_KEY = 'user'
@@ -42,7 +42,11 @@ let _authenticator: Authenticator<Auth> | null = null
 
 function logOidcOp(action: string, startMs: number) {
   const durationMs = Math.round(performance.now() - startMs)
-  const fields = { 'event.action': action, 'event.duration': durationMs * 1_000_000, component: 'oidc' }
+  const fields = {
+    'event.action': action,
+    'event.duration': durationMs * 1_000_000,
+    component: 'oidc',
+  }
   if (durationMs > 1_000) {
     logger.warn(fields, `Slow ${action}: ${durationMs}ms`)
   } else {
@@ -57,9 +61,7 @@ async function fetchDiscovery(): Promise<OidcDiscoveryDocument> {
   const response = await fetch(url)
   logOidcOp('oidc.discovery', t)
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch OIDC discovery document from ${url}: ${response.statusText}`,
-    )
+    throw new Error(`Failed to fetch OIDC discovery document from ${url}: ${response.statusText}`)
   }
   _discovery = (await response.json()) as OidcDiscoveryDocument
   return _discovery
@@ -136,7 +138,9 @@ export async function getAuthenticator(): Promise<Authenticator<Auth>> {
       const { expires_in } = extraParams as unknown as { expires_in: number }
       const expirationDate = new Date()
       const refreshExpirationDate = new Date()
-      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
+      expirationDate.setSeconds(
+        expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer,
+      )
       return {
         user: {
           username: (profile._json.preferred_username as string) || profile.id || '',
@@ -208,7 +212,10 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
       )
     }
     if (new Date(authTokens.expirationDate) <= new Date()) {
-      logger.debug({ 'event.action': 'auth.token_expired', component: 'oidc' }, 'auth.token_expired')
+      logger.debug(
+        { 'event.action': 'auth.token_expired', component: 'oidc' },
+        'auth.token_expired',
+      )
       throw new AuthorizationError('Token expired')
     }
     logger.debug({ 'event.action': 'auth.token_valid', component: 'oidc' }, 'auth.token_valid')
@@ -221,7 +228,9 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
         auth.tokens.refreshToken,
       )
       const expirationDate = new Date()
-      expirationDate.setSeconds(expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer)
+      expirationDate.setSeconds(
+        expirationDate.getSeconds() + expires_in - oidc.tokenExpirationBuffer,
+      )
       auth.tokens = {
         accessToken: access_token,
         refreshToken: refresh_token,
@@ -267,5 +276,9 @@ const refreshAccessToken = async (request: Request, refreshToken: string) => {
     await authenticator.logout(request, { redirectTo: logoutUrl })
     throw new Error('Invalid refresh token, authentication failed')
   }
-  return response.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>
+  return response.json() as Promise<{
+    access_token: string
+    refresh_token: string
+    expires_in: number
+  }>
 }

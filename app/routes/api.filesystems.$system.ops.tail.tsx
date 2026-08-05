@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
 // types
 import { GetOpsTailResponse } from '~/types/api-filesystem'
 // helpers
@@ -40,7 +40,11 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
       lines,
       request,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TAIL, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TAIL,
+      request,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 // types
 import { PostTransferUploadRequest } from '~/types/api-filesystem'
 // helpers
@@ -46,7 +46,11 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.account,
       request,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_UPLOAD, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_UPLOAD,
+      request,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

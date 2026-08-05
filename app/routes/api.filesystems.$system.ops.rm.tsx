@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction } from '~/helpers/log-labels'
@@ -40,7 +40,11 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
     await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
-    logInfoHttp({ eventAction: LogAction.FS_RM, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_RM,
+      request,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
 // helpers
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils

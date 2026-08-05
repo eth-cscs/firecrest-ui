@@ -5,12 +5,12 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 import {
   unstable_createMemoryUploadHandler,
   unstable_parseMultipartFormData,
   MaxPartSizeExceededError,
-} from '@remix-run/node'
+} from 'react-router'
 // types
 import { PostFileUploadPayload } from '~/types/api-filesystem'
 // helpers
@@ -68,7 +68,17 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     const formData = await unstable_parseMultipartFormData(request, uploadHandler)
     const fileValue = formData.get('file')
     const originalFileName = (formData.get('fileName') as string) || (fileValue as any)?.name
-    console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
+    console.log(
+      '[upload] file type:',
+      typeof fileValue,
+      (fileValue as any)?.constructor?.name,
+      'size:',
+      (fileValue as any)?.size,
+      'name:',
+      (fileValue as any)?.name,
+      'originalFileName:',
+      originalFileName,
+    )
     console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
     await postFileUpload(
@@ -79,7 +89,11 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       originalFileName,
       request,
     )
-    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_UPLOAD,
+      request,
+      extraInfo: { username: authUser?.username, system },
+    })
     await notifySuccessMessage(
       {
         title: 'File upload',

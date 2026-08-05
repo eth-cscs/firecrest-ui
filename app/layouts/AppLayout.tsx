@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState } from 'react'
-import { Outlet, useMatches } from '@remix-run/react'
+import { Outlet, useMatches } from 'react-router'
 // types
 import type { AuthUser } from '~/types/auth'
 import type { NotificationMessage } from '~/types/notification'

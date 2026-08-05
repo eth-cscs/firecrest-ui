@@ -6,7 +6,8 @@
 *************************************************************************/
 
 import Redis from 'ioredis'
-import { createCookie, createFileSessionStorage } from '@remix-run/node'
+import { createCookie } from 'react-router'
+import { createFileSessionStorage } from '@react-router/node'
 import { createRedisSessionStorage } from '@mcansh/remix-redis-session-storage'
 // configs
 import base from '~/configs/base.config'

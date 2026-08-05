@@ -7,7 +7,7 @@
 
 import _ from 'lodash'
 import React, { useEffect, useState } from 'react'
-import { useFetcher } from '@remix-run/react'
+import { useFetcher } from 'react-router'
 import prettyMilliseconds from 'pretty-ms'
 import {
   CheckCircleIcon,
@@ -318,7 +318,9 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
 const NODES_RETRY_INTERVAL_MS = 30_000
 
 const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
-  const fetcher = useFetcher<SystemNodesOverview | { maintenance: true; message: string | null } | null>()
+  const fetcher = useFetcher<
+    SystemNodesOverview | { maintenance: true; message: string | null } | null
+  >()
   const { setMaintenance } = useMaintenance()
 
   // Initial load on mount
@@ -361,7 +363,10 @@ const SystemsStatusStatList: React.FC<{ systems: any[] }> = ({ systems }) => {
   )
 }
 
-const SystemsStatusStat: React.FC<{ systems: any[]; className?: string }> = ({ systems, className = '' }) => {
+const SystemsStatusStat: React.FC<{ systems: any[]; className?: string }> = ({
+  systems,
+  className = '',
+}) => {
   return (
     <div className={classNames('mb-4', className)}>
       <h3 className='text-base font-semibold leading-6 text-gray-900'>Systems status</h3>

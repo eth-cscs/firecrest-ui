@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Link, isRouteErrorResponse } from '@remix-run/react'
+import { Link, isRouteErrorResponse } from 'react-router'
 // pages
 import MaintenancePage from '~/components/pages/MaintenancePage'
 

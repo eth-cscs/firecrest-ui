@@ -7,7 +7,7 @@
 
 import { ValidationError } from 'yup'
 import { StatusCodes } from 'http-status-codes'
-import { json, MaxPartSizeExceededError } from '@remix-run/node'
+import { json, MaxPartSizeExceededError } from 'react-router'
 // types
 import { ErrorType } from '~/types/error'
 import type { HttpErrorResponse, ValidationErrorResponse } from '~/types/error'

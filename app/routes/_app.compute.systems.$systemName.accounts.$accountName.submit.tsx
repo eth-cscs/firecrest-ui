@@ -5,14 +5,13 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
+import type { LoaderFunction, ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 import {
   redirect,
   unstable_composeUploadHandlers,
   unstable_createMemoryUploadHandler,
   unstable_parseMultipartFormData,
-} from '@remix-run/node'
-import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
+ useLoaderData, useActionData, useRouteError } from 'react-router'
 // types
 import { convertPostJobFormToApiPayload, type PostJobFormPayload } from '~/types/api-compute'
 // utils
@@ -38,7 +37,11 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   logInfoHttp({
     eventAction: LogPage.COMPUTE_SUBMIT,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

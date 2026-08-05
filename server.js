@@ -8,7 +8,7 @@
 import { randomUUID } from 'crypto'
 import express from 'express'
 import pino from 'pino'
-import { createRequestHandler } from '@remix-run/express'
+import { createRequestHandler } from '@react-router/express'
 import dotenv from 'dotenv'
 
 const isProd = process.env.NODE_ENV === 'production'
@@ -79,7 +79,7 @@ app.all(
     : async (req, res, next) => {
         try {
           // fresh build on every request in dev
-          const build = await vite.ssrLoadModule('virtual:remix/server-build')
+          const build = await vite.ssrLoadModule('virtual:react-router/server-build')
           return createRequestHandler({
             build,
             mode: 'development',

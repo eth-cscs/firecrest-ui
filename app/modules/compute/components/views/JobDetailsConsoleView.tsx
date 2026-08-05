@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Link } from '@remix-run/react'
+import { Link } from 'react-router'
 import React, { useEffect, useRef, useMemo, useState } from 'react'
 import { ArrowDownCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // types
@@ -128,7 +128,9 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                   system={system?.name || ''}
                   file={stdoutFile}
                   accountName={selectedGroup?.name || ''}
-                  downloadLimit={system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER}
+                  downloadLimit={
+                    system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER
+                  }
                   open={stdoutDownloadDialogOpen}
                   onClose={() => setStdoutDownloadDialogOpen(false)}
                 />
@@ -152,7 +154,9 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                   system={system?.name || ''}
                   file={stderrFile}
                   accountName={selectedGroup?.name || ''}
-                  downloadLimit={system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER}
+                  downloadLimit={
+                    system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER
+                  }
                   open={stderrDownloadDialogOpen}
                   onClose={() => setStderrDownloadDialogOpen(false)}
                 />
@@ -161,7 +165,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                   title='Download STDErr log'
                   className='w-8 h-8 flex items-center justify-center rounded-md border text-white bg-blue-700 hover:bg-blue-500'
                 >
-                  <ArrowDownCircleIcon className='w-6 h-6' /> 
+                  <ArrowDownCircleIcon className='w-6 h-6' />
                 </button>
               </>
             )}
@@ -297,7 +301,9 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content }) => {
         ref={scrollerRef}
         className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
       >
-        <pre className='px-3 py-2 whitespace-pre-wrap'>{cleanedContent || '# No data available'}</pre>
+        <pre className='px-3 py-2 whitespace-pre-wrap'>
+          {cleanedContent || '# No data available'}
+        </pre>
       </div>
     </section>
   )
@@ -426,7 +432,6 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ job, dashboards
           </select>
         </div>
       </div>
-
       <div className='flex-1 bg-white'>
         {!dashboards?.length ? (
           <div className='p-6 text-sm text-neutral-500'>No Grafana dashboards configured.</div>
@@ -659,6 +664,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
 
   return (
     // <ActiveScrollCtx.Provider value={ctxValue}>
+    // </ActiveScrollCtx.Provider>
     <JobDetailsLayout
       job={currentJob || undefined}
       jobMetadata={jobMetadata || undefined}
@@ -673,7 +679,6 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       dashboards={dashboards}
       onChangeTab={setActiveTab}
     />
-    // </ActiveScrollCtx.Provider>
   )
 }
 

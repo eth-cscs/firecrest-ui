@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 // types
 import { PostTransferDownloadRequest } from '~/types/api-filesystem'
 // helpers
@@ -36,13 +36,12 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferDownloadRequest = await validateTransferDownload(formData)
     // Put data
-    const response = await postTransferDownload(
-      accessToken,
-      system,
-      payloadData.path,
+    const response = await postTransferDownload(accessToken, system, payloadData.path, request)
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_DOWNLOAD,
       request,
-    )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { username: authUser?.username, system } })
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

@@ -5,8 +5,6 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
-import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node'
 import {
   Meta,
   Links,
@@ -15,7 +13,8 @@ import {
   ScrollRestoration,
   useLoaderData,
   useRouteError,
-} from '@remix-run/react'
+} from 'react-router'
+import type { LinksFunction, LoaderFunctionArgs } from 'react-router'
 // styles
 import stylesheet from '~/tailwind.css?url'
 // configs
@@ -24,7 +23,7 @@ import base from './configs/base.config'
 import ErrorPage from './components/pages/ErrorPage'
 
 export async function loader({ context }: LoaderFunctionArgs) {
-  return json({
+  return {
     nonce: context.nonce as string,
     appName: base.appName,
     logoPath: base.logoPath,
@@ -34,7 +33,7 @@ export async function loader({ context }: LoaderFunctionArgs) {
       APP_VERSION: base.appVersion,
       ENVIRONMENT: base.environment,
     },
-  })
+  }
 }
 
 export const links: LinksFunction = () => [

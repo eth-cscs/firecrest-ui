@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { Suspense, memo } from 'react'
-import { Link, Await } from '@remix-run/react'
+import { Link, Await } from 'react-router'
 import { PlusIcon } from '@heroicons/react/20/solid'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'

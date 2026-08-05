@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React from 'react'
-import { useRouteLoaderData } from '@remix-run/react'
+import { useRouteLoaderData } from 'react-router'
 // logos
 import AppLogo from '~/logos/AppLogo'
 

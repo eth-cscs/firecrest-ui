@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import Redis from 'ioredis'
-import { createCookie, createFileSessionStorage } from '@remix-run/node'
-import { createRedisSessionStorage } from '@mcansh/remix-redis-session-storage'
+import { createCookie, createSessionStorage } from 'react-router'
+import { createFileSessionStorage } from '@react-router/node'
 // configs
 import base from '~/configs/base.config'
 import redisConfig from '~/configs/redis.config'
@@ -30,6 +30,47 @@ export const sessionCookie = createCookie('__session', {
   secrets: [base.sessionSecret], // replace this with an actual secret
   secure: base.cookieSecure,
 })
+
+// @mcansh/remix-redis-session-storage pins @remix-run/node and is unmaintained for
+// React Router v7 — reimplemented inline against react-router's generic
+// createSessionStorage (the package itself was just this thin wrapper).
+function createRedisSessionStorage({
+  redis,
+  cookie,
+}: {
+  redis: Redis
+  cookie: ReturnType<typeof createCookie>
+}) {
+  return createSessionStorage({
+    cookie,
+    async createData(data, expires) {
+      const id = Math.random().toString(36).substring(2)
+      await redis.set(id, JSON.stringify(data))
+      if (expires) {
+        await redis.expireat(id, Math.floor(expires.getTime() / 1000))
+      }
+      return id
+    },
+    async readData(id) {
+      const data = await redis.get(id)
+      if (!data) return null
+      try {
+        return JSON.parse(data)
+      } catch {
+        return null
+      }
+    },
+    async updateData(id, data, expires) {
+      await redis.set(id, JSON.stringify(data))
+      if (expires) {
+        await redis.expireat(id, Math.floor(expires.getTime() / 1000))
+      }
+    },
+    async deleteData(id) {
+      await redis.del(id)
+    },
+  })
+}
 
 export let sessionStorage: any
 

@@ -22,6 +22,9 @@ public/build
 public/build/
 sessions/
 
+# React Router typegen
+.react-router/
+
 # env
 .env
 .env*

@@ -6,8 +6,7 @@
 *************************************************************************/
 
 import React, { Fragment } from 'react'
-import { Link } from '@remix-run/react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link , NavLink, useLocation } from 'react-router'
 import {
   Dialog,
   DialogBackdrop,
@@ -86,18 +85,17 @@ const Sidebar: React.FC<any> = ({
       systemHealthyStatus: systemHealthyStatus,
       disabled: disabled,
       children: [
-            {
-              name: "Scheduler",
-              path: '/compute/systems/' + system.name,
-              icon: serviceIconMapper('scheduler'),
-            },
-            {
-              name: "Filesystems",
-              path: '/filesystems/systems/' + system.name,
-              icon: serviceIconMapper('filesystem'),
-            }
-
-          ]
+        {
+          name: 'Scheduler',
+          path: '/compute/systems/' + system.name,
+          icon: serviceIconMapper('scheduler'),
+        },
+        {
+          name: 'Filesystems',
+          path: '/filesystems/systems/' + system.name,
+          icon: serviceIconMapper('filesystem'),
+        },
+      ],
     }
   })
 
@@ -216,52 +214,52 @@ const Sidebar: React.FC<any> = ({
                   <div className='mt-2 pt-2'>
                     <ul className='space-y-1'>
                       {primaryNavigation.map((item: any) => {
-                         const statusDotClass = getSystemHealthyStatusDotClass(
-                                        item.systemHealthyStatus,
-                                      )
+                        const statusDotClass = getSystemHealthyStatusDotClass(
+                          item.systemHealthyStatus,
+                        )
                         const isDisabled = item.disabled
                         return (
-                        <li key={`link-${item.path}`}>
-                          {'children' in item && item.children ? (
-                            <Disclosure
-                              as='div'
-                              defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
-                            >
-                              {({ open }) => (
-                                <>
-                                  <DisclosureButton
-                                    className={classNames(
-                                      isCurrentRootPath({ currentRootPath: item.path })
-                                        ? 'bg-gray-100 text-gray-900'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
-                                      'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
-                                    )}
-                                  >
-                                    <item.icon
+                          <li key={`link-${item.path}`}>
+                            {'children' in item && item.children ? (
+                              <Disclosure
+                                as='div'
+                                defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
+                              >
+                                {({ open }) => (
+                                  <>
+                                    <DisclosureButton
                                       className={classNames(
                                         isCurrentRootPath({ currentRootPath: item.path })
-                                          ? 'text-gray-500'
-                                          : 'text-gray-400 group-hover:text-gray-500',
-                                        'h-6 w-6 shrink-0 ',
+                                          ? 'bg-gray-100 text-gray-900'
+                                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
+                                        'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
                                       )}
-                                      aria-hidden='true'
-                                    />
-                                    <span
-                                              className={classNames(
-                                                'ml-3 h-2.5 w-2.5 rounded-full',
-                                                statusDotClass,
-                                              )}
-                                            />
-                                    {item.name}
-                                    <ChevronRightIcon
-                                      className={classNames(
-                                        open ? 'rotate-90 text-gray-500' : 'text-gray-400',
-                                        'ml-auto h-5 w-5 shrink-0',
-                                      )}
-                                      aria-hidden='true'
-                                    />
-                                  </DisclosureButton>
-                                  {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                    >
+                                      <item.icon
+                                        className={classNames(
+                                          isCurrentRootPath({ currentRootPath: item.path })
+                                            ? 'text-gray-500'
+                                            : 'text-gray-400 group-hover:text-gray-500',
+                                          'h-6 w-6 shrink-0 ',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                      <span
+                                        className={classNames(
+                                          'ml-3 h-2.5 w-2.5 rounded-full',
+                                          statusDotClass,
+                                        )}
+                                      />
+                                      {item.name}
+                                      <ChevronRightIcon
+                                        className={classNames(
+                                          open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                          'ml-auto h-5 w-5 shrink-0',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                    </DisclosureButton>
+                                    {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
                                     {item.children.map((subItem: any) => (
                                       <li key={`link-${subItem.path}`}>
                                         <DisclosureButton
@@ -279,59 +277,58 @@ const Sidebar: React.FC<any> = ({
                                       </li>
                                     ))}
                                   </DisclosurePanel> */}
-                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                    {item.children.map((subItem: any) => {
-                                      
-                                     
-                                      return (
-                                        <li key={`link-${subItem.path}`}>
-                                          <DisclosureButton
-                                            as={isDisabled ? 'div' : 'a'}
-                                            href={isDisabled ? 'undefined' : subItem.path}
-                                            disabled={isDisabled}
-                                            className={classNames(
-                                              'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                              isDisabled
-                                                ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                                : isCurrentRootPath({
-                                                      currentRootPath: subItem.path,
-                                                    })
-                                                  ? 'bg-gray-100 text-gray-900'
-                                                  : 'hover:bg-gray-100 text-gray-900',
-                                            )}
-                                          >
-                                            <span>{subItem.name}</span>
-                                          </DisclosureButton>
-                                        </li>
-                                      )
-                                    })}
-                                  </DisclosurePanel>
-                                </>
-                              )}
-                            </Disclosure>
-                          ) : (
-                            <NavLink
-                              to={item.path}
-                              className={({ isActive }: any) =>
-                                isActive
-                                  ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
-                              }
-                            >
-                              <item.icon
-                                className={classNames(
-                                  isCurrentPath({ currentPath: item.path })
-                                    ? 'text-gray-500'
-                                    : 'text-gray-400 group-hover:text-gray-500',
-                                  'mr-4 flex-shrink-0 h-6 w-6',
+                                    <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                      {item.children.map((subItem: any) => {
+                                        return (
+                                          <li key={`link-${subItem.path}`}>
+                                            <DisclosureButton
+                                              as={isDisabled ? 'div' : 'a'}
+                                              href={isDisabled ? 'undefined' : subItem.path}
+                                              disabled={isDisabled}
+                                              className={classNames(
+                                                'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                                isDisabled
+                                                  ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                                  : isCurrentRootPath({
+                                                        currentRootPath: subItem.path,
+                                                      })
+                                                    ? 'bg-gray-100 text-gray-900'
+                                                    : 'hover:bg-gray-100 text-gray-900',
+                                              )}
+                                            >
+                                              <span>{subItem.name}</span>
+                                            </DisclosureButton>
+                                          </li>
+                                        )
+                                      })}
+                                    </DisclosurePanel>
+                                  </>
                                 )}
-                                aria-hidden='true'
-                              />
-                              {item.name}
-                            </NavLink>
-                          )}
-                        </li>
-                      )})}
+                              </Disclosure>
+                            ) : (
+                              <NavLink
+                                to={item.path}
+                                className={({ isActive }: any) =>
+                                  isActive
+                                    ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
+                                }
+                              >
+                                <item.icon
+                                  className={classNames(
+                                    isCurrentPath({ currentPath: item.path })
+                                      ? 'text-gray-500'
+                                      : 'text-gray-400 group-hover:text-gray-500',
+                                    'mr-4 flex-shrink-0 h-6 w-6',
+                                  )}
+                                  aria-hidden='true'
+                                />
+                                {item.name}
+                              </NavLink>
+                            )}
+                          </li>
+                        )
+                      })}
                     </ul>
                   </div>
                   <div className='mt-6 pt-6'>
@@ -403,114 +400,113 @@ const Sidebar: React.FC<any> = ({
                 ))}
               </ul>
               <div className='mt-2 pt-2'>
-                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>HPC Clusters</span>
+                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>
+                  HPC Clusters
+                </span>
                 <ul className='space-y-1'>
                   {primaryNavigation.map((item: any) => {
                     const isDisabled = item.disabled
-                                  const statusDotClass = getSystemHealthyStatusDotClass(
-                                    item.systemHealthyStatus,
-                                  )
+                    const statusDotClass = getSystemHealthyStatusDotClass(item.systemHealthyStatus)
                     return (
-                    <li key={`link-${item.path}`}>
-                      {'children' in item && item.children  ? (
-                        <Disclosure
-                          as='div'
-                          defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
-                        >
-                          {({ open }) => (
-                            <>
-                              <DisclosureButton
-                                className={classNames(
-                                  isCurrentRootPath({ currentRootPath: item.path })
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
-                                  'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
-                                )}
-                              >
-                                <item.icon
+                      <li key={`link-${item.path}`}>
+                        {'children' in item && item.children ? (
+                          <Disclosure
+                            as='div'
+                            defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
+                          >
+                            {({ open }) => (
+                              <>
+                                <DisclosureButton
                                   className={classNames(
                                     isCurrentRootPath({ currentRootPath: item.path })
-                                      ? 'text-gray-500'
-                                      : 'text-gray-400 group-hover:text-gray-500',
-                                    'h-6 w-6 shrink-0 ',
+                                      ? 'bg-gray-100 text-gray-900'
+                                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
+                                    'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
                                   )}
-                                  aria-hidden='true'
-                                />
-                                <span
+                                >
+                                  <item.icon
+                                    className={classNames(
+                                      isCurrentRootPath({ currentRootPath: item.path })
+                                        ? 'text-gray-500'
+                                        : 'text-gray-400 group-hover:text-gray-500',
+                                      'h-6 w-6 shrink-0 ',
+                                    )}
+                                    aria-hidden='true'
+                                  />
+                                  <span
+                                    className={classNames(
+                                      ' h-2.5 w-2.5 rounded-full',
+                                      statusDotClass,
+                                    )}
+                                  />
+                                  {item.name}
+
+                                  <ChevronRightIcon
+                                    className={classNames(
+                                      open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                      'ml-auto h-5 w-5 shrink-0',
+                                    )}
+                                    aria-hidden='true'
+                                  />
+                                </DisclosureButton>
+                                <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                  {item.children.map((subItem: any) => {
+                                    return (
+                                      <li key={`link-${subItem.path}`}>
+                                        <a
+                                          href={isDisabled ? undefined : subItem.path}
+                                          disabled={isDisabled}
                                           className={classNames(
-                                            ' h-2.5 w-2.5 rounded-full',
-                                            statusDotClass,
+                                            'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                            isDisabled
+                                              ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                              : isCurrentRootPath({ currentRootPath: subItem.path })
+                                                ? 'bg-gray-100 text-gray-900'
+                                                : 'hover:bg-gray-100 text-gray-900',
                                           )}
-                                        />
-                                {item.name}
-                                
-                                <ChevronRightIcon
-                                  className={classNames(
-                                    open ? 'rotate-90 text-gray-500' : 'text-gray-400',
-                                    'ml-auto h-5 w-5 shrink-0',
-                                  )}
-                                  aria-hidden='true'
-                                />
-                              </DisclosureButton>
-                              <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                {item.children.map((subItem: any) => {
-                                  
-                                  return (
-                                    <li key={`link-${subItem.path}`}>
-                                      <a
-                                        href={isDisabled ? undefined : subItem.path}
-                                        disabled={isDisabled}
-                                        className={classNames(
-                                          'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                          isDisabled
-                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                            : isCurrentRootPath({ currentRootPath: subItem.path })
-                                              ? 'bg-gray-100 text-gray-900'
-                                              : 'hover:bg-gray-100 text-gray-900',
-                                        )}
-                                      >
-                                      <subItem.icon
-                                        className={classNames(
-                                          isCurrentPath({ currentPath: item.path })
-                                            ? 'text-gray-500'
-                                            : 'text-gray-400 group-hover:text-gray-500',
-                                          'mr-3 flex-shrink-0 h-6 w-6',
-                                        )}
-                                        aria-hidden='true'
-                                      />
-                                      <span>{subItem.name}</span>
-                                        
-                                      </a>
-                                    </li>
-                                  )
-                                })}
-                              </DisclosurePanel>
-                            </>
-                          )}
-                        </Disclosure>
-                      ) : (
-                        <NavLink
-                          to={item.path}
-                          className={({ isActive }: any) =>
-                            isActive
-                              ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
-                          }
-                        >
-                          <item.icon
-                            className={classNames(
-                              isCurrentPath({ currentPath: item.path })
-                                ? 'text-gray-500'
-                                : 'text-gray-400 group-hover:text-gray-500',
-                              'mr-3 flex-shrink-0 h-6 w-6',
+                                        >
+                                          <subItem.icon
+                                            className={classNames(
+                                              isCurrentPath({ currentPath: item.path })
+                                                ? 'text-gray-500'
+                                                : 'text-gray-400 group-hover:text-gray-500',
+                                              'mr-3 flex-shrink-0 h-6 w-6',
+                                            )}
+                                            aria-hidden='true'
+                                          />
+                                          <span>{subItem.name}</span>
+                                        </a>
+                                      </li>
+                                    )
+                                  })}
+                                </DisclosurePanel>
+                              </>
                             )}
-                            aria-hidden='true'
-                          />
-                          {item.name}
-                        </NavLink>
-                      )}
-                    </li>
-                  )})}
+                          </Disclosure>
+                        ) : (
+                          <NavLink
+                            to={item.path}
+                            className={({ isActive }: any) =>
+                              isActive
+                                ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                            }
+                          >
+                            <item.icon
+                              className={classNames(
+                                isCurrentPath({ currentPath: item.path })
+                                  ? 'text-gray-500'
+                                  : 'text-gray-400 group-hover:text-gray-500',
+                                'mr-3 flex-shrink-0 h-6 w-6',
+                              )}
+                              aria-hidden='true'
+                            />
+                            {item.name}
+                          </NavLink>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
               <div className='mt-6 pt-6'>

@@ -5,9 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useLoaderData, useRouteError } from '@remix-run/react'
-import type { LoaderFunctionArgs } from '@remix-run/node'
-import { defer } from '@remix-run/node'
+import { useLoaderData, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -65,7 +64,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   })
   // Return deferred response
-  return defer({ jobsPromise })
+  return { jobsPromise }
 }
 
 export default function AppComputeIandexRoute() {

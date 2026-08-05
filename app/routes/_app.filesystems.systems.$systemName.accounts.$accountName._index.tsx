@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
+import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import { useLoaderData, useActionData, useRouteError } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -37,7 +37,11 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   logInfoHttp({
     eventAction: LogPage.FILESYSTEM_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)

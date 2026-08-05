@@ -10,9 +10,9 @@ import type {
   ActionFunctionArgs,
   LoaderFunction,
   LoaderFunctionArgs,
-} from '@remix-run/node'
+} from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import { useRouteError, useLoaderData, redirect, useActionData } from '@remix-run/react'
+import { useRouteError, useLoaderData, redirect, useActionData } from 'react-router'
 // types
 import { GetJobMetadataResponse, GetJobResponse } from '~/types/api-job'
 import { GetSystemsResponse, System } from '~/types/api-status'
@@ -44,7 +44,11 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   logInfoHttp({
     eventAction: LogPage.COMPUTE_JOB_DETAIL,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Layout
   let layoutMode = 'standard'

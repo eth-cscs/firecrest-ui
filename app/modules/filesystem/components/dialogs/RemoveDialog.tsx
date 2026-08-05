@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState, useRef } from 'react'
-import { useSubmit } from '@remix-run/react'
+import { useSubmit } from 'react-router'
 // types
 import { File } from '~/types/api-filesystem'
 // buttons

@@ -7,7 +7,8 @@
 
 import { hydrateRoot } from 'react-dom/client'
 import { startTransition, StrictMode, useEffect } from 'react'
-import { RemixBrowser, useLocation, useMatches } from '@remix-run/react'
+import { HydratedRouter } from 'react-router/dom'
+import { useLocation, useMatches } from 'react-router'
 
 // Declare globals
 declare global {
@@ -23,7 +24,7 @@ startTransition(() => {
   hydrateRoot(
     document,
     <StrictMode>
-      <RemixBrowser />
+      <HydratedRouter />
     </StrictMode>,
   )
 })

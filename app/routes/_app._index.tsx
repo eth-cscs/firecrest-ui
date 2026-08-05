@@ -5,9 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError } from '@remix-run/react'
-import { data } from '@remix-run/node'
-import type { LoaderFunctionArgs } from '@remix-run/node'
+import { useRouteError , data } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogPage } from '~/helpers/log-labels'

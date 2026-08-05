@@ -53,7 +53,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       if (part.name === 'file' || part.isFile) {
         formData.append(
           part.name,
-          new File([part.bytes], part.filename || 'upload', {
+          new File([part.bytes as BlobPart], part.filename || 'upload', {
             type: part.mediaType || 'application/octet-stream',
           }),
         )

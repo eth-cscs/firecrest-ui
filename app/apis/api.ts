@@ -45,14 +45,18 @@ async function handleReponse(
   if (response.status == StatusCodes.NO_CONTENT && response.ok) {
     return httpResponse
   }
-  // Maintenance mode: the backend returns 503 with a JSON `{"message": "..."}"` body regardless
-  // of the requested response type. Detected here, before the API_LOCAL/API_REMOTE split, so it
-  // behaves consistently for every caller (server-side loaders and direct browser fetches alike).
+  // Maintenance mode: the real backend returns 503 with a flat `{"message": "..."}"` body. But
+  // this branch also fires for ApiTarget.API_LOCAL calls - i.e. when the UI's own /api/* routes
+  // proxy that same 503 back out, which they wrap via handleApiErrorResponse() into
+  // `{"error": {"message": "...", "statusCode": 503}}` first (see response-helper.ts). Both
+  // shapes have to be handled here, or the second hop falls back to dumping the raw JSON as the
+  // message - matches getMaintenancePayloadMessage()'s same two-shape fallback.
   if (response.status === StatusCodes.SERVICE_UNAVAILABLE) {
     const text = await response.text()
     let message = text
     try {
-      message = JSON.parse(text)?.message ?? text
+      const parsed = JSON.parse(text)
+      message = parsed?.message ?? parsed?.error?.message ?? text
     } catch {
       // not JSON, fall back to raw text
     }

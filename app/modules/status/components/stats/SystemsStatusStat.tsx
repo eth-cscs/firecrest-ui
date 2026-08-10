@@ -36,6 +36,7 @@ import { isSystemHealthy } from '~/helpers/system-helper'
 import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
 // apis
 import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
+import type { MaintenancePayload } from '~/apis/api'
 // contexts
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 
@@ -318,7 +319,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
 const NODES_RETRY_INTERVAL_MS = 30_000
 
 const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
-  const fetcher = useFetcher<SystemNodesOverview | { maintenance: true; message: string | null } | null>()
+  const fetcher = useFetcher<SystemNodesOverview | MaintenancePayload | null>()
   const { setMaintenance } = useMaintenance()
 
   // Initial load on mount

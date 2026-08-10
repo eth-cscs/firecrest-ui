@@ -20,6 +20,7 @@ import {
   getMaintenanceMessage,
   isMaintenancePayload,
   getMaintenancePayloadMessage,
+  MAINTENANCE_REASON,
 } from '~/apis/api'
 import type { MaintenancePayload } from '~/apis/api'
 // layouts
@@ -61,6 +62,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       if (isMaintenanceResponse(error)) {
         const payload: MaintenancePayload = {
           maintenance: true,
+          reason: MAINTENANCE_REASON,
           message: await getMaintenanceMessage(error),
         }
         return payload

@@ -19,6 +19,13 @@ export enum ResponseBodyType {
   BLOB,
 }
 
+// Marker used in a 503 body's `reason` field to signal *planned* maintenance (see
+// templates/maintenance-service.yaml), as opposed to a real backend outage that also happens to
+// return 503. Threaded through as the thrown Response's statusText, since that's the only part of
+// a 503 body that survives both the Remix ErrorBoundary (isRouteErrorResponse) and the
+// local-route wrapping in response-helper.ts.
+export const MAINTENANCE_REASON = 'maintenance'
+
 const buildUrl = (url: string, target: ApiTarget = ApiTarget.API_REMOTE) => {
   if (target === ApiTarget.API_REMOTE) {
     return `${firecrest.baseUrl}${url}`
@@ -45,24 +52,28 @@ async function handleReponse(
   if (response.status == StatusCodes.NO_CONTENT && response.ok) {
     return httpResponse
   }
-  // Maintenance mode: the real backend returns 503 with a flat `{"message": "..."}"` body. But
-  // this branch also fires for ApiTarget.API_LOCAL calls - i.e. when the UI's own /api/* routes
-  // proxy that same 503 back out, which they wrap via handleApiErrorResponse() into
+  // Any 503 might be planned maintenance (see templates/maintenance-service.yaml, which stubs the
+  // backend with a flat `{"message": "...", "reason": "maintenance"}` body) or it might be a real
+  // backend outage that also happens to return 503 - only the former should show the maintenance
+  // page. This branch also fires for ApiTarget.API_LOCAL calls - i.e. when the UI's own /api/*
+  // routes proxy that same 503 back out, which they wrap via handleApiErrorResponse() into
   // `{"error": {"message": "...", "statusCode": 503}}` first (see response-helper.ts). Both
   // shapes have to be handled here, or the second hop falls back to dumping the raw JSON as the
   // message - matches getMaintenancePayloadMessage()'s same two-shape fallback.
   if (response.status === StatusCodes.SERVICE_UNAVAILABLE) {
     const text = await response.text()
     let message = text
+    let reason: string | undefined
     try {
       const parsed = JSON.parse(text)
       message = parsed?.message ?? parsed?.error?.message ?? text
+      reason = parsed?.reason ?? parsed?.error?.reason
     } catch {
       // not JSON, fall back to raw text
     }
     throw new Response(message, {
       status: StatusCodes.SERVICE_UNAVAILABLE,
-      statusText: ReasonPhrases.SERVICE_UNAVAILABLE,
+      statusText: reason === MAINTENANCE_REASON ? MAINTENANCE_REASON : ReasonPhrases.SERVICE_UNAVAILABLE,
     })
   }
   switch (jsonResponse) {
@@ -89,9 +100,15 @@ async function handleReponse(
   })
 }
 
-// A thrown Response with status 503 is the app-wide signal for backend maintenance mode.
+// A thrown Response with status 503 and the maintenance statusText is the app-wide signal for
+// planned backend maintenance. A 503 without it is a real outage - see the comment on
+// MAINTENANCE_REASON.
 export function isMaintenanceResponse(error: unknown): error is Response {
-  return error instanceof Response && error.status === StatusCodes.SERVICE_UNAVAILABLE
+  return (
+    error instanceof Response &&
+    error.status === StatusCodes.SERVICE_UNAVAILABLE &&
+    error.statusText === MAINTENANCE_REASON
+  )
 }
 
 // Reads the maintenance message off a thrown Response. Safe to call even outside Remix's router
@@ -123,12 +140,16 @@ export async function getMaintenanceMessage(error: Response): Promise<string | n
 // through handleApiErrorResponse/handleFormErrorResponse.
 export interface MaintenancePayload {
   maintenance: true
+  reason: typeof MAINTENANCE_REASON
   message: string | null
 }
 
+// Only a `reason: "maintenance"` marker (or the equivalent on the wrapped `error` shape) counts
+// as planned maintenance - a bare 503/error.statusCode of 503 alone is a real outage, not
+// maintenance, and should fall through to normal error handling instead of the maintenance page.
 export function isMaintenancePayload(data: any): boolean {
   if (!data) return false
-  return data.maintenance === true || data?.error?.statusCode === StatusCodes.SERVICE_UNAVAILABLE
+  return data.reason === MAINTENANCE_REASON || data?.error?.reason === MAINTENANCE_REASON
 }
 
 export function getMaintenancePayloadMessage(data: any): string | null {

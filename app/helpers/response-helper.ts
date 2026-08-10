@@ -8,6 +8,8 @@
 import { ValidationError } from 'yup'
 import { StatusCodes } from 'http-status-codes'
 import { json, MaxPartSizeExceededError } from '@remix-run/node'
+// apis
+import { MAINTENANCE_REASON } from '~/apis/api'
 // types
 import { ErrorType } from '~/types/error'
 import type { HttpErrorResponse, ValidationErrorResponse } from '~/types/error'
@@ -130,6 +132,9 @@ export const buildHttpErrorResponseFromResponse = async (error: Response) => {
     type: ErrorType.http,
     message: message,
     statusCode: error.status,
+    // The thrown Response's statusText carries the maintenance signal across this wrapping step -
+    // see api.ts's MAINTENANCE_REASON comment.
+    reason: error.statusText === MAINTENANCE_REASON ? MAINTENANCE_REASON : undefined,
   }
   return response
 }

@@ -24,4 +24,5 @@ export interface ValidationErrorResponse extends ErrorResponse {
 export interface HttpErrorResponse extends ErrorResponse {
   statusCode: number
   data?: any
+  reason?: string
 }

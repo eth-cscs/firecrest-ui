@@ -18,7 +18,7 @@ import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promi
 import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
-import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
+import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from '~/apis/api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 import JobListView from '~/modules/compute/components/views/JobListView'
@@ -54,7 +54,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     DEFERRED_PROMISE_TIMEOUT_MS,
   ).catch(async (error): Promise<GetSystemJobsResponse | MaintenancePayload> => {
     if (isMaintenanceResponse(error)) {
-      return { maintenance: true, message: await getMaintenanceMessage(error) }
+      return { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) }
     }
     return {
       system: systemName,

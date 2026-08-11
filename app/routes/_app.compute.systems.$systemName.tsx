@@ -5,26 +5,25 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useEffect, startTransition } from 'react'
-import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
-import { defer } from '@remix-run/node'
+import { useEffect } from 'react'
+import { Outlet, useLoaderData, useRouteError, useFetcher } from '@remix-run/react'
+import { data } from '@remix-run/node'
 import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-// loggers
-import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
-import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
-import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
+import { requireAuth } from '~/utils/auth.server'
 // apis
-import { getUserInfo } from '~/apis/status-api'
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // types
 import type { GetUserInfoResponse } from '~/types/api-status'
+import type { MaintenancePayload } from '~/apis/api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 // contexts
 import { GroupProvider, useGroup } from '~/contexts/GroupContext'
+import { useMaintenance } from '~/contexts/MaintenanceContext'
 // switchers
 import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
@@ -37,60 +36,51 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     request: request,
     extraInfo: { username: auth.user.username, system: systemName },
   })
-  // Get auth access token
-  const accessToken = await getAuthAccessToken(request)
   // Get path params
   const groupName = params.accountName || null
-  // Defer getUserInfo so the page renders immediately while groups load in background.
-  // Resolve with null on any failure (timeout, HTTP error) rather than rejecting —
-  // the page still works because groups are seeded from the URL, and DeferredGroupsLoader
-  // uses optional chaining so null userInfo is handled gracefully.
-  const userInfoPromise = promiseWithTimeout(
-    getUserInfo(accessToken, systemName, request),
-    DEFERRED_PROMISE_TIMEOUT_MS,
-  ).catch((error) => {
-    logger.warn({ error }, `Failed to load user info for system ${systemName}`)
-    return null
-  })
-  return defer({ userInfoPromise, groupName, systemName })
+  return data({ groupName, systemName })
 }
 
-// Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,
-// so there is no dehydrated Suspense boundary that can trigger React error #421 during
-// Remix's internal fetchAndApplyManifestPatches hydration pass.
-function GroupsUpdater({
-  promise,
-  groupName,
-}: {
-  promise: Promise<GetUserInfoResponse | null>
-  groupName: string | null
-}) {
+// Fetches groups client-side (useFetcher) rather than through the loader - a deferred/streamed
+// loader response doesn't survive a buffering reverse proxy (e.g. Traefik) well, and could leave
+// the page waiting on data that streamed fine server-side but never reached the browser intact.
+// setGroups() is always called once the fetch settles, success or failure - see GroupContext's
+// isLoadingGroups, which only flips to false there. Without that, a failed fetch would leave
+// dependents (e.g. the system index redirect page) waiting on a selectedGroup that will never
+// arrive, forever.
+function GroupsFetcher({ systemName, groupName }: { systemName: string; groupName: string | null }) {
   const { setGroups, setSelectedGroupName } = useGroup()
+  const { setMaintenance } = useMaintenance()
+  const fetcher = useFetcher<GetUserInfoResponse | MaintenancePayload | null>()
+
   useEffect(() => {
-    Promise.resolve(promise).then((userInfo) => {
-      startTransition(() => {
-        if (userInfo?.groups) {
-          setGroups(userInfo.groups)
-        }
-        if (!groupName && userInfo?.group?.name) {
-          setSelectedGroupName(userInfo.group.name)
-        }
-      })
-    })
-  }, [promise, groupName, setGroups, setSelectedGroupName])
+    fetcher.load(`/api/status/${systemName}/userinfo`)
+  }, [systemName])
+
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || fetcher.data === undefined) return
+    if (isMaintenancePayload(fetcher.data)) {
+      setMaintenance(true, getMaintenancePayloadMessage(fetcher.data))
+      return
+    }
+    const userInfo = fetcher.data as GetUserInfoResponse | null
+    setGroups(userInfo?.groups ?? [])
+    if (!groupName && userInfo?.group?.name) {
+      setSelectedGroupName(userInfo.group.name)
+    }
+  }, [fetcher.state, fetcher.data, groupName, setGroups, setSelectedGroupName, setMaintenance])
+
   return null
 }
 
-
 export default function AppComputeIndexRoute() {
-  const { userInfoPromise, groupName, systemName }: any = useLoaderData()
+  const { groupName, systemName }: any = useLoaderData()
   // Seed the provider with a synthetic group from the URL so child components
   // that depend on selectedGroup render correctly before the real data arrives.
   const initialGroups = groupName ? [{ id: groupName, name: groupName }] : []
   return (
     <GroupProvider groups={initialGroups} groupName={groupName}>
-      {/* Resolve deferred groups and push them into context without remounting children */}
-      <GroupsUpdater promise={userInfoPromise} groupName={groupName} />
+      <GroupsFetcher systemName={systemName} groupName={groupName} />
       <GroupSwitcherPortal
         systemName={systemName}
         basePath='/compute'

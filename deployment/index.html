@@ -823,6 +823,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#maintenance-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintenance Mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Maintenance Mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implementing-the-503-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementing the 503 response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1188,6 +1216,41 @@
 </span></code></pre></div></p>
 <blockquote>
 <p><strong>Note:</strong> The official <a href="https://hub.docker.com/r/valkey/valkey">valkey/valkey</a> image is used here as it provides versioned tags. The <code>allowInsecureImages</code> flag is required by the Bitnami chart when using a non-Bitnami image.</p>
+</blockquote>
+<hr />
+<h2 id="maintenance-mode">Maintenance Mode<a class="headerlink" href="#maintenance-mode" title="Permanent link">&para;</a></h2>
+<p>The UI can show a dedicated maintenance page instead of its normal error handling, but only when the backend explicitly signals <em>planned</em> maintenance. It does this by inspecting the body of a <code>503 Service Unavailable</code> response from <code>firecrestApiBaseUrl</code>:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The API is currently under maintenance. Please try again later.&quot;</span><span class="p">,</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;maintenance&quot;</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="p">}</span>
+</span></code></pre></div>
+<ul>
+<li><code>reason</code> must be the literal string <code>"maintenance"</code>. Any other value (or a missing <code>reason</code> field) is treated as a regular backend error, not maintenance — the UI falls back to its normal error handling for that request instead of showing the maintenance page.</li>
+<li><code>message</code> is optional; when present, it's shown on the maintenance page.</li>
+</ul>
+<p>This distinction matters because a backend can return <code>503</code> for reasons that have nothing to do with planned maintenance (an unrelated outage, overload, a crashed dependency, ...). Without the <code>reason</code> marker, the UI can't tell those apart, and would otherwise show a "planned maintenance" message for what's actually an unplanned failure.</p>
+<h3 id="implementing-the-503-response">Implementing the 503 response<a class="headerlink" href="#implementing-the-503-response" title="Permanent link">&para;</a></h3>
+<p>How you produce that <code>503</code> response is entirely up to your deployment: an ingress rule that swaps the backend service, a sidecar, a service mesh fault injection rule, a small standalone stub service, etc. — whatever fits your infrastructure. The only requirement is that when maintenance mode is toggled on, requests to <code>firecrestApiBaseUrl</code> return the JSON body above with a <code>503</code> status.</p>
+<p>A minimal reference implementation, using an nginx stub swapped in at the ingress level:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ConfigMap mounted into the stub&#39;s nginx.</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">firecrest-api-maintenance-stub</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="nt">data</span><span class="p">:</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span><span class="nt">default.conf</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">    </span><span class="no">server {</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="no">listen 80;</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">      </span><span class="no">location / {</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">        </span><span class="no">default_type application/json;</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">        </span><span class="no">return 503 &#39;{&quot;message&quot;: &quot;The API is currently under maintenance. Please try again later.&quot;, &quot;reason&quot;: &quot;maintenance&quot;}&#39;;</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">      </span><span class="no">}</span>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">    </span><span class="no">}</span>
+</span></code></pre></div>
+<p>Point this stub's Service at <code>firecrestApiBaseUrl</code> (or reconfigure your ingress to route there) to turn maintenance mode on, and switch back to the real backend to turn it off.</p>
+<blockquote>
+<p><strong>Note:</strong> If your stub's config is mounted from a ConfigMap, remember that most reverse proxies (nginx included) don't reload a changed, mounted ConfigMap on their own — a pod restart (or a config-hash annotation on the pod template, so Kubernetes restarts it automatically on change) is needed for edits to <code>message</code>/<code>reason</code> to take effect.</p>
 </blockquote>
 
 

@@ -36,13 +36,20 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferDownloadRequest = await validateTransferDownload(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferDownload(
       accessToken,
       system,
       payloadData.path,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_DOWNLOAD,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

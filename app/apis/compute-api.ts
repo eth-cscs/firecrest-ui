@@ -14,7 +14,7 @@ import type {
 } from '~/types/api-job'
 
 // apis
-import api, { ApiTarget, isMaintenanceResponse, withRequestId } from './api'
+import api, { ApiTarget, isMaintenanceResponse, withTracingHeaders } from './api'
 
 export const getJobs = async (
   accessToken: string,
@@ -27,7 +27,7 @@ export const getJobs = async (
     const apiResponse = await api.get<GetJobsResponse>(
       `/compute/${system}/jobs?account=${account}&allusers=${allUsers}`,
       {
-        headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+        headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
       },
     )
     return {
@@ -63,7 +63,7 @@ export const getJob = async (
 ): Promise<GetJobResponse> => {
   try {
     const apiResponse = await api.get<GetJobResponse>(`/compute/${systemName}/jobs/${jobId}`, {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
     })
     return { jobs: apiResponse.jobs, error: undefined }
   } catch (error) {
@@ -84,7 +84,7 @@ export const getJobMetadata = async (
     const apiResponse = await api.get<GetJobMetadataResponse>(
       `/compute/${systemName}/jobs/${jobId}/metadata`,
       {
-        headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+        headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
       },
     )
     return { jobs: apiResponse.jobs, error: undefined }
@@ -103,7 +103,7 @@ export const cancelJob = async (
   request: Request | null = null,
 ): Promise<any> => {
   await api.delete<any, any>(`/compute/${systemName}/jobs/${jobId}`, null, {
-    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+    headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
   })
 }
 
@@ -112,14 +112,16 @@ export const postJob = async (
   systemName: string,
   jobPayload: PostJobPayload,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<PostJobResponse> => {
   const apiResponse = await api.post<any, PostJobResponse>(
     `/compute/${systemName}/jobs`,
     JSON.stringify(jobPayload),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )

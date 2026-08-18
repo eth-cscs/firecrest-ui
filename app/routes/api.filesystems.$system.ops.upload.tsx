@@ -71,6 +71,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
     console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
+    const requestId = crypto.randomUUID()
     await postFileUpload(
       accessToken,
       system,
@@ -78,8 +79,14 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.file,
       originalFileName,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_UPLOAD, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_UPLOAD,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     await notifySuccessMessage(
       {
         title: 'File upload',

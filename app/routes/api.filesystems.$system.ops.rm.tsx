@@ -39,8 +39,14 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
-    await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
-    logInfoHttp({ eventAction: LogAction.FS_RM, request, extraInfo: { username: authUser?.username, system } })
+    const requestId = crypto.randomUUID()
+    await deleteOpsRm(accessToken, system, payload.fileTargetPath, request, requestId)
+    logInfoHttp({
+      eventAction: LogAction.FS_RM,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

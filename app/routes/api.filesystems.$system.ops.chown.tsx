@@ -37,6 +37,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PutOpsChownRequest = await validateOpsChown(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await putOpsChown(
       accessToken,
       system,
@@ -44,8 +45,14 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.owner || '',
       payloadData.group || '',
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_CHOWN, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_CHOWN,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -33,14 +33,21 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const targetPath = url.searchParams.get('targetPath') || ''
     const lines = url.searchParams.get('lines') || ''
     // Get data
+    const requestId = crypto.randomUUID()
     const response: GetOpsTailResponse = await getOpsTail(
       accessToken,
       system,
       targetPath,
       lines,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TAIL, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TAIL,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

@@ -775,6 +775,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#per-hop-request-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-hop request logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#platform-label" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -923,41 +934,41 @@
 <h3 id="3-update-values-file-valuesyaml">3. Update Values File (values.yaml)<a class="headerlink" href="#3-update-values-file-valuesyaml" title="Permanent link">&para;</a></h3>
 <p>Customize the deployment by editing the <code>values.yaml</code> file. Below are the most common configurations:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">global</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="s">"production"</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">dns</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">webUI</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;webui.example.com&quot;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">webUI</span><span class="p">:</span><span class="w"> </span><span class="s">"webui.example.com"</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ghcr.io/eth-cscs/firecrest-ui&quot;</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">loggingLevel</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;info&quot;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="s">"ghcr.io/eth-cscs/firecrest-ui"</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">loggingLevel</span><span class="p">:</span><span class="w"> </span><span class="s">"info"</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">companyName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MyCompany&quot;</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nt">appName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MyPlatform&quot;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">companyName</span><span class="p">:</span><span class="w"> </span><span class="s">"MyCompany"</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nt">appName</span><span class="p">:</span><span class="w"> </span><span class="s">"MyPlatform"</span>
 </span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nt">customLogo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nt">customLogoVolume</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/usr/server/app/public/custom/logo.svg&quot;</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="nt">customLogoPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./custom/logo.svg&quot;</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nt">customLogoVolume</span><span class="p">:</span><span class="w"> </span><span class="s">"/usr/server/app/public/custom/logo.svg"</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="nt">customLogoPath</span><span class="p">:</span><span class="w"> </span><span class="s">"./custom/logo.svg"</span>
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># OIDC settings — configure with your identity provider&#39;s issuer URL.</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># OIDC settings — configure with your identity provider's issuer URL.</span>
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># The application will automatically discover all endpoints (authorization,</span>
 </span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># token, userinfo, end_session) from {oidcIssuerUrl}/.well-known/openid-configuration.</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="nt">oidcIssuerUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://auth.example.com/auth/realms/myrealm&quot;</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nt">oidcCallbackUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://webui.example.com/auth/callback&quot;</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="nt">oidcPostLogoutRedirectUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://webui.example.com/logout&quot;</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="nt">oidcIssuerUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://auth.example.com/auth/realms/myrealm"</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="nt">oidcCallbackUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://webui.example.com/auth/callback"</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="nt">oidcPostLogoutRedirectUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://webui.example.com/logout"</span>
 </span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="nt">firecrestApiBaseUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://api.example.com&quot;</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="nt">firecrestApiBaseUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://api.example.com"</span>
 </span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;redis-master&quot;</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">"redis-master"</span>
 </span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="nt">supportUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://support.example.com&quot;</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="nt">docUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://docs.example.com&quot;</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="nt">repoUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://github.com/example/repo&quot;</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="nt">supportUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://support.example.com"</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="nt">docUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://docs.example.com"</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="nt">repoUrl</span><span class="p">:</span><span class="w"> </span><span class="s">"https://github.com/example/repo"</span>
 </span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
 </span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="c1"># Optional: URL of an observability/monitoring dashboard to link from the UI</span>
-</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
 </span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
 </span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="c1"># Observability settings</span>
-</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-platform&quot;</span><span class="w">  </span><span class="c1"># optional — logical name of the deployment platform (e.g. &#39;stp&#39;, &#39;prod&#39;)</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">"my-platform"</span><span class="w">  </span><span class="c1"># optional — logical name of the deployment platform (e.g. 'stp', 'prod')</span>
 </span></code></pre></div>
 <h3 id="file-upload-and-download-limits">File upload and download limits<a class="headerlink" href="#file-upload-and-download-limits" title="Permanent link">&para;</a></h3>
 <p>Upload and download size limits are <strong>not configured in the UI</strong>. They are read at runtime from the <code>max_ops_file_size</code> field returned by the FirecREST backend for each system. Make sure your ingress <code>proxy-body-size</code> (or equivalent) is set to at least the backend limit plus some overhead for multipart framing — e.g. if the backend allows 5 MB, set the ingress limit to <code>6m</code>.</p>
@@ -1015,8 +1026,8 @@
 <li>Update <code>values.yaml</code> to enable branding:</li>
 </ol>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">customLogo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">customLogoVolume</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/usr/server/app/public/custom/logo.svg&quot;</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">customLogoPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./custom/logo.svg&quot;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">customLogoVolume</span><span class="p">:</span><span class="w"> </span><span class="s">"/usr/server/app/public/custom/logo.svg"</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">customLogoPath</span><span class="p">:</span><span class="w"> </span><span class="s">"./custom/logo.svg"</span>
 </span></code></pre></div>
 <ol>
 <li>Create the ConfigMap with the custom logo:</li>
@@ -1029,7 +1040,7 @@
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nt">data</span><span class="p">:</span>
 </span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="nt">logo.svg</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="no">&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 127.45 125.91&quot; width=&quot;100&quot; height=&quot;100&quot;&gt;</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="no">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.45 125.91" width="100" height="100"&gt;</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">      </span><span class="no">&lt;defs&gt;</span>
 </span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">        </span><span class="no">&lt;style&gt;</span>
 </span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">          </span><span class="no">.cls-2 {</span>
@@ -1038,12 +1049,12 @@
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">        </span><span class="no">&lt;/style&gt;</span>
 </span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">      </span><span class="no">&lt;/defs&gt;</span>
 </span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">      </span><span class="no">&lt;path</span>
-</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">        </span><span class="no">d=&quot;M2.38 61.642L23.177 40.846l20.796 20.796-20.796 20.796zM.05 105.38l20.8-20.79-20.8-20.8v41.59zM98.86 96.5H69.45v29.41L98.86 96.5zM67.66 93.34l27.48-27.48 27.49 27.48H67.66zM66.38 125.67l-41-41 41-41v82zM127.45 29.03H69.47v57.98l57.98-57.98z&quot;</span>
-</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">        </span><span class="no">class=&quot;cls-2&quot;</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">        </span><span class="no">d="M2.38 61.642L23.177 40.846l20.796 20.796-20.796 20.796zM.05 105.38l20.8-20.79-20.8-20.8v41.59zM98.86 96.5H69.45v29.41L98.86 96.5zM67.66 93.34l27.48-27.48 27.49 27.48H67.66zM66.38 125.67l-41-41 41-41v82zM127.45 29.03H69.47v57.98l57.98-57.98z"</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">        </span><span class="no">class="cls-2"</span>
 </span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">      </span><span class="no">/&gt;</span>
 </span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">      </span><span class="no">&lt;path</span>
-</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">        </span><span class="no">d=&quot;M31.03 0L0 30.64l.08 28.71 30.89-30.48L31.03 0z&quot;</span>
-</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="w">        </span><span class="no">style=&quot;fill: #ec671a;&quot;</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">        </span><span class="no">d="M31.03 0L0 30.64l.08 28.71 30.89-30.48L31.03 0z"</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="w">        </span><span class="no">style="fill: #ec671a;"</span>
 </span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a><span class="w">      </span><span class="no">/&gt;</span>
 </span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="w">    </span><span class="no">&lt;/svg&gt;</span>
 </span></code></pre></div></p>
@@ -1135,7 +1146,11 @@
 </tr>
 <tr>
 <td><code>request.id</code></td>
-<td>Request correlation ID from the <code>x-request-id</code> header</td>
+<td>ID of the single backend call this event reports on, from the <code>X-Request-ID</code> header. Present on action events (e.g. <code>fs.chmod</code>); omitted on page-view events, which may fan out into several backend calls with their own distinct IDs</td>
+</tr>
+<tr>
+<td><code>firecrest.correlationId</code></td>
+<td>End-to-end correlation ID from the <code>x-correlation-id</code> header, shared across every backend call made during this page request</td>
 </tr>
 <tr>
 <td><code>http.request.method</code></td>
@@ -1163,10 +1178,43 @@
 </tr>
 </tbody>
 </table>
+<h3 id="per-hop-request-logging">Per-hop request logging<a class="headerlink" href="#per-hop-request-logging" title="Permanent link">&para;</a></h3>
+<p>Each individual outbound call to firecrest-v2 (one per <code>fetch</code>, so a single page load can produce several) is also logged on its own, via a <code>fetch</code> wrapper in <code>server.js</code>. It carries a narrower field set:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event.action</code></td>
+<td>Always <code>api.request</code></td>
+</tr>
+<tr>
+<td><code>request.id</code></td>
+<td>Per-hop ID from the <code>X-Request-ID</code> header, fresh for this one call</td>
+</tr>
+<tr>
+<td><code>firecrest.correlationId</code></td>
+<td>Same end-to-end correlation ID as above</td>
+</tr>
+<tr>
+<td><code>http.request.method</code></td>
+<td>Method of the outbound call</td>
+</tr>
+<tr>
+<td><code>url.path</code></td>
+<td>Target URL of the outbound call</td>
+</tr>
+</tbody>
+</table>
+<p>Joining on <code>request.id</code> or <code>firecrest.correlationId</code> lets you follow a single backend call, or an entire page request, across firecrest-ui's own logs and firecrest-v2's.</p>
 <h3 id="platform-label">Platform label<a class="headerlink" href="#platform-label" title="Permanent link">&para;</a></h3>
 <p>The optional <code>PLATFORM</code> environment variable sets the <code>firecrest.platform</code> field on every log line. Use it to distinguish logs from different deployment platforms (e.g. <code>stp</code>, <code>prod</code>) when multiple instances share the same Elasticsearch cluster.</p>
 <p>Set it via <code>values.yaml</code>:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stp&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="s">"stp"</span>
 </span></code></pre></div>
 <p>When unset (default), the field is omitted from logs.</p>
 <h3 id="elasticsearch-data-stream-routing">Elasticsearch data stream routing<a class="headerlink" href="#elasticsearch-data-stream-routing" title="Permanent link">&para;</a></h3>
@@ -1179,7 +1227,7 @@
 <p>The namespace is fixed so that Grafana dashboard queries can use <code>data_stream.namespace:"firecrest-ui"</code> as a stable filter across all environments.</p>
 <h3 id="grafana-dashboard-link">Grafana dashboard link<a class="headerlink" href="#grafana-dashboard-link" title="Permanent link">&para;</a></h3>
 <p>Set <code>uiObservabilityDashboard</code> to a Grafana panel URL to expose a direct link to the monitoring dashboard from within the UI:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://grafana.example.com/d/abc123/firecrest-ui&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">uiObservabilityDashboard</span><span class="p">:</span><span class="w"> </span><span class="s">"https://grafana.example.com/d/abc123/firecrest-ui"</span>
 </span></code></pre></div>
 <hr />
 <h2 id="session-store-for-multiple-replicas">Session Store for Multiple Replicas<a class="headerlink" href="#session-store-for-multiple-replicas" title="Permanent link">&para;</a></h2>
@@ -1198,8 +1246,8 @@
 </span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
 </span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nt">firecrest-web-ui-v2</span><span class="p">:</span>
 </span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;release-name&gt;-valkey-primary&quot;</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nt">redisActive</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nt">redisHost</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;release-name&gt;-valkey-primary"</span>
 </span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
 </span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="nt">valkey</span><span class="p">:</span>
 </span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span>
@@ -1221,8 +1269,8 @@
 <h2 id="maintenance-mode">Maintenance Mode<a class="headerlink" href="#maintenance-mode" title="Permanent link">&para;</a></h2>
 <p>The UI can show a dedicated maintenance page instead of its normal error handling, but only when the backend explicitly signals <em>planned</em> maintenance. It does this by inspecting the body of a <code>503 Service Unavailable</code> response from <code>firecrestApiBaseUrl</code>:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">{</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The API is currently under maintenance. Please try again later.&quot;</span><span class="p">,</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;maintenance&quot;</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The API is currently under maintenance. Please try again later."</span><span class="p">,</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"maintenance"</span>
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="p">}</span>
 </span></code></pre></div>
 <ul>
@@ -1233,7 +1281,7 @@
 <h3 id="implementing-the-503-response">Implementing the 503 response<a class="headerlink" href="#implementing-the-503-response" title="Permanent link">&para;</a></h3>
 <p>How you produce that <code>503</code> response is entirely up to your deployment: an ingress rule that swaps the backend service, a sidecar, a service mesh fault injection rule, a small standalone stub service, etc. — whatever fits your infrastructure. The only requirement is that when maintenance mode is toggled on, requests to <code>firecrestApiBaseUrl</code> return the JSON body above with a <code>503</code> status.</p>
 <p>A minimal reference implementation, using an nginx stub swapped in at the ingress level:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ConfigMap mounted into the stub&#39;s nginx.</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ConfigMap mounted into the stub's nginx.</span>
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nt">metadata</span><span class="p">:</span>
@@ -1244,7 +1292,7 @@
 </span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="no">listen 80;</span>
 </span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">      </span><span class="no">location / {</span>
 </span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">        </span><span class="no">default_type application/json;</span>
-</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">        </span><span class="no">return 503 &#39;{&quot;message&quot;: &quot;The API is currently under maintenance. Please try again later.&quot;, &quot;reason&quot;: &quot;maintenance&quot;}&#39;;</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">        </span><span class="no">return 503 '{"message": "The API is currently under maintenance. Please try again later.", "reason": "maintenance"}';</span>
 </span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">      </span><span class="no">}</span>
 </span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">    </span><span class="no">}</span>
 </span></code></pre></div>

@@ -32,13 +32,20 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const url = new URL(request.url)
     const targetPath = url.searchParams.get('targetPath') || ''
     // Get data
+    const requestId = crypto.randomUUID()
     const response: GetOpsChecksumResponse = await getOpsChecksum(
       accessToken,
       system,
       targetPath,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_CHECKSUM, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_CHECKSUM,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

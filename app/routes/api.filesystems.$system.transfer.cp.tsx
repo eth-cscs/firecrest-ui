@@ -37,14 +37,21 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferCpRequest = await validateTransferCp(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferCp(
       accessToken,
       system,
       payloadData.sourcePath,
       payloadData.targetPath,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_CP, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_CP,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

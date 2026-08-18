@@ -14,14 +14,14 @@ import type {
   GetUserInfoResponse,
 } from '~/types/api-status'
 // apis
-import api, { withRequestId } from './api'
+import api, { withTracingHeaders } from './api'
 
 export const getSystems = async (
   accessToken: string,
   request: Request | null = null,
 ): Promise<GetSystemsResponse> => {
   const apiResponse = await api.get<GetSystemsResponse>('/status/systems', {
-    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+    headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
   })
   return apiResponse
 }
@@ -37,7 +37,7 @@ export const getSystemNodes = async (
   request: Request | null = null,
 ): Promise<GetSystemNodesResponse> => {
   const apiResponse = await api.get<GetSystemNodesResponse>(`/status/${systemName}/nodes`, {
-    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+    headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
   })
   return apiResponse
 }
@@ -84,7 +84,7 @@ export const getUserInfo = async (
     }
   }
   const apiResponse = await api.get<GetUserInfoResponse>(`/status/${systemName}/userinfo`, {
-    headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+    headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
   })
   userInfoCache.set(cacheKey, { data: apiResponse, expiresAt: now + USER_INFO_TTL_MS })
   return apiResponse

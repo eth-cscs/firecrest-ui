@@ -156,12 +156,25 @@ export function getMaintenancePayloadMessage(data: any): string | null {
   return data?.message ?? data?.error?.message ?? null
 }
 
-export function withRequestId(
+// X-Correlation-ID identifies the whole browser-originated request end-to-end and is
+// forwarded unchanged (minted once in server.js). X-Request-ID identifies this single
+// hop; callers that need to log the exact value used (see logInfoHttp's requestId
+// param) can pass one in, otherwise a fresh one is minted here - either way each call
+// gets its own, so concurrent/fan-out calls from the same page load don't share one id.
+// Deliberately no logging in this function: this file is bundled for the client too
+// (e.g. ErrorView.tsx imports MAINTENANCE_REASON from it), so it can't import the
+// server-only logger - see server.js's fetch wrapper for where these calls get logged.
+export function withTracingHeaders(
   headers: Record<string, string>,
   request: Request | null | undefined,
+  requestId: string = crypto.randomUUID(),
 ): Record<string, string> {
-  const id = request?.headers?.get('x-request-id')
-  return id ? { ...headers, 'X-Request-ID': id } : headers
+  const correlationId = request?.headers?.get('x-correlation-id') ?? undefined
+  return {
+    ...headers,
+    ...(correlationId ? { 'X-Correlation-ID': correlationId } : {}),
+    'X-Request-ID': requestId,
+  }
 }
 
 const api = {

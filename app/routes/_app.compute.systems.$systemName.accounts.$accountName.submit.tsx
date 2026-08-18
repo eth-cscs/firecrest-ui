@@ -83,7 +83,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // Payload
     const payload = await convertPostJobFormToApiPayload(formPayload)
     // Post data
-    const responseJob = await postJob(accessToken, formPayload.system, payload, request)
+    const requestId = crypto.randomUUID()
+    const responseJob = await postJob(accessToken, formPayload.system, payload, request, requestId)
     const jobId = responseJob.jobId
     logInfoHttp({
       eventAction:
@@ -91,6 +92,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           ? LogAction.COMPUTE_JOB_SUBMIT_REMOTE
           : LogAction.COMPUTE_JOB_SUBMIT_LOCAL,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system: systemName, account: accountName, jobId },
     })
     // Notify success message

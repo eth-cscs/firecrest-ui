@@ -259,7 +259,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                     {nodes?.available} Idle
                   </span>
                   <span className='flex items-center gap-1'>
-                    <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
+                    <span className='inline-block w-2 h-2 rounded-full bg-blue-400' />
                     {nodes?.allocated} Allocated
                   </span>
                   <span className='flex items-center gap-1'>
@@ -279,7 +279,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                       style={{ width: `${idlePercent}%` }}
                     />
                     <div
-                      className='bg-yellow-400 h-2 transition-all duration-300'
+                      className='bg-blue-400 h-2 transition-all duration-300'
                       style={{ width: `${allocPercent}%` }}
                     />
                   </>

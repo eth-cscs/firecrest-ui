@@ -258,13 +258,28 @@ Every log line includes the following fields:
 | `service.environment` | Value of the `ENVIRONMENT` variable |
 | `host.name` | Pod hostname |
 | `user.id` | Authenticated username (present on all requests after login) |
-| `request.id` | Request correlation ID from the `x-request-id` header |
+| `request.id` | ID of the single backend call this event reports on, from the `X-Request-ID` header. Present on action events (e.g. `fs.chmod`); omitted on page-view events, which may fan out into several backend calls with their own distinct IDs |
+| `firecrest.correlationId` | End-to-end correlation ID from the `x-correlation-id` header, shared across every backend call made during this page request |
 | `http.request.method` | HTTP method |
 | `url.path` | Request path |
 | `firecrest.system` | HPC system name targeted by the request |
 | `firecrest.account` | HPC account used (compute routes only) |
 | `firecrest.jobId` | Job ID returned by a submission (compute submit only) |
 | `firecrest.platform` | Platform name, if `PLATFORM` is set (see below) |
+
+### Per-hop request logging
+
+Each individual outbound call to firecrest-v2 (one per `fetch`, so a single page load can produce several) is also logged on its own, via a `fetch` wrapper in `server.js`. It carries a narrower field set:
+
+| Field | Description |
+|---|---|
+| `event.action` | Always `api.request` |
+| `request.id` | Per-hop ID from the `X-Request-ID` header, fresh for this one call |
+| `firecrest.correlationId` | Same end-to-end correlation ID as above |
+| `http.request.method` | Method of the outbound call |
+| `url.path` | Target URL of the outbound call |
+
+Joining on `request.id` or `firecrest.correlationId` lets you follow a single backend call, or an entire page request, across firecrest-ui's own logs and firecrest-v2's.
 
 ### Platform label
 
@@ -339,3 +354,48 @@ valkey:
 ```
 
 > **Note:** The official [valkey/valkey](https://hub.docker.com/r/valkey/valkey) image is used here as it provides versioned tags. The `allowInsecureImages` flag is required by the Bitnami chart when using a non-Bitnami image.
+
+---
+
+## Maintenance Mode
+
+The UI can show a dedicated maintenance page instead of its normal error handling, but only when the backend explicitly signals *planned* maintenance. It does this by inspecting the body of a `503 Service Unavailable` response from `firecrestApiBaseUrl`:
+
+```json
+{
+  "message": "The API is currently under maintenance. Please try again later.",
+  "reason": "maintenance"
+}
+```
+
+- `reason` must be the literal string `"maintenance"`. Any other value (or a missing `reason` field) is treated as a regular backend error, not maintenance — the UI falls back to its normal error handling for that request instead of showing the maintenance page.
+- `message` is optional; when present, it's shown on the maintenance page.
+
+This distinction matters because a backend can return `503` for reasons that have nothing to do with planned maintenance (an unrelated outage, overload, a crashed dependency, ...). Without the `reason` marker, the UI can't tell those apart, and would otherwise show a "planned maintenance" message for what's actually an unplanned failure.
+
+### Implementing the 503 response
+
+How you produce that `503` response is entirely up to your deployment: an ingress rule that swaps the backend service, a sidecar, a service mesh fault injection rule, a small standalone stub service, etc. — whatever fits your infrastructure. The only requirement is that when maintenance mode is toggled on, requests to `firecrestApiBaseUrl` return the JSON body above with a `503` status.
+
+A minimal reference implementation, using an nginx stub swapped in at the ingress level:
+
+```yaml
+# ConfigMap mounted into the stub's nginx.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: firecrest-api-maintenance-stub
+data:
+  default.conf: |
+    server {
+      listen 80;
+      location / {
+        default_type application/json;
+        return 503 '{"message": "The API is currently under maintenance. Please try again later.", "reason": "maintenance"}';
+      }
+    }
+```
+
+Point this stub's Service at `firecrestApiBaseUrl` (or reconfigure your ingress to route there) to turn maintenance mode on, and switch back to the real backend to turn it off.
+
+> **Note:** If your stub's config is mounted from a ConfigMap, remember that most reverse proxies (nginx included) don't reload a changed, mounted ConfigMap on their own — a pod restart (or a config-hash annotation on the pod template, so Kubernetes restarts it automatically on change) is needed for edits to `message`/`reason` to take effect.

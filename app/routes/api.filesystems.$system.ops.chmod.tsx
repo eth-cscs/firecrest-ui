@@ -37,16 +37,19 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PutOpsChmodRequest = await validateOpsChmod(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await putOpsChmod(
       accessToken,
       system,
       payloadData.targetPath,
       payloadData.mode,
       request,
+      requestId,
     )
     logInfoHttp({
       eventAction: LogAction.FS_CHMOD,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system },
     })
     // Notify success message

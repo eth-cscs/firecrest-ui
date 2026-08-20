@@ -37,16 +37,19 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferMvRequest = await validateTransferMv(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferMv(
       accessToken,
       system,
       payloadData.sourcePath,
       payloadData.targetPath,
       request,
+      requestId,
     )
     logInfoHttp({
       eventAction: LogAction.FS_TRANSFER_MV,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system },
     })
     // Notify success message

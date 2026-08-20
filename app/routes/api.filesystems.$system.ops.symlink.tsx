@@ -37,16 +37,19 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostOpsSymlinkRequest = await validateOpsSymlink(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postOpsSymlink(
       accessToken,
       system,
       payloadData.targetPath,
       payloadData.linkPath,
       request,
+      requestId,
     )
     logInfoHttp({
       eventAction: LogAction.FS_SYMLINK,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system },
     })
     // Notify success message

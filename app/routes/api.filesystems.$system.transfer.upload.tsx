@@ -37,6 +37,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferUploadRequest = await validateTransferUpload(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferUpload(
       accessToken,
       system,
@@ -45,10 +46,12 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       payloadData.fileSize,
       payloadData.account,
       request,
+      requestId,
     )
     logInfoHttp({
       eventAction: LogAction.FS_TRANSFER_UPLOAD,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system },
     })
     // Return response

@@ -36,6 +36,7 @@ import { isSystemHealthy } from '~/helpers/system-helper'
 import ServiceHealthDetailsDialog from '../dialogs/ServiceHealthDetailsDialog'
 // apis
 import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
+import type { MaintenancePayload } from '~/apis/api'
 // contexts
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 
@@ -258,7 +259,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                     {nodes?.available} Idle
                   </span>
                   <span className='flex items-center gap-1'>
-                    <span className='inline-block w-2 h-2 rounded-full bg-yellow-400' />
+                    <span className='inline-block w-2 h-2 rounded-full bg-blue-400' />
                     {nodes?.allocated} Allocated
                   </span>
                   <span className='flex items-center gap-1'>
@@ -278,7 +279,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
                       style={{ width: `${idlePercent}%` }}
                     />
                     <div
-                      className='bg-yellow-400 h-2 transition-all duration-300'
+                      className='bg-blue-400 h-2 transition-all duration-300'
                       style={{ width: `${allocPercent}%` }}
                     />
                   </>
@@ -318,9 +319,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
 const NODES_RETRY_INTERVAL_MS = 30_000
 
 const SystemStatusStatCard: React.FC<{ system: any }> = ({ system }) => {
-  const fetcher = useFetcher<
-    SystemNodesOverview | { maintenance: true; message: string | null } | null
-  >()
+  const fetcher = useFetcher<SystemNodesOverview | MaintenancePayload | null>()
   const { setMaintenance } = useMaintenance()
 
   // Initial load on mount

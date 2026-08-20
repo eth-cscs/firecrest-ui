@@ -37,10 +37,19 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostOpsMkdirRequest = await validateOpsMkdir(formData)
     // Put data
-    const response = await postOpsMkdir(accessToken, system, payloadData.path, false, request)
+    const requestId = crypto.randomUUID()
+    const response = await postOpsMkdir(
+      accessToken,
+      system,
+      payloadData.path,
+      false,
+      request,
+      requestId,
+    )
     logInfoHttp({
       eventAction: LogAction.FS_MKDIR,
       request,
+      requestId,
       extraInfo: { username: authUser?.username, system },
     })
     // Notify success message

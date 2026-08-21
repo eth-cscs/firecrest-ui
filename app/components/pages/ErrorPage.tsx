@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React from 'react'
-import { Link, useRouteError, isRouteErrorResponse } from '@remix-run/react'
+import { Link, useRouteError, isRouteErrorResponse } from 'react-router'
 // pages
 import MaintenancePage from './MaintenancePage'
 // apis

@@ -5,12 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
-import {
-  unstable_createMemoryUploadHandler,
-  unstable_parseMultipartFormData,
-  MaxPartSizeExceededError,
-} from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
+import { parseMultipartRequest, MaxFileSizeExceededError } from '@mjackson/multipart-parser'
 // types
 import { PostFileUploadPayload } from '~/types/api-filesystem'
 // helpers
@@ -18,7 +14,11 @@ import { StatusCodes } from 'http-status-codes'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction } from '~/helpers/log-labels'
 import { notifySuccessMessage } from '~/helpers/notification-helper'
-import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
+import {
+  handleApiErrorResponse,
+  handleSuccessResponse,
+  MaxPartSizeExceededError,
+} from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
@@ -41,34 +41,39 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
   if (!maxOpsFileSize) {
     throw new Error(`System "${system}" not found or has no file size limit configured`)
   }
-  const memHandler = unstable_createMemoryUploadHandler()
-  // Custom handler: the standard file handler silently skips parts with no
-  // filename in Content-Disposition (common with some nginx configurations).
-  // For the 'file' part we collect chunks directly and return a File object
-  // regardless of whether filename is present, using the fileName text field
-  // sent by the client as the authoritative name.
-  const uploadHandler = async (part: any) => {
-    if (part.name === 'file') {
-      const chunks: BlobPart[] = []
-      let size = 0
-      for await (const chunk of part.data) {
-        size += chunk.byteLength
-        if (size > maxOpsFileSize) {
-          throw new MaxPartSizeExceededError('file', maxOpsFileSize)
-        }
-        chunks.push(chunk)
-      }
-      return new File(chunks, part.filename || 'upload', {
-        type: part.contentType || 'application/octet-stream',
-      })
-    }
-    return memHandler(part)
-  }
   try {
-    const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+    // Build FormData manually rather than using @mjackson/form-data-parser's
+    // parseFormData: its part.isFile detection skips parts with no filename in
+    // Content-Disposition (common with some nginx configurations), same as the
+    // handler this replaces used to work around. Forcing the 'file' field to
+    // always become a File, filename or not, needs the lower-level part iterator.
+    const formData = new FormData()
+    for await (const part of parseMultipartRequest(request, { maxFileSize: maxOpsFileSize })) {
+      if (!part.name) continue
+      if (part.name === 'file' || part.isFile) {
+        formData.append(
+          part.name,
+          new File([part.bytes as BlobPart], part.filename || 'upload', {
+            type: part.mediaType || 'application/octet-stream',
+          }),
+        )
+      } else {
+        formData.append(part.name, part.text)
+      }
+    }
     const fileValue = formData.get('file')
     const originalFileName = (formData.get('fileName') as string) || (fileValue as any)?.name
-    console.log('[upload] file type:', typeof fileValue, (fileValue as any)?.constructor?.name, 'size:', (fileValue as any)?.size, 'name:', (fileValue as any)?.name, 'originalFileName:', originalFileName)
+    console.log(
+      '[upload] file type:',
+      typeof fileValue,
+      (fileValue as any)?.constructor?.name,
+      'size:',
+      (fileValue as any)?.size,
+      'name:',
+      (fileValue as any)?.name,
+      'originalFileName:',
+      originalFileName,
+    )
     console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
     const requestId = crypto.randomUUID()
@@ -105,6 +110,9 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       StatusCodes.CREATED,
     )
   } catch (error) {
+    if (error instanceof MaxFileSizeExceededError) {
+      return handleApiErrorResponse(new MaxPartSizeExceededError(maxOpsFileSize))
+    }
     return handleApiErrorResponse(error)
   }
 }

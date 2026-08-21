@@ -6,9 +6,8 @@
 *************************************************************************/
 
 import { Suspense } from 'react'
-import { data } from '@remix-run/node'
-import { useLoaderData, Await } from '@remix-run/react'
-import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { data , useLoaderData, Await } from 'react-router'
+import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from 'react-router'
 // styles
 import stylesheet from '~/styles/app.css?url'
 // configs
@@ -69,12 +68,15 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       }
       throw error
     })
-  logger.debug({
-    'event.action': 'loader.complete',
-    'event.duration': Math.round(performance.now() - loaderStart) * 1_000_000,
-    'url.path': '/_app',
-    component: 'loader',
-  }, 'loader.complete')
+  logger.debug(
+    {
+      'event.action': 'loader.complete',
+      'event.duration': Math.round(performance.now() - loaderStart) * 1_000_000,
+      'url.path': '/_app',
+      component: 'loader',
+    },
+    'loader.complete',
+  )
   return data(
     {
       environment: base.environment,

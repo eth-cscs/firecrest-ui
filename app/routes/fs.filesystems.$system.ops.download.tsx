@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from '@remix-run/node'
+import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
 // helpers
 import { handleErrorResponse } from '~/helpers/response-helper'
 // utils

@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import { useEffect } from 'react'
-import { useLoaderData, useNavigate, useRouteError } from '@remix-run/react'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { useLoaderData, useNavigate, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
@@ -21,7 +21,7 @@ import ErrorView from '~/components/views/ErrorView'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication only — groups are resolved client-side from the
   // deferred userInfoPromise already started by the parent layout loader.
   const { auth } = await requireAuth(request)

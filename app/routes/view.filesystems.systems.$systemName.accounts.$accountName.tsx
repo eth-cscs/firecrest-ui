@@ -5,10 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
+import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
+import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -16,7 +15,8 @@ import { getAuthAccessToken } from '~/utils/auth.server'
 import { getOpsDownload } from '~/apis/filesystem-api'
 
 const ERROR_MESSAGES: Record<number, string> = {
-  [StatusCodes.REQUEST_TOO_LONG]: 'The file exceeds the maximum size allowed for direct preview. Use the Download option instead.',
+  [StatusCodes.REQUEST_TOO_LONG]:
+    'The file exceeds the maximum size allowed for direct preview. Use the Download option instead.',
   [StatusCodes.FORBIDDEN]: 'You do not have permission to access this file.',
   [StatusCodes.NOT_FOUND]: 'The file could not be found.',
   [StatusCodes.UNAUTHORIZED]: 'You are not authorized to access this file.',
@@ -36,13 +36,13 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   try {
     const blob: Blob = await getOpsDownload(accessToken, system, sourcePath, request)
     const content = await blob.text()
-    return json<LoaderData>({ ok: true, content, fileName, sourcePath })
+    return { ok: true, content, fileName, sourcePath } satisfies LoaderData
   } catch (error) {
     if (error instanceof Response) {
       const statusCode = error.status
       const message =
         ERROR_MESSAGES[statusCode] ?? `An unexpected error occurred (HTTP ${statusCode}).`
-      return json<LoaderData>({ ok: false, statusCode, message, fileName, sourcePath })
+      return { ok: false, statusCode, message, fileName, sourcePath } satisfies LoaderData
     }
     throw error
   }
@@ -67,9 +67,7 @@ export default function FileTextViewer() {
         <div className='flex flex-1 items-center justify-center'>
           <div className='flex flex-col items-center gap-3 text-center max-w-md px-6'>
             <ExclamationTriangleIcon className='h-10 w-10 text-red-500' />
-            <p className='text-red-600 font-semibold text-base'>
-              Unable to preview file
-            </p>
+            <p className='text-red-600 font-semibold text-base'>Unable to preview file</p>
             <p className='text-gray-500 text-sm'>{data.message}</p>
             <p className='text-gray-400 text-xs'>HTTP {data.statusCode}</p>
           </div>

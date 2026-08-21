@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { ChevronRightIcon, ChevronDownIcon, FolderOpenIcon } from '@heroicons/react/20/solid'
-import { useSubmit, useFetcher } from '@remix-run/react'
+import { useSubmit, useFetcher } from 'react-router'
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 // helpers
 import { classNames } from '~/helpers/class-helper'
@@ -261,7 +261,10 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                       onClick={handleOnRemoteScriptBrowse}
                       className='relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
                     >
-                      <FolderOpenIcon className='-ml-0.5 h-5 w-5 text-gray-400' aria-hidden='true' />
+                      <FolderOpenIcon
+                        className='-ml-0.5 h-5 w-5 text-gray-400'
+                        aria-hidden='true'
+                      />
                       Browse remote filesystem
                     </button>
                   </div>
@@ -271,7 +274,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                   })}
                 </>
               )}
-        </div>
+            </div>
             <div className='col-span-6 sm:col-span-2'>
               <label htmlFor='name' className='block text-sm font-medium text-gray-700'>
                 Job Name
@@ -285,9 +288,8 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 fieldName: 'name',
                 formErrorFields: formErrorFields,
               })}
-
             </div>
-            
+
             <div className='col-span-6 sm:col-span-6'>
               <label htmlFor='workingDirectory' className='block text-sm font-medium text-gray-700'>
                 Working directory <span className='italic text-red-400'>*</span>
@@ -328,7 +330,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                 </button>
               </div>
             </div>
-            
+
             <div className='col-span-6 sm:col-span-6'>
               <div className='text-sm'>
                 <button
@@ -345,7 +347,9 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
                   </div>
                   <div>
                     {' '}
-                    {showAdvancedOptions ? 'Hide advanced options' : 'Show advanced options (optional)'}
+                    {showAdvancedOptions
+                      ? 'Hide advanced options'
+                      : 'Show advanced options (optional)'}
                   </div>
                 </button>
               </div>

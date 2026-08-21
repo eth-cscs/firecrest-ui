@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 // types
 import { PutOpsChownRequest } from '~/types/api-filesystem'
 // helpers

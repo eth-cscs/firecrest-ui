@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunction, ActionFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction } from '~/helpers/log-labels'

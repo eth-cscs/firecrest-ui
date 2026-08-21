@@ -4,7 +4,7 @@ WORKDIR /usr/server/app
 ENV PATH=/usr/server/app/node_modules/.bin:$PATH
 
 # Enable Corepack + Yarn 4
-RUN corepack enable && corepack prepare yarn@4.9.2 --activate
+RUN corepack enable && corepack prepare yarn@4.18.0 --activate
 
 # ---------- Dependencies ----------
 FROM base AS deps
@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Enable Yarn 4 runtime
-RUN corepack enable && corepack prepare yarn@4.9.2 --activate
+RUN corepack enable && corepack prepare yarn@4.18.0 --activate
 
 # Copy dependencies and build output
 COPY --from=prune /usr/server/app/node_modules ./node_modules

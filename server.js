@@ -64,12 +64,6 @@ global.fetch = (input, init) => {
 const app = express()
 app.disable('x-powered-by')
 
-// In production, serve /assets (Remix client build) and anything in /public
-if (isProd) {
-  app.use('/assets', express.static('build/client', { immutable: true, maxAge: '1y' }))
-  app.use(express.static('public', { maxAge: '1h' }))
-}
-
 let vite // only used in dev
 if (!isProd) {
   vite = await import('vite').then(({ createServer }) =>
@@ -77,9 +71,6 @@ if (!isProd) {
       server: { middlewareMode: true },
     }),
   )
-
-  // Vite must be before your Remix handler
-  app.use(vite.middlewares)
 }
 
 if (isProd) {
@@ -109,7 +100,7 @@ app.use((req, _res, next) => {
   next()
 })
 
-// Remix handler
+// React Router handler
 app.all(
   '*',
   isProd

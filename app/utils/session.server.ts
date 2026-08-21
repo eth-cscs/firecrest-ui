@@ -44,7 +44,7 @@ function createRedisSessionStorage({
   return createSessionStorage({
     cookie,
     async createData(data, expires) {
-      const id = Math.random().toString(36).substring(2)
+      const id = crypto.randomUUID()
       await redis.set(id, JSON.stringify(data))
       if (expires) {
         await redis.expireat(id, Math.floor(expires.getTime() / 1000))

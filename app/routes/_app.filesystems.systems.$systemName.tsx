@@ -71,8 +71,11 @@ function GroupsUpdater({
         if (userInfo?.groups) {
           setGroups(userInfo.groups)
         }
-        if (!groupName && userInfo?.group?.name) {
-          setSelectedGroupName(userInfo.group.name)
+        if (!groupName) {
+          const defaultGroup = userInfo?.groups?.find((group) => group.default)
+          if (defaultGroup) {
+            setSelectedGroupName(defaultGroup.name)
+          }
         }
       })
     })
@@ -84,7 +87,7 @@ export default function AppFilesystemsIndexRoute() {
   const { userInfoPromise, groupName, systemName }: any = useLoaderData()
   // Seed the provider with a synthetic group from the URL so child components
   // that depend on selectedGroup render correctly before the real data arrives.
-  const initialGroups = groupName ? [{ id: groupName, name: groupName }] : []
+  const initialGroups = groupName ? [{ id: groupName, name: groupName, default: false }] : []
   return (
     <GroupProvider groups={initialGroups} groupName={groupName}>
       {/* Resolve deferred groups and push them into context without remounting children */}

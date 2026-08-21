@@ -143,11 +143,11 @@ export interface User {
 export interface Group {
   id: string
   name: string
+  default: boolean
 }
 
 export interface UserInfo {
   user: User
-  group: Group
   groups: Group[]
 }
 

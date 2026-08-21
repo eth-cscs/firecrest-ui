@@ -20,10 +20,12 @@ import { useGroup } from '~/contexts/GroupContext'
 import ErrorView from '~/components/views/ErrorView'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
+// alerts
+import AlertWarning from '~/components/alerts/AlertWarning'
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
-  // Check authentication only — groups are resolved client-side from the
-  // deferred userInfoPromise already started by the parent layout loader.
+  // Check authentication only — groups are fetched client-side by the parent
+  // layout's GroupsFetcher (see _app.filesystems.systems.$systemName.tsx).
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
   logInfoHttp({
@@ -36,7 +38,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
 
 export default function AppFilesystemsSystemIndexRoute() {
   const { systemName } = useLoaderData<typeof loader>()
-  const { selectedGroup } = useGroup()
+  const { selectedGroup, isLoadingGroups, groups } = useGroup()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -48,6 +50,17 @@ export default function AppFilesystemsSystemIndexRoute() {
       navigate(to, { replace: true })
     }
   }, [selectedGroup, systemName, navigate, location.search])
+
+  // Groups finished loading (successfully or not) but there's still nothing to select - a stuck
+  // "Loading..." spinner would otherwise be indistinguishable from a genuinely slow fetch.
+  if (!isLoadingGroups && groups.length === 0) {
+    return (
+      <AlertWarning title='No accounts found' className='m-6'>
+        Unable to load accounts for system &quot;{systemName}&quot;. Please try again later or
+        contact support if the issue persists.
+      </AlertWarning>
+    )
+  }
 
   return <LoadingSpinner title='Loading...' className='py-10' />
 }

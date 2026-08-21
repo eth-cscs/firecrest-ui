@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from '@remix-run/react'
+import { useNavigate, useFetcher } from '@remix-run/react'
 import {
   CalendarIcon,
   ClockIcon,
@@ -33,10 +33,10 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 // apis
-import { getLocalJobs } from '~/apis/compute-api'
-import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
+import type { MaintenancePayload } from '~/apis/api'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
@@ -44,6 +44,8 @@ import { useRefreshing } from '~/contexts/RefreshingContext'
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className = '' }) => {
   if (!unavailableSystems || unavailableSystems.length <= 0) {
@@ -239,66 +241,73 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
   )
 }
 
-type SystemJobListProps = {
-  jobs: GetSystemJobsResponse
-}
+const JOBS_POLL_INTERVAL_MS = 2000
 
-const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
-  const [allUsers, setAllUsers] = useState<boolean>(jobs?.allUsers ?? false)
-  const [localError, setLocalError] = useState<any>(jobs?.error ?? null)
+const SystemJobList: React.FC = () => {
+  const [allUsers, setAllUsers] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get('allUsers') === 'true',
+  )
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()
   const { setMaintenance } = useMaintenance()
-  const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
+  // useFetcher (rather than a hand-rolled fetch+setState poll) is what makes this safe under a
+  // slow/hanging backend: calling .load() again while a previous one for this fetcher is still
+  // in flight aborts the stale request, so an old, slow-to-resolve response can never land after
+  // and clobber state set by a newer one. Also avoids the Remix defer()/<Await> streaming this
+  // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
+  const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
 
-  const onChangeHandler = async (event: any) => {
+  const buildUrl = (allUsersValue: boolean) =>
+    `/api/compute/systems/${selectedSystem?.name ?? ''}/accounts/${selectedGroup?.name ?? ''}/jobs?allUsers=${allUsersValue}`
+
+  const onChangeHandler = (event: any) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a Remix navigation/loader re-run,
-    // which would cause Suspense to re-suspend and conflict with the in-flight fetchJobs call.
+    // Update URL for bookmarkability without triggering a Remix navigation/loader re-run.
     const url = new URL(window.location.href)
     url.searchParams.set('allUsers', String(checked))
     window.history.replaceState({}, '', url.toString())
-    // Trigger immediate fetch for instant feedback with the new value
-    await fetchJobs(checked)
+    // The effect below re-fetches on the `allUsers` change - no need to trigger it here too.
   }
 
-  const fetchJobs = async (allUsersOverride?: boolean) => {
-    try {
-      setRefreshing(true, 'Refreshing jobs...')
-      const startTime = Date.now()
-
-      const response = await getLocalJobs(
-        selectedSystem?.name ?? '',
-        selectedGroup?.name ?? '',
-        allUsersOverride !== undefined ? allUsersOverride : allUsers,
-      )
-
-      setCurrentJobs(sortJobs(response?.jobs ?? []))
-      setLocalError(response?.error ?? null)
-
-      // Ensure minimum display time of 300ms to avoid flickering
-      const elapsed = Date.now() - startTime
-      const minDisplayTime = 300
-      if (elapsed < minDisplayTime) {
-        await new Promise((resolve) => setTimeout(resolve, minDisplayTime - elapsed))
-      }
-    } catch (error) {
-      if (isMaintenanceResponse(error)) {
-        setMaintenance(true, await getMaintenanceMessage(error))
-      } else {
-        setLocalError(error)
-      }
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
+  // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
+  // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
+  // finish a request rather than having it superseded (and effectively never completing) every
+  // time the interval fires.
   useEffect(() => {
-    const intervalId = setInterval(fetchJobs, 2000)
+    fetcher.load(buildUrl(allUsers))
+    const intervalId = setInterval(() => {
+      if (fetcher.state === 'idle') {
+        fetcher.load(buildUrl(allUsers))
+      }
+    }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)
   }, [selectedSystem?.name, selectedGroup?.name, allUsers])
+
+  useEffect(() => {
+    setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
+  }, [fetcher.state])
+
+  useEffect(() => {
+    if (isMaintenancePayload(fetcher.data)) {
+      setMaintenance(true, getMaintenancePayloadMessage(fetcher.data))
+    }
+  }, [fetcher.data])
+
+  if (!fetcher.data) {
+    return <LoadingSpinner title='Loading jobs...' className='py-10' />
+  }
+
+  if (isMaintenancePayload(fetcher.data)) {
+    // AppLayout swaps to the maintenance page on the next render once setMaintenance() above
+    // takes effect - nothing meaningful to render here in the meantime.
+    return null
+  }
+
+  const jobsData = fetcher.data as GetSystemJobsResponse
+  const currentJobs = sortJobs(jobsData?.jobs ?? [])
+  const localError = jobsData?.error ?? null
 
   return (
     <>

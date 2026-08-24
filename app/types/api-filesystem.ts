@@ -155,4 +155,5 @@ export type PostTransferUploadRequest = {
 
 export type PostTransferDownloadRequest = {
   path: string
+  account?: string
 }

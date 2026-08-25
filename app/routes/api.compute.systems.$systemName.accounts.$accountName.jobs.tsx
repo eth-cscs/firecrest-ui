@@ -13,6 +13,7 @@ import { GetSystemJobsResponse } from '~/types/api-job'
 import { handleApiErrorResponse } from '~/helpers/response-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
+import { jobsAllUsersCookie } from '~/utils/preferences.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 
@@ -40,6 +41,9 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
       allUsers,
       request,
     )
+    // Remember the toggle choice for the next time this page is loaded fresh
+    // (e.g. via a nav link rather than back/forward), which doesn't carry the query param.
+    headers.append('Set-Cookie', await jobsAllUsersCookie.serialize(allUsers))
     return json(response, { headers })
   } catch (error) {
     return handleApiErrorResponse(error)

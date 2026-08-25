@@ -48,7 +48,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     container:
-      image: node:24-alpine
+      # glibc, not alpine/musl: matches the production image (deploy/docker/Dockerfile uses
+      # node:24-bookworm-slim) and .yarnrc.yml's supportedArchitectures (libc: [glibc]), which
+      # deliberately doesn't fetch the musl rollup/esbuild binaries since they're never used in
+      # what's actually shipped - running this job under alpine fails on that missing binary.
+      image: node:24-bookworm-slim
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

@@ -57,6 +57,7 @@ const transferDownloadSchema: Yup.ObjectSchema<PostTransferDownloadRequest> = Yu
   path: Yup.string()
     .required('Source path is required')
     .matches(new RegExp(FILE_PATH_REGEXP), 'Target path should be a valid PATH'),
+  account: Yup.string().optional(),
 })
 
 export const validateTransferUpload = async (

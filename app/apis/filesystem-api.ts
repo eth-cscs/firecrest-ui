@@ -309,16 +309,26 @@ export const postTransferUpload = async (
   return apiResponse
 }
 
+// `account` must be forwarded (mirrors postTransferUpload below): some systems fill it into a
+// scheduler directive on the backend and reject the transfer job with a 400 if it's missing.
+// Note that even with an account set, the transfer job can still be rejected by the scheduler if
+// the cluster doesn't have the partition the backend requests for data-transfer jobs - that's a
+// separate, cluster-side scheduler configuration issue, not something this request can fix.
 export const postTransferDownload = async (
   accessToken: string,
   system: string,
   path: string,
+  account: string | null = null,
   request: Request | null = null,
   requestId?: string,
 ): Promise<GetTransferDownloadResponse> => {
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
-    JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
+    JSON.stringify({
+      sourcePath: path,
+      account: account,
+      transferDirectives: { transferMethod: 's3' },
+    }),
     {
       headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },

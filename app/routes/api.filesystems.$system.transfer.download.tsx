@@ -41,6 +41,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
       accessToken,
       system,
       payloadData.path,
+      payloadData.account,
       request,
       requestId,
     )

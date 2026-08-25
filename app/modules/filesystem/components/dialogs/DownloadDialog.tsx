@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react'
 import { ArrowDownIcon } from '@heroicons/react/24/outline'
 // types
 import { File, GetTransferDownloadResponse } from '~/types/api-filesystem'
+import type { HttpErrorResponse } from '~/types/error'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // dialogs
@@ -40,7 +41,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
 }: DownloadDialogProps) => {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [downloadJob, setDownloadJob] = useState<number | null>(null)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [downloadError, setDownloadError] = useState<HttpErrorResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [formValues, setFormValues] = useState({
     account: accountName,
@@ -66,9 +67,9 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       setDownloadUrl(response?.transferDirectives?.downloadUrl)
       setDownloadJob(response?.transferJob?.jobId)
       setLoading(false)
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false)
-      setDownloadError('An error occurred while initiating the download transfer.')
+      setDownloadError(error?.error || error)
     }
   }
 
@@ -100,7 +101,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
       {loading && <LoadingSpinner title='Preparing download...' className='py-10' />}
       {!loading && (
         <>
-          <AlertError error={downloadError ? { message: downloadError } : null} />
+          <AlertError error={downloadError} />
           {!downloadUrl && (
             <div className='flex flex-col w-full space-y-4'>
               {needTransferDownload() && (

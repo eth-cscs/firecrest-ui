@@ -5,12 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type {
-  ActionFunction,
-  ActionFunctionArgs,
-  LoaderFunction,
-  LoaderFunctionArgs,
-} from 'react-router'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
 import { useRouteError, useLoaderData, redirect, useActionData } from 'react-router'
 // types

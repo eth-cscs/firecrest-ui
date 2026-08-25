@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError, data } from 'react-router'
+import { useRouteError } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
@@ -25,7 +25,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     request: request,
     extraInfo: { username: auth.user.username },
   })
-  return data({})
+  return {}
 }
 
 export default function AppIndexRoute() {

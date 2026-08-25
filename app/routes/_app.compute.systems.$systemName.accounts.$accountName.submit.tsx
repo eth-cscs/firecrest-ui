@@ -28,6 +28,11 @@ import { validateJob } from '~/validations/computeValidation'
 import ErrorView from '~/components/views/ErrorView'
 import JobSubmitView from '~/modules/compute/components/views/JobSubmitView'
 
+// A submitted job script is a SLURM batch script, not an arbitrary user file - unrelated to
+// the per-system max_ops_file_size used by the file manager's uploads (api.filesystems.$system
+// .ops.upload.tsx). 1MB is a generous ceiling for a shell script.
+const MAX_JOB_SCRIPT_SIZE_BYTES = 1_000_000
+
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
@@ -71,7 +76,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const accountName = params.accountName!
   try {
     // Get form data
-    const formData = await parseFormData(request, { maxFileSize: 1_000_000 })
+    const formData = await parseFormData(request, { maxFileSize: MAX_JOB_SCRIPT_SIZE_BYTES })
     // Validate
     const formPayload: PostJobFormPayload = await validateJob(formData)
     // Payload
@@ -104,7 +109,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     })
   } catch (error) {
     if (error instanceof MaxFileSizeExceededError) {
-      return handleFormErrorResponse(new MaxPartSizeExceededError(1_000_000))
+      return handleFormErrorResponse(new MaxPartSizeExceededError(MAX_JOB_SCRIPT_SIZE_BYTES))
     }
     return handleFormErrorResponse(error)
   }

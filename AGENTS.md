@@ -11,8 +11,8 @@ with upload/download.
 
 ## Stack
 
-- **Framework**: Remix v2 (`@remix-run/*`), served via a custom Express `server.js`, not the
-  Remix dev/prod server directly.
+- **Framework**: React Router v7 in framework mode (`react-router`, `@react-router/*`), served
+  via a custom Express `server.js`, not `react-router-serve` directly.
 - **Language**: TypeScript, strict-ish; some `any` remains in older code, don't treat that as
   license to add more.
 - **Styling**: Tailwind CSS. Some components are Tailwind UI-derived — see the README's
@@ -27,8 +27,9 @@ with upload/download.
 
 ## Repo layout
 
-- `app/routes/` — Remix flat-file routing convention (`_app.compute.systems.$systemName...tsx`
-  style file names encode the URL path and layout nesting; not a folder-per-route layout).
+- `app/routes/` — `@react-router/fs-routes` flat-file routing convention (see `app/routes.ts`);
+  `_app.compute.systems.$systemName...tsx` style file names encode the URL path and layout
+  nesting, not a folder-per-route layout.
 - `app/apis/` — typed wrappers around FirecREST v2 backend calls, one file per API domain
   (`compute-api.ts`, `filesystem-api.ts`, `status-api.ts`).
 - `app/modules/` — feature-specific components, grouped by domain (`compute/`, `filesystem/`,
@@ -55,7 +56,7 @@ with upload/download.
 - `yarn typecheck` — `tsc`, no emit.
 - `yarn test` — Jest.
 - `yarn run check-licence` — license header verification (separate from lint).
-- `yarn build` — must succeed; this is a real build via `remix vite:build`, not just a
+- `yarn build` — must succeed; this is a real build via `react-router build`, not just a
   syntax check.
 
 ## Things not to suggest without strong justification
@@ -64,4 +65,4 @@ with upload/download.
   framework's default server — both are deliberate choices tied to how this app is deployed
   and how auth/session/OIDC-discovery gating works at startup.
 - Don't suggest renaming or restructuring the flat-file route naming convention — it's a
-  Remix/React Router convention, not an accident.
+  React Router convention, not an accident.

@@ -46,8 +46,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Resolves with an error object on timeout so the job list view renders inline rather than
   // triggering the route ErrorBoundary. Maintenance resolves too, with a flagged payload (see
   // api.ts's isMaintenancePayload) - a rejected Error gets its message wiped by
-  // @remix-run/server-runtime's production sanitization before it crosses the turbo-stream
-  // boundary, so rejecting can't carry the signal.
+  // react-router's production sanitization before it crosses the turbo-stream boundary, so
+  // rejecting can't carry the signal.
   const jobsPromise = promiseWithTimeout(
     getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,

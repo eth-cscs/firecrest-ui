@@ -105,13 +105,9 @@ app.all(
   '*',
   isProd
     ? createRequestHandler({
-        // built server bundle from `remix vite build`
+        // built server bundle from `react-router build`
         build: await import('./build/server/index.js'),
         mode: process.env.NODE_ENV,
-        getLoadContext(_req, _res) {
-          // return whatever you need in loaders/actions
-          return {}
-        },
       })
     : async (req, res, next) => {
         try {
@@ -120,9 +116,6 @@ app.all(
           return createRequestHandler({
             build,
             mode: 'development',
-            getLoadContext(_req, _res) {
-              return {}
-            },
           })(req, res, next)
         } catch (err) {
           // Let Vite fix stack traces for better DX

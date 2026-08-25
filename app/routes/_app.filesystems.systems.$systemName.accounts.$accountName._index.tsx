@@ -73,7 +73,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const { output } = await getOpsLs(accessToken, systemName, path!, request)
     files = output || []
   } catch (err: any) {
-    logger.error('Error fetching filesystem data', { error: err })
+    logger.error({ err }, 'Error fetching filesystem data')
     if (err?.status === 404) {
       remoteFsError = { message: "The filesystem path doesn't exist", status: 404 }
     } else {

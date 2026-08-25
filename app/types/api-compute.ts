@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-export type JobDescritpion = {
+export type JobDescription = {
   script?: string
   script_path?: string
   account?: string
@@ -20,7 +20,7 @@ export type JobDescritpion = {
 }
 
 export type PostJobPayload = {
-  job: JobDescritpion
+  job: JobDescription
 }
 
 export type PostJobResponse = {
@@ -29,6 +29,7 @@ export type PostJobResponse = {
 
 // Form
 export type PostJobFormPayload = {
+  system: string
   scriptMode: 'local' | 'remote'
   file?: any
   remoteScript?: string

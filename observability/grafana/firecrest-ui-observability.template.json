@@ -985,7 +985,7 @@
         "y": 47
       },
       "id": 31,
-      "description": "Tracks loader-level page visits logged by Remix route loaders.",
+      "description": "Tracks loader-level page visits logged by route loaders.",
       "options": {
         "legend": {
           "calcs": [],

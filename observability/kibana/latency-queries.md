@@ -1,6 +1,6 @@
 # Kibana / Elastic Latency Queries
 
-All queries target the ECS-structured logs emitted by the Remix app (pino + ECS format).
+All queries target the ECS-structured logs emitted by the UI app (pino + ECS format).
 Fields of interest: `event.action`, `event.duration` (nanoseconds), `component`, `message`,
 `http.request.id` (x-request-id), `log.level`.
 

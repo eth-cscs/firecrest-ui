@@ -11,7 +11,11 @@ import MaintenancePage from '~/components/pages/MaintenancePage'
 // apis
 import { MAINTENANCE_REASON } from '~/apis/api'
 
-const ErrorView: React.FC<any> = ({ error }: any) => {
+interface ErrorViewProps {
+  error: unknown
+}
+
+const ErrorView: React.FC<ErrorViewProps> = ({ error }: ErrorViewProps) => {
   // Deferred loader values (returned promises rendered via <Await>) never surface maintenance
   // here as a thrown Response - they resolve with a flagged payload instead (see api.ts's
   // isMaintenancePayload) and are handled at the render site that owns the <Await>, not in this
@@ -26,8 +30,8 @@ const ErrorView: React.FC<any> = ({ error }: any) => {
     return <MaintenancePage message={error.data} />
   }
 
-  let title: any = 'Something went wrong'
-  let message: any = 'Sorry, an error has occurred, please retry or contact our support.'
+  let title: string = 'Something went wrong'
+  let message: string = 'Sorry, an error has occurred, please retry or contact our support.'
 
   if (isRouteErrorResponse(error)) {
     title = `${error.status} ${error.statusText}`
@@ -43,7 +47,6 @@ const ErrorView: React.FC<any> = ({ error }: any) => {
       <div className='mt-10 flex items-center justify-center gap-x-6'>
         <Link
           to='/'
-          onClick={() => {}}
           className='inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
         >
           Go back home

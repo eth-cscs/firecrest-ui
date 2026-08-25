@@ -127,7 +127,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
         {job.user !== '' ? (
           <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
         ) : (
-          <LabelBadge color={LabelColor.GRAY}>undefined</LabelBadge>
+          <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
         )}
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>

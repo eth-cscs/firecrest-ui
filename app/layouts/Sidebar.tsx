@@ -37,11 +37,11 @@ import { useSystem } from '~/contexts/SystemContext'
 // helpers
 import { isSystemHealthy } from '~/helpers/system-helper'
 // types
-import { SystemHealtyStatus } from '~/types/api-status'
+import { SystemHealtyStatus, System } from '~/types/api-status'
 
 interface SidebarProps {
   sidebarOpen: boolean
-  setSidebarOpen: () => void
+  setSidebarOpen: (open: boolean) => void
   logoPath: string | null
   appName: string | null
   supportUrl: string | null
@@ -49,7 +49,36 @@ interface SidebarProps {
   repoUrl: string | null
 }
 
-const Sidebar: React.FC<any> = ({
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>
+
+interface NavItem {
+  name: string
+  path: string
+  icon: IconComponent
+}
+
+interface PrimarySubNavItem {
+  name: string
+  path: string
+  icon: IconComponent
+}
+
+interface PrimaryNavItem {
+  name: string
+  path: string
+  icon: IconComponent
+  systemHealthyStatus: SystemHealtyStatus
+  disabled: boolean
+  children: PrimarySubNavItem[]
+}
+
+interface SecondaryNavItem {
+  name: string
+  url: string
+  icon: IconComponent
+}
+
+const Sidebar: React.FC<SidebarProps> = ({
   sidebarOpen,
   setSidebarOpen,
   logoPath = null,
@@ -57,7 +86,7 @@ const Sidebar: React.FC<any> = ({
   supportUrl = null,
   docUrl = null,
   repoUrl = null,
-}: any) => {
+}: SidebarProps) => {
   const location = useLocation()
   const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
@@ -75,7 +104,7 @@ const Sidebar: React.FC<any> = ({
     }
   }
 
-  const primaryNavigation: any = systems.map((system) => {
+  const primaryNavigation: PrimaryNavItem[] = systems.map((system: System) => {
     const systemHealthyStatus = isSystemHealthy(system)
     const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
     return {
@@ -99,7 +128,7 @@ const Sidebar: React.FC<any> = ({
     }
   })
 
-  const secondaryNavigation: any = []
+  const secondaryNavigation: SecondaryNavItem[] = []
 
   if (docUrl && docUrl !== '') {
     secondaryNavigation.push({
@@ -125,12 +154,12 @@ const Sidebar: React.FC<any> = ({
     })
   }
 
-  const isCurrentPath = ({ currentPath }: any) => {
+  const isCurrentPath = ({ currentPath }: { currentPath: string }) => {
     const path = location.pathname
     return path === currentPath
   }
 
-  const isCurrentRootPath = ({ currentRootPath }: any) => {
+  const isCurrentRootPath = ({ currentRootPath }: { currentRootPath: string }) => {
     const path: string = location.pathname
     return path.includes(currentRootPath)
   }
@@ -191,7 +220,7 @@ const Sidebar: React.FC<any> = ({
                       <li key={`link-${item.path}`}>
                         <NavLink
                           to={item.path}
-                          className={({ isActive }: any) =>
+                          className={({ isActive }) =>
                             isActive
                               ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
                               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
@@ -213,7 +242,7 @@ const Sidebar: React.FC<any> = ({
                   </ul>
                   <div className='mt-2 pt-2'>
                     <ul className='space-y-1'>
-                      {primaryNavigation.map((item: any) => {
+                      {primaryNavigation.map((item: PrimaryNavItem) => {
                         const statusDotClass = getSystemHealthyStatusDotClass(
                           item.systemHealthyStatus,
                         )
@@ -259,26 +288,8 @@ const Sidebar: React.FC<any> = ({
                                         aria-hidden='true'
                                       />
                                     </DisclosureButton>
-                                    {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                    {item.children.map((subItem: any) => (
-                                      <li key={`link-${subItem.path}`}>
-                                        <DisclosureButton
-                                          as='a'
-                                          href={subItem.path}
-                                          className={classNames(
-                                            isCurrentRootPath({ currentRootPath: subItem.path })
-                                              ? 'bg-gray-100'
-                                              : 'hover:bg-gray-100',
-                                            'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-900',
-                                          )}
-                                        >
-                                          {subItem.name}
-                                        </DisclosureButton>
-                                      </li>
-                                    ))}
-                                  </DisclosurePanel> */}
                                     <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                      {item.children.map((subItem: any) => {
+                                      {item.children.map((subItem: PrimarySubNavItem) => {
                                         const linkClassName = classNames(
                                           'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
                                           isDisabled
@@ -297,8 +308,8 @@ const Sidebar: React.FC<any> = ({
                                               </span>
                                             ) : (
                                               <DisclosureButton
-                                                as='a'
-                                                href={subItem.path}
+                                                as={NavLink}
+                                                to={subItem.path}
                                                 className={linkClassName}
                                               >
                                                 <span>{subItem.name}</span>
@@ -314,7 +325,7 @@ const Sidebar: React.FC<any> = ({
                             ) : (
                               <NavLink
                                 to={item.path}
-                                className={({ isActive }: any) =>
+                                className={({ isActive }) =>
                                   isActive
                                     ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
@@ -339,7 +350,7 @@ const Sidebar: React.FC<any> = ({
                   </div>
                   <div className='mt-6 pt-6'>
                     <ul className='space-y-1'>
-                      {secondaryNavigation.map((item: any) => (
+                      {secondaryNavigation.map((item: SecondaryNavItem) => (
                         <li key={`link-${item.name}`}>
                           <Link
                             to={item.url}
@@ -381,11 +392,11 @@ const Sidebar: React.FC<any> = ({
           <div className='mt-5 flex-grow flex flex-col'>
             <nav className='flex-1 px-2 pb-4 space-y-6 divide-y'>
               <ul className='space-y-1'>
-                {userNavigation.map((item: any) => (
+                {userNavigation.map((item: NavItem) => (
                   <li key={`link-${item.path}`}>
                     <NavLink
                       to={item.path}
-                      className={({ isActive }: any) =>
+                      className={({ isActive }) =>
                         isActive
                           ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
@@ -410,7 +421,7 @@ const Sidebar: React.FC<any> = ({
                   HPC Clusters
                 </span>
                 <ul className='space-y-1'>
-                  {primaryNavigation.map((item: any) => {
+                  {primaryNavigation.map((item: PrimaryNavItem) => {
                     const isDisabled = item.disabled
                     const statusDotClass = getSystemHealthyStatusDotClass(item.systemHealthyStatus)
                     return (
@@ -456,7 +467,7 @@ const Sidebar: React.FC<any> = ({
                                   />
                                 </DisclosureButton>
                                 <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                  {item.children.map((subItem: any) => {
+                                  {item.children.map((subItem: PrimarySubNavItem) => {
                                     const linkClassName = classNames(
                                       'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
                                       isDisabled
@@ -486,9 +497,9 @@ const Sidebar: React.FC<any> = ({
                                             {linkContent}
                                           </span>
                                         ) : (
-                                          <a href={subItem.path} className={linkClassName}>
+                                          <NavLink to={subItem.path} className={linkClassName}>
                                             {linkContent}
-                                          </a>
+                                          </NavLink>
                                         )}
                                       </li>
                                     )
@@ -500,7 +511,7 @@ const Sidebar: React.FC<any> = ({
                         ) : (
                           <NavLink
                             to={item.path}
-                            className={({ isActive }: any) =>
+                            className={({ isActive }) =>
                               isActive
                                 ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
@@ -525,7 +536,7 @@ const Sidebar: React.FC<any> = ({
               </div>
               <div className='mt-6 pt-6'>
                 <ul className='space-y-1'>
-                  {secondaryNavigation.map((item: any) => (
+                  {secondaryNavigation.map((item: SecondaryNavItem) => (
                     <li key={`link-${item.name}`}>
                       <Link
                         to={item.url}

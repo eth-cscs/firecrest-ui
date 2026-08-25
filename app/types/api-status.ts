@@ -22,7 +22,7 @@ export enum ServiceType {
   scheduler = 'scheduler',
   ssh = 'ssh',
   filesystem = 'filesystem',
-  external_storage = 's3',  //To be renamed after f7t 2.6.0 release
+  external_storage = 's3', //To be renamed after f7t 2.6.0 release
 }
 
 export enum SystemHealtyStatus {
@@ -92,7 +92,6 @@ export interface ServiceHealth {
   nodes?: SystemNodesOverview
   path?: string
 }
-
 
 export interface ProbingService {
   timeout: number

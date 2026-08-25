@@ -250,7 +250,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   const onChangeHandler = async (event: any) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a Remix navigation/loader re-run,
+    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run,
     // which would cause Suspense to re-suspend and conflict with the in-flight fetchJobs call.
     const url = new URL(window.location.href)
     url.searchParams.set('allUsers', String(checked))

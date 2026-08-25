@@ -6,9 +6,8 @@
 *************************************************************************/
 
 import { hydrateRoot } from 'react-dom/client'
-import { startTransition, StrictMode, useEffect } from 'react'
+import { startTransition, StrictMode } from 'react'
 import { HydratedRouter } from 'react-router/dom'
-import { useLocation, useMatches } from 'react-router'
 
 // Declare globals
 declare global {

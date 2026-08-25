@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { Fragment } from 'react'
-import { Link , NavLink, useLocation } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
 import {
   Dialog,
   DialogBackdrop,
@@ -283,7 +283,7 @@ const Sidebar: React.FC<any> = ({
                                           <li key={`link-${subItem.path}`}>
                                             <DisclosureButton
                                               as={isDisabled ? 'div' : 'a'}
-                                              href={isDisabled ? 'undefined' : subItem.path}
+                                              href={isDisabled ? undefined : subItem.path}
                                               disabled={isDisabled}
                                               className={classNames(
                                                 'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',

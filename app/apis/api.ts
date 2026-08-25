@@ -22,7 +22,7 @@ export enum ResponseBodyType {
 // Marker used in a 503 body's `reason` field to signal *planned* maintenance (see
 // templates/maintenance-service.yaml), as opposed to a real backend outage that also happens to
 // return 503. Threaded through as the thrown Response's statusText, since that's the only part of
-// a 503 body that survives both the Remix ErrorBoundary (isRouteErrorResponse) and the
+// a 503 body that survives both the route ErrorBoundary (isRouteErrorResponse) and the
 // local-route wrapping in response-helper.ts.
 export const MAINTENANCE_REASON = 'maintenance'
 
@@ -111,7 +111,7 @@ export function isMaintenanceResponse(error: unknown): error is Response {
   )
 }
 
-// Reads the maintenance message off a thrown Response. Safe to call even outside Remix's router
+// Reads the maintenance message off a thrown Response. Safe to call even outside React Router's router
 // (e.g. from a plain try/catch around a browser fetch), where `error.data` is never populated.
 export async function getMaintenanceMessage(error: Response): Promise<string | null> {
   try {
@@ -123,10 +123,10 @@ export async function getMaintenanceMessage(error: Response): Promise<string | n
 
 // Deferred loader data (defer()/<Await>) is streamed to the client via turbo-stream. Rejecting a
 // deferred promise doesn't work as a maintenance signal: a raw Response can't be serialized across
-// that boundary at all, and a plain Error fares no better - @remix-run/server-runtime's production
-// build unconditionally replaces any rejected Error's message/stack with a generic "Unexpected
-// Server Error" before it reaches the client (see single-fetch.js's encodeViaTurboStream, which
-// runs sanitizeError() on every Error value). That sanitization doesn't happen in dev, so a
+// that boundary at all, and a plain Error fares no better - react-router's production build
+// unconditionally replaces any rejected Error's message/stack with a generic "Unexpected
+// Server Error" before it reaches the client (see its encodeViaTurboStream, which runs
+// sanitizeError() on every Error value). That sanitization doesn't happen in dev, so a
 // message-tagged Error looks like it works locally and then breaks in every production build.
 // Deferred call sites must instead catch isMaintenanceResponse() and *resolve* the promise with a
 // flagged payload (see isMaintenancePayload() below) - only Error instances get sanitized, plain

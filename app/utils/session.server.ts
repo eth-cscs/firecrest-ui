@@ -7,6 +7,7 @@
 
 import Redis from 'ioredis'
 import { createCookie, createSessionStorage } from 'react-router'
+import type { Session, SessionStorage } from 'react-router'
 import { createFileSessionStorage } from '@react-router/node'
 // configs
 import base from '~/configs/base.config'
@@ -72,7 +73,7 @@ function createRedisSessionStorage({
   })
 }
 
-export let sessionStorage: any
+export let sessionStorage: SessionStorage
 
 if (redisConfig.active) {
   const redis = new Redis({
@@ -117,14 +118,14 @@ export async function getSession(cookie: string | null) {
   return session
 }
 
-export async function commitSession(session: any) {
+export async function commitSession(session: Session) {
   const t = performance.now()
   const cookie = await sessionStorage.commitSession(session)
   logSessionOp('session.commit', t)
   return cookie
 }
 
-export async function destroySession(session: any) {
+export async function destroySession(session: Session) {
   const t = performance.now()
   const cookie = await sessionStorage.destroySession(session)
   logSessionOp('session.destroy', t)

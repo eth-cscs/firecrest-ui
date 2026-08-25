@@ -20,7 +20,11 @@ const ErrorPage: React.FC = () => {
   // and are handled at the render site that owns the <Await>, not in this route ErrorBoundary.
   // A 503 without the maintenance statusText is a real backend outage, not planned maintenance -
   // it falls through to the generic error UI below instead.
-  if (isRouteErrorResponse(error) && error.status === 503 && error.statusText === MAINTENANCE_REASON) {
+  if (
+    isRouteErrorResponse(error) &&
+    error.status === 503 &&
+    error.statusText === MAINTENANCE_REASON
+  ) {
     return <MaintenancePage message={error.data} />
   }
 

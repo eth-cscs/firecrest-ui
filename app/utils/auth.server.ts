@@ -14,7 +14,7 @@ import type { Auth } from '~/types/auth'
 import oidc from '~/configs/oidc.config'
 import base from '~/configs/base.config'
 // utils
-import { getSession, commitSession, destroySession, sessionStorage } from './session.server'
+import { getSession, commitSession, destroySession } from './session.server'
 // logger
 import logger from '~/logger/logger.server'
 // errors
@@ -197,7 +197,7 @@ export async function getAuthAccessToken(request: Request, headers = new Headers
       }
       const session = await getSession(request.headers.get('Cookie'))
       session.set(AUTH_SESSION_KEY, auth)
-      headers.append('Set-Cookie', await sessionStorage.commitSession(session))
+      headers.append('Set-Cookie', await commitSession(session))
       if (request.method === 'GET') {
         const url = request.url
         if (url.indexOf('/api/') < 0) {

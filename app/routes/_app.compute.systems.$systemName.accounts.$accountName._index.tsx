@@ -53,7 +53,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     DEFERRED_PROMISE_TIMEOUT_MS,
   ).catch(async (error): Promise<GetSystemJobsResponse | MaintenancePayload> => {
     if (isMaintenanceResponse(error)) {
-      return { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) }
+      return {
+        maintenance: true,
+        reason: MAINTENANCE_REASON,
+        message: await getMaintenanceMessage(error),
+      }
     }
     return {
       system: systemName,

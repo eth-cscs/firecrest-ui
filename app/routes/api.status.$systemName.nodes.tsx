@@ -45,7 +45,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   } catch (error) {
     if (isMaintenanceResponse(error)) {
       return data(
-        { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) },
+        {
+          maintenance: true,
+          reason: MAINTENANCE_REASON,
+          message: await getMaintenanceMessage(error),
+        },
         { headers },
       )
     }

@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 import { redirect, useLoaderData, useActionData, useRouteError } from 'react-router'
 import { parseFormData } from '@mjackson/form-data-parser'
 import { MaxFileSizeExceededError } from '@mjackson/multipart-parser'
@@ -28,7 +28,7 @@ import { validateJob } from '~/validations/computeValidation'
 import ErrorView from '~/components/views/ErrorView'
 import JobSubmitView from '~/modules/compute/components/views/JobSubmitView'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({

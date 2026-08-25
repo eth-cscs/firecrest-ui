@@ -6,13 +6,13 @@
 *************************************************************************/
 
 import { redirect } from 'react-router'
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // utils
 import { getAuthenticator, getAuth } from '~/utils/auth.server'
 import { returnToCookie } from '~/utils/session.server'
 import { isRedirectResponse, safeRedirect } from '~/utils/redirect.server'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get returnTo from query param and set cookie if needed
   const url = new URL(request.url)
   const returnToParam = url.searchParams.get('returnTo')

@@ -7,7 +7,7 @@
 
 import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
@@ -26,7 +26,7 @@ type LoaderData =
   | { ok: true; content: string; fileName: string; sourcePath: string }
   | { ok: false; statusCode: number; message: string; fileName: string; sourcePath: string }
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const headers = new Headers()
   const accessToken = await getAuthAccessToken(request, headers)
   const system: string = params.systemName || ''

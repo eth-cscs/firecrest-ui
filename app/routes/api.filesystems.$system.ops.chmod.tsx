@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from 'react-router'
+import type { ActionFunctionArgs } from 'react-router'
 // types
 import { PutOpsChmodRequest } from '~/types/api-filesystem'
 // helpers
@@ -21,7 +21,7 @@ import { putOpsChmod } from '~/apis/filesystem-api'
 // validations
 import { validateOpsChmod } from '~/validations/filesystemOpsValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

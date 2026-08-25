@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 import { useLoaderData, useActionData, useRouteError } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
@@ -31,7 +31,7 @@ import FileListView from '~/modules/filesystem/components/views/FileListView'
 // types
 import type { File } from '~/types/api-filesystem'
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({

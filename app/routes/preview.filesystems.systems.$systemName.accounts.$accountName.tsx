@@ -7,7 +7,7 @@
 
 import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 import { useState } from 'react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 // utils
@@ -23,7 +23,7 @@ const ERROR_MESSAGES: Record<number, string> = {
   [StatusCodes.UNAUTHORIZED]: 'You are not authorized to access this file.',
 }
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Auth check only — the browser loads the binary content directly from the resource route
   const headers = new Headers()
   await getAuthAccessToken(request, headers)

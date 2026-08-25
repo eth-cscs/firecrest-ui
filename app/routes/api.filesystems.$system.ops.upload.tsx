@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { ActionFunction, ActionFunctionArgs } from 'react-router'
+import type { ActionFunctionArgs } from 'react-router'
 import { parseMultipartRequest, MaxFileSizeExceededError } from '@mjackson/multipart-parser'
 // types
 import { PostFileUploadPayload } from '~/types/api-filesystem'
@@ -27,7 +27,7 @@ import { getSystems } from '~/apis/status-api'
 // validation
 import { validateFileUpload } from '~/validations/filesystemValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -63,18 +63,6 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     }
     const fileValue = formData.get('file')
     const originalFileName = (formData.get('fileName') as string) || (fileValue as any)?.name
-    console.log(
-      '[upload] file type:',
-      typeof fileValue,
-      (fileValue as any)?.constructor?.name,
-      'size:',
-      (fileValue as any)?.size,
-      'name:',
-      (fileValue as any)?.name,
-      'originalFileName:',
-      originalFileName,
-    )
-    console.log('[upload] maxOpsFileSize:', maxOpsFileSize)
     const payloadData: PostFileUploadPayload = await validateFileUpload(formData, maxOpsFileSize)
     const requestId = crypto.randomUUID()
     await postFileUpload(
@@ -95,7 +83,7 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     await notifySuccessMessage(
       {
         title: 'File upload',
-        text: `File "${originalFileName}" have been upload successfully at the target path "${payloadData.path}"`,
+        text: `File "${originalFileName}" was uploaded successfully at the target path "${payloadData.path}"`,
       },
       request,
       headers,

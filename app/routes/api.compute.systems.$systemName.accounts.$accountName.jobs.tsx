@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // types
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
@@ -15,7 +15,7 @@ import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunctionArgs, LoaderFunction } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import {
   getDefaultFileSystemFromSystem,
@@ -19,7 +19,7 @@ import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 import { getSystems } from '~/apis/status-api'
 import { getOpsLs } from '~/apis/filesystem-api'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

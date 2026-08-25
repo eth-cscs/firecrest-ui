@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import { Suspense } from 'react'
-import { data , useLoaderData, Await } from 'react-router'
-import type { LinksFunction, LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import { data, useLoaderData, Await } from 'react-router'
+import type { LinksFunction, LoaderFunctionArgs } from 'react-router'
 // styles
 import stylesheet from '~/styles/app.css?url'
 // configs
@@ -40,7 +40,7 @@ import type { System } from '~/types/api-status'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const loaderStart = performance.now()
   // Check authentication
   const { auth } = await requireAuth(request)

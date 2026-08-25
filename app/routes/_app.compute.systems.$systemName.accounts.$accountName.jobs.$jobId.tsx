@@ -38,7 +38,7 @@ import JobDetailsConsoleView from '~/modules/compute/components/views/JobDetails
 // observability
 import observability from '~/configs/observability.config'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
@@ -88,7 +88,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   }
 }
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

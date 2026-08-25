@@ -7,7 +7,7 @@
 
 import { useEffect, startTransition } from 'react'
 import { Outlet, useLoaderData, useRouteError } from 'react-router'
-import type { LoaderFunction, LoaderFunctionArgs } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -27,7 +27,7 @@ import { GroupProvider, useGroup } from '~/contexts/GroupContext'
 // switchers
 import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
@@ -55,7 +55,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
 
 // Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,
 // so there is no dehydrated Suspense boundary that can trigger React error #421 during
-// Remix's internal fetchAndApplyManifestPatches hydration pass.
+// React Router's internal fetchAndApplyManifestPatches hydration pass.
 function GroupsUpdater({
   promise,
   groupName,

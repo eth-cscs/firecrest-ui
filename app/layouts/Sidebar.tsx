@@ -279,25 +279,31 @@ const Sidebar: React.FC<any> = ({
                                   </DisclosurePanel> */}
                                     <DisclosurePanel as='ul' className='mt-1 px-2'>
                                       {item.children.map((subItem: any) => {
+                                        const linkClassName = classNames(
+                                          'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                          isDisabled
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                            : isCurrentRootPath({
+                                                  currentRootPath: subItem.path,
+                                                })
+                                              ? 'bg-gray-100 text-gray-900'
+                                              : 'hover:bg-gray-100 text-gray-900',
+                                        )
                                         return (
                                           <li key={`link-${subItem.path}`}>
-                                            <DisclosureButton
-                                              as={isDisabled ? 'div' : 'a'}
-                                              href={isDisabled ? undefined : subItem.path}
-                                              disabled={isDisabled}
-                                              className={classNames(
-                                                'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                                isDisabled
-                                                  ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                                  : isCurrentRootPath({
-                                                        currentRootPath: subItem.path,
-                                                      })
-                                                    ? 'bg-gray-100 text-gray-900'
-                                                    : 'hover:bg-gray-100 text-gray-900',
-                                              )}
-                                            >
-                                              <span>{subItem.name}</span>
-                                            </DisclosureButton>
+                                            {isDisabled ? (
+                                              <span aria-disabled='true' className={linkClassName}>
+                                                <span>{subItem.name}</span>
+                                              </span>
+                                            ) : (
+                                              <DisclosureButton
+                                                as='a'
+                                                href={subItem.path}
+                                                className={linkClassName}
+                                              >
+                                                <span>{subItem.name}</span>
+                                              </DisclosureButton>
+                                            )}
                                           </li>
                                         )
                                       })}
@@ -451,31 +457,39 @@ const Sidebar: React.FC<any> = ({
                                 </DisclosureButton>
                                 <DisclosurePanel as='ul' className='mt-1 px-2'>
                                   {item.children.map((subItem: any) => {
+                                    const linkClassName = classNames(
+                                      'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                      isDisabled
+                                        ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                        : isCurrentRootPath({ currentRootPath: subItem.path })
+                                          ? 'bg-gray-100 text-gray-900'
+                                          : 'hover:bg-gray-100 text-gray-900',
+                                    )
+                                    const linkContent = (
+                                      <>
+                                        <subItem.icon
+                                          className={classNames(
+                                            isCurrentPath({ currentPath: item.path })
+                                              ? 'text-gray-500'
+                                              : 'text-gray-400 group-hover:text-gray-500',
+                                            'mr-3 flex-shrink-0 h-6 w-6',
+                                          )}
+                                          aria-hidden='true'
+                                        />
+                                        <span>{subItem.name}</span>
+                                      </>
+                                    )
                                     return (
                                       <li key={`link-${subItem.path}`}>
-                                        <a
-                                          href={isDisabled ? undefined : subItem.path}
-                                          disabled={isDisabled}
-                                          className={classNames(
-                                            'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                            isDisabled
-                                              ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                              : isCurrentRootPath({ currentRootPath: subItem.path })
-                                                ? 'bg-gray-100 text-gray-900'
-                                                : 'hover:bg-gray-100 text-gray-900',
-                                          )}
-                                        >
-                                          <subItem.icon
-                                            className={classNames(
-                                              isCurrentPath({ currentPath: item.path })
-                                                ? 'text-gray-500'
-                                                : 'text-gray-400 group-hover:text-gray-500',
-                                              'mr-3 flex-shrink-0 h-6 w-6',
-                                            )}
-                                            aria-hidden='true'
-                                          />
-                                          <span>{subItem.name}</span>
-                                        </a>
+                                        {isDisabled ? (
+                                          <span aria-disabled='true' className={linkClassName}>
+                                            {linkContent}
+                                          </span>
+                                        ) : (
+                                          <a href={subItem.path} className={linkClassName}>
+                                            {linkContent}
+                                          </a>
+                                        )}
                                       </li>
                                     )
                                   })}

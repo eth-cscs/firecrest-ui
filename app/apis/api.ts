@@ -73,7 +73,8 @@ async function handleReponse(
     }
     throw new Response(message, {
       status: StatusCodes.SERVICE_UNAVAILABLE,
-      statusText: reason === MAINTENANCE_REASON ? MAINTENANCE_REASON : ReasonPhrases.SERVICE_UNAVAILABLE,
+      statusText:
+        reason === MAINTENANCE_REASON ? MAINTENANCE_REASON : ReasonPhrases.SERVICE_UNAVAILABLE,
     })
   }
   switch (jsonResponse) {
@@ -121,13 +122,14 @@ export async function getMaintenanceMessage(error: Response): Promise<string | n
   }
 }
 
-// Deferred loader data (defer()/<Await>) is streamed to the client via turbo-stream. Rejecting a
-// deferred promise doesn't work as a maintenance signal: a raw Response can't be serialized across
-// that boundary at all, and a plain Error fares no better - react-router's production build
-// unconditionally replaces any rejected Error's message/stack with a generic "Unexpected
-// Server Error" before it reaches the client (see its encodeViaTurboStream, which runs
-// sanitizeError() on every Error value). That sanitization doesn't happen in dev, so a
-// message-tagged Error looks like it works locally and then breaks in every production build.
+// Deferred loader data (returned promises rendered via <Await>) is streamed to the client via
+// turbo-stream. Rejecting a deferred promise doesn't work as a maintenance signal: a raw
+// Response can't be serialized across that boundary at all, and a plain Error fares no better -
+// react-router's production build unconditionally replaces any rejected Error's message/stack
+// with a generic "Unexpected Server Error" before it reaches the client (see its
+// encodeViaTurboStream, which runs sanitizeError() on every Error value). That sanitization
+// doesn't happen in dev, so a message-tagged Error looks like it works locally and then breaks
+// in every production build.
 // Deferred call sites must instead catch isMaintenanceResponse() and *resolve* the promise with a
 // flagged payload (see isMaintenancePayload() below) - only Error instances get sanitized, plain
 // resolved values pass through untouched.

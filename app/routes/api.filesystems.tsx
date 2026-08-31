@@ -8,8 +8,8 @@
 import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import {
-  getDefaultFileSystemFromSystem,
   getDefaultSystemFromSystems,
+  getFileSystemByTargetPath,
 } from '~/modules/status/helpers/system-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
@@ -38,15 +38,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
     // Get first file system home direc
     const system = getDefaultSystemFromSystems(activeSystems)
-    const fileSystem = getDefaultFileSystemFromSystem(system)
-    // Validation
-    if (system === null || fileSystem === null) {
+    if (system === null) {
       throw new Error('Filesystem(s) configuration error')
     }
-    let targetPath = fileSystem.path
-    if (fileSystem.defaultWorkDir) {
-      targetPath = `${fileSystem.path}/${username}`
-    }
+    const { fileSystem, path: targetPath } = getFileSystemByTargetPath(system, null, username)
     // Call api/s and fetch data
     const { output } = await getOpsLs(accessToken, system.name, targetPath, request)
     // Get file system

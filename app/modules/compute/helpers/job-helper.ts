@@ -7,9 +7,4 @@
 // types
 import { Job } from '~/types/api-job'
 
-export const sortJobs = (jobs: Job[]) =>
-  [...jobs].sort((a, b) => {
-    const aId = a.jobId ?? -Infinity
-    const bId = b.jobId ?? -Infinity
-    return bId - aId
-  })
+export const sortJobs = (jobs: Job[]) => [...jobs].sort((a, b) => Number(b.jobId) - Number(a.jobId))

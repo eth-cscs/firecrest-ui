@@ -94,7 +94,7 @@ const DownloadDialog: React.FC<DownloadDialogProps> = ({
   return (
     <SimpleDialog
       title='Download file'
-      subtitle={`Donwload the file "${getFilePath()}"`}
+      subtitle={`Download the file "${getFilePath()}"`}
       open={open}
       onClose={onClose}
     >

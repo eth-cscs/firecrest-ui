@@ -72,7 +72,10 @@ function GroupsUpdater({
           setGroups(userInfo.groups)
         }
         if (!groupName) {
-          const defaultGroup = userInfo?.groups?.find((group) => group.default)
+          // firecrest-v2 >= 2.6.0 flags the default group per-item (group.default); older
+          // backends signal it via a separate top-level UserInfo.group instead - fall back to
+          // that so this works against either API generation.
+          const defaultGroup = userInfo?.groups?.find((group) => group.default) ?? userInfo?.group
           if (defaultGroup) {
             setSelectedGroupName(defaultGroup.name)
           }

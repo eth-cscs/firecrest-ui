@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from 'react-router'
 // types
 import { PostTransferDownloadRequest } from '~/types/api-filesystem'
 // helpers
@@ -20,7 +20,7 @@ import { postTransferDownload } from '~/apis/filesystem-api'
 // validations
 import { validateTransferDownload } from '~/validations/filesystemTransferValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -36,13 +36,21 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferDownloadRequest = await validateTransferDownload(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferDownload(
       accessToken,
       system,
       payloadData.path,
+      payloadData.account,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_DOWNLOAD, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_DOWNLOAD,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response, StatusCodes.OK, headers)
   } catch (error) {

@@ -1,0 +1,40 @@
+name: opencode-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    # Skip runs the bot's own push triggered: opencode-agent[bot] occasionally commits back to
+    # the PR branch (its verdict/a trivial fix), which re-fires `synchronize` and would otherwise
+    # have the bot review itself. That self-triggered run reliably fails anyway - GitHub's
+    # collaborator-permission check (which the action uses to gate posting) has no concept of
+    # "permission level" for a bot actor, since Apps aren't repo collaborators, so it comes back
+    # `none` and the step errors out. Skipping it here avoids a spurious red run instead of
+    # relying on the upstream action to handle a bot-authored actor.
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'opencode-agent[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: opencode-review-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: anomalyco/opencode/github@latest
+        env:
+          CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_KEY }}
+        with:
+          agent: grumpy-reviewer
+          model: cscs/moonshotai/Kimi-K2.7-Code
+          share: false

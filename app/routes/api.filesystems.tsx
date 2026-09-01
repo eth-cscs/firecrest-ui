@@ -5,11 +5,11 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunctionArgs, LoaderFunction } from '@remix-run/node'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import {
-  getDefaultFileSystemFromSystem,
   getDefaultSystemFromSystems,
+  getFileSystemByTargetPath,
 } from '~/modules/status/helpers/system-helper'
 import { getHealthyFileSystemSystems } from '~/helpers/system-helper'
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
@@ -19,7 +19,7 @@ import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 import { getSystems } from '~/apis/status-api'
 import { getOpsLs } from '~/apis/filesystem-api'
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -38,15 +38,10 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
     }
     // Get first file system home direc
     const system = getDefaultSystemFromSystems(activeSystems)
-    const fileSystem = getDefaultFileSystemFromSystem(system)
-    // Validation
-    if (system === null || fileSystem === null) {
+    if (system === null) {
       throw new Error('Filesystem(s) configuration error')
     }
-    let targetPath = fileSystem.path
-    if (fileSystem.defaultWorkDir) {
-      targetPath = `${fileSystem.path}/${username}`
-    }
+    const { fileSystem, path: targetPath } = getFileSystemByTargetPath(system, null, username)
     // Call api/s and fetch data
     const { output } = await getOpsLs(accessToken, system.name, targetPath, request)
     // Get file system

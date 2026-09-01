@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { data } from '@remix-run/node'
+import { data } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
@@ -20,7 +20,7 @@ import type { GetUserInfoResponse } from '~/types/api-status'
 // Consumed via useFetcher (see the compute/filesystem system layouts) - a thrown/non-2xx
 // Response wouldn't cleanly populate fetcher.data, so any failure (including maintenance) is
 // flattened into a normal 200 response, same convention as api.status.$systemName.nodes.tsx.
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const headers = new Headers()
   const accessToken = await getAuthAccessToken(request, headers)
   const systemName = params.systemName!

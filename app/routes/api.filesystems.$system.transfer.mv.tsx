@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from 'react-router'
 // types
 import { PostTransferMvRequest } from '~/types/api-filesystem'
 // helpers
@@ -21,7 +21,7 @@ import { postTransferMv } from '~/apis/filesystem-api'
 // validations
 import { validateTransferMv } from '~/validations/filesystemTransferValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -37,14 +37,21 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostTransferMvRequest = await validateTransferMv(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postTransferMv(
       accessToken,
       system,
       payloadData.sourcePath,
       payloadData.targetPath,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_TRANSFER_MV, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_TRANSFER_MV,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

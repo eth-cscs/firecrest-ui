@@ -5,9 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { redirect } from '@remix-run/node'
-import { useRouteError } from '@remix-run/react'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { redirect, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
@@ -25,13 +24,17 @@ import { getSystems } from '~/apis/status-api'
 // views
 import ErrorView from '~/components/views/ErrorView'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
     eventAction: LogPage.FILESYSTEM_TRANSFER_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Get path params
   const systemName = params.systemName!

@@ -20,7 +20,7 @@ import type {
   GetTransferDownloadResponse,
 } from '~/types/api-filesystem'
 // apis
-import api, { ApiTarget, ResponseBodyType, withRequestId } from './api'
+import api, { ApiTarget, ResponseBodyType, withTracingHeaders } from './api'
 
 export const getOpsLs = async (
   accessToken: string,
@@ -34,7 +34,7 @@ export const getOpsLs = async (
   const apiResponse = await api.get<GetOpsLsResponse>(
     `/filesystem/${system}/ops/ls?${urlSearchParams}`,
     {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
     },
   )
   return apiResponse
@@ -46,6 +46,7 @@ export const getOpsTail = async (
   targetPath: string,
   lines: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsTailResponse> => {
   const urlSearchParams = new URLSearchParams({
     path: targetPath,
@@ -54,7 +55,7 @@ export const getOpsTail = async (
   const apiResponse = await api.get<GetOpsTailResponse>(
     `/filesystem/${system}/ops/tail?${urlSearchParams}`,
     {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request, requestId),
     },
   )
   return apiResponse
@@ -65,6 +66,7 @@ export const getOpsChecksum = async (
   system: string,
   targetPath: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsChecksumResponse> => {
   const urlSearchParams = new URLSearchParams({
     path: targetPath,
@@ -72,7 +74,7 @@ export const getOpsChecksum = async (
   const apiResponse = await api.get<GetOpsChecksumResponse>(
     `/filesystem/${system}/ops/checksum?` + urlSearchParams,
     {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request, requestId),
     },
   )
   return apiResponse
@@ -90,7 +92,7 @@ export const getOpsDownload = async (
   const apiResponse = await api.get<any>(
     `/filesystem/${system}/ops/download?` + urlSearchParams,
     {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
     },
     ApiTarget.API_REMOTE,
     ResponseBodyType.BLOB,
@@ -104,14 +106,16 @@ export const postOpsSymlink = async (
   targetPath: string,
   linkPath: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsSymlinkResponse> => {
   const apiResponse = await api.post<any, GetOpsSymlinkResponse>(
     `/filesystem/${system}/ops/symlink`,
     JSON.stringify({ path: targetPath, linkPath }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -125,14 +129,16 @@ export const putOpsChown = async (
   owner: string | null,
   group: string | null,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsChownResponse> => {
   const apiResponse = await api.put<any, GetOpsChownResponse>(
     `/filesystem/${system}/ops/chown`,
     JSON.stringify({ path: targetPath, owner, group }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -145,14 +151,16 @@ export const putOpsChmod = async (
   targetPath: string,
   mode: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsChmodResponse> => {
   const apiResponse = await api.put<any, GetOpsChmodResponse>(
     `/filesystem/${system}/ops/chmod`,
     JSON.stringify({ path: targetPath, mode }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -165,14 +173,16 @@ export const postOpsMkdir = async (
   path: string,
   parent: boolean = false,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetOpsMkdirResponse> => {
   const apiResponse = await api.post<any, GetOpsMkdirResponse>(
     `/filesystem/${system}/ops/mkdir`,
     JSON.stringify({ path, parent }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -184,11 +194,13 @@ export const deleteOpsRm = async (
   system: string,
   targetPath: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<any> => {
   await api.delete<any, any>(`/filesystem/${system}/ops/rm?path=${targetPath}`, null, {
-    headers: withRequestId(
+    headers: withTracingHeaders(
       { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       request,
+      requestId,
     ),
   })
 }
@@ -199,14 +211,16 @@ export const postTransferCp = async (
   sourcePath: string,
   targetPath: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetTransferCpResponse> => {
   const apiResponse = await api.post<any, GetTransferCpResponse>(
     `/filesystem/${system}/transfer/cp`,
     JSON.stringify({ sourcePath, targetPath }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -219,14 +233,16 @@ export const postTransferMv = async (
   sourcePath: string,
   targetPath: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetTransferMvResponse> => {
   const apiResponse = await api.post<any, GetTransferMvResponse>(
     `/filesystem/${system}/transfer/mv`,
     JSON.stringify({ sourcePath, targetPath }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
@@ -240,6 +256,7 @@ export const postFileUpload = async (
   fileData: any,
   fileName?: string,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<any> => {
   const formData = new FormData()
   if (fileName) {
@@ -254,7 +271,7 @@ export const postFileUpload = async (
     `/filesystem/${system}/ops/upload?${urlSearchParams}`,
     formData,
     {
-      headers: withRequestId({ Authorization: `Bearer ${accessToken}` }, request),
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request, requestId),
     },
   )
   return result
@@ -268,6 +285,7 @@ export const postTransferUpload = async (
   fileSize: number,
   account: string | null = null,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetTransferUploadResponse> => {
   const payload = {
     sourcePath: `${path}/${fileName}`,
@@ -281,28 +299,41 @@ export const postTransferUpload = async (
     `/filesystem/${system}/transfer/upload`,
     JSON.stringify(payload),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )
   return apiResponse
 }
 
+// `account` must be forwarded (mirrors postTransferUpload below): some systems fill it into a
+// scheduler directive on the backend and reject the transfer job with a 400 if it's missing.
+// Note that even with an account set, the transfer job can still be rejected by the scheduler if
+// the cluster doesn't have the partition the backend requests for data-transfer jobs - that's a
+// separate, cluster-side scheduler configuration issue, not something this request can fix.
 export const postTransferDownload = async (
   accessToken: string,
   system: string,
   path: string,
+  account: string | null = null,
   request: Request | null = null,
+  requestId?: string,
 ): Promise<GetTransferDownloadResponse> => {
   const apiResponse = await api.post<any, GetTransferDownloadResponse>(
     `/filesystem/${system}/transfer/download`,
-    JSON.stringify({ sourcePath: path, transferDirectives: { transferMethod: 's3' } }),
+    JSON.stringify({
+      sourcePath: path,
+      account: account,
+      transferDirectives: { transferMethod: 's3' },
+    }),
     {
-      headers: withRequestId(
+      headers: withTracingHeaders(
         { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         request,
+        requestId,
       ),
     },
   )

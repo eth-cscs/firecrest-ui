@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React from 'react'
-import { Link } from '@remix-run/react'
+import { Link } from 'react-router'
 import { PlusIcon } from '@heroicons/react/20/solid'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'

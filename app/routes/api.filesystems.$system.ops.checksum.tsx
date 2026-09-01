@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import type { LoaderFunctionArgs } from 'react-router'
 // types
 import { GetOpsChecksumResponse } from '~/types/api-filesystem'
 // helpers
@@ -17,7 +17,7 @@ import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
 // apis
 import { getOpsChecksum } from '~/apis/filesystem-api'
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -32,13 +32,20 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const url = new URL(request.url)
     const targetPath = url.searchParams.get('targetPath') || ''
     // Get data
+    const requestId = crypto.randomUUID()
     const response: GetOpsChecksumResponse = await getOpsChecksum(
       accessToken,
       system,
       targetPath,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_CHECKSUM, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_CHECKSUM,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Return response
     return handleSuccessResponse(response)
   } catch (error) {

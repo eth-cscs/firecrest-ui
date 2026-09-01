@@ -5,9 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useRouteError } from '@remix-run/react'
-import type { LoaderFunctionArgs } from '@remix-run/node'
-import { data } from '@remix-run/node'
+import { useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
@@ -34,7 +33,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     request: request,
     extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
-  return data({})
+  return {}
 }
 
 export default function AppComputeIandexRoute() {

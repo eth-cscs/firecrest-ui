@@ -6,10 +6,10 @@
 *************************************************************************/
 import { PassThrough } from 'node:stream'
 import { isbot } from 'isbot'
-import { RemixServer } from '@remix-run/react'
+import { ServerRouter } from 'react-router'
 import { renderToPipeableStream } from 'react-dom/server'
-import { createReadableStreamFromReadable } from '@remix-run/node'
-import type { AppLoadContext, EntryContext } from '@remix-run/node'
+import { createReadableStreamFromReadable } from '@react-router/node'
+import type { AppLoadContext, EntryContext } from 'react-router'
 import { ABORT_DELAY_MS } from '~/helpers/promise-helper'
 
 const ABORT_DELAY = ABORT_DELAY_MS
@@ -18,26 +18,26 @@ export default function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
+  reactRouterContext: EntryContext,
   // This is ignored so we can keep it in the template for visibility.  Feel
   // free to delete this parameter in your app if you're not using it!
   loadContext: AppLoadContext,
 ) {
   return isbot(request.headers.get('user-agent') || '')
-    ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
-    : handleBrowserRequest(request, responseStatusCode, responseHeaders, remixContext)
+    ? handleBotRequest(request, responseStatusCode, responseHeaders, reactRouterContext)
+    : handleBrowserRequest(request, responseStatusCode, responseHeaders, reactRouterContext)
 }
 
 function handleBotRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
+  reactRouterContext: EntryContext,
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer context={remixContext} url={request.url} abortDelay={ABORT_DELAY} />,
+      <ServerRouter context={reactRouterContext} url={request.url} />,
       {
         onAllReady() {
           shellRendered = true
@@ -78,12 +78,12 @@ function handleBrowserRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
+  reactRouterContext: EntryContext,
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer context={remixContext} url={request.url} abortDelay={ABORT_DELAY} />,
+      <ServerRouter context={reactRouterContext} url={request.url} />,
       {
         onShellReady() {
           shellRendered = true

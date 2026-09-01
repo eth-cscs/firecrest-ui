@@ -258,13 +258,28 @@ Every log line includes the following fields:
 | `service.environment` | Value of the `ENVIRONMENT` variable |
 | `host.name` | Pod hostname |
 | `user.id` | Authenticated username (present on all requests after login) |
-| `request.id` | Request correlation ID from the `x-request-id` header |
+| `request.id` | ID of the single backend call this event reports on, from the `X-Request-ID` header. Present on action events (e.g. `fs.chmod`); omitted on page-view events, which may fan out into several backend calls with their own distinct IDs |
+| `firecrest.correlationId` | End-to-end correlation ID from the `x-correlation-id` header, shared across every backend call made during this page request |
 | `http.request.method` | HTTP method |
 | `url.path` | Request path |
 | `firecrest.system` | HPC system name targeted by the request |
 | `firecrest.account` | HPC account used (compute routes only) |
 | `firecrest.jobId` | Job ID returned by a submission (compute submit only) |
 | `firecrest.platform` | Platform name, if `PLATFORM` is set (see below) |
+
+### Per-hop request logging
+
+Each individual outbound call to firecrest-v2 (one per `fetch`, so a single page load can produce several) is also logged on its own, via a `fetch` wrapper in `server.js`. It carries a narrower field set:
+
+| Field | Description |
+|---|---|
+| `event.action` | Always `api.request` |
+| `request.id` | Per-hop ID from the `X-Request-ID` header, fresh for this one call |
+| `firecrest.correlationId` | Same end-to-end correlation ID as above |
+| `http.request.method` | Method of the outbound call |
+| `url.path` | Target URL of the outbound call |
+
+Joining on `request.id` or `firecrest.correlationId` lets you follow a single backend call, or an entire page request, across firecrest-ui's own logs and firecrest-v2's.
 
 ### Platform label
 

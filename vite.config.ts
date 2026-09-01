@@ -7,26 +7,16 @@
 
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import { installGlobals } from '@remix-run/node'
-import { vitePlugin as remix } from '@remix-run/dev'
-
-installGlobals()
+import { reactRouter } from '@react-router/dev/vite'
 
 export default defineConfig({
-  plugins: [
-    remix({
-      future: {
-        v3_fetcherPersist: true,
-        v3_lazyRouteDiscovery: true,
-        v3_relativeSplatPath: true,
-        v3_singleFetch: true,
-        v3_throwAbortReason: true,
-      },
-    }),
-    tsconfigPaths(),
-  ],
+  plugins: [reactRouter(), tsconfigPaths()],
   build: {
-    sourcemap: true,
+    // The client build's output is served as-is from /assets in production (see server.js), so
+    // a sourcemap here would be publicly downloadable next to the bundle it maps - and nothing
+    // in this repo consumes/uploads it (no error-tracking integration), so there's no offsetting
+    // benefit to shipping one.
+    sourcemap: false,
   },
   ssr: {
     // pino uses worker threads (thread-stream) internally; Vite 6's SSR

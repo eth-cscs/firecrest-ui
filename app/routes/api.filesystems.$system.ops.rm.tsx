@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { LogAction } from '~/helpers/log-labels'
@@ -21,7 +21,7 @@ import { DeleteOpsRmRequest } from '~/types/api-filesystem'
 // validations
 import { validateOpsRm } from '~/validations/filesystemOpsValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -39,8 +39,14 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payload: DeleteOpsRmRequest = await validateOpsRm(formData)
     // Delete the file
-    await deleteOpsRm(accessToken, system, payload.fileTargetPath, request)
-    logInfoHttp({ eventAction: LogAction.FS_RM, request, extraInfo: { username: authUser?.username, system } })
+    const requestId = crypto.randomUUID()
+    await deleteOpsRm(accessToken, system, payload.fileTargetPath, request, requestId)
+    logInfoHttp({
+      eventAction: LogAction.FS_RM,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

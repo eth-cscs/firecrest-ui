@@ -6,8 +6,7 @@
 *************************************************************************/
 
 import React, { Fragment } from 'react'
-import { Link } from '@remix-run/react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router'
 import {
   Dialog,
   DialogBackdrop,
@@ -38,11 +37,11 @@ import { useSystem } from '~/contexts/SystemContext'
 // helpers
 import { isSystemHealthy } from '~/helpers/system-helper'
 // types
-import { SystemHealtyStatus } from '~/types/api-status'
+import { SystemHealtyStatus, System } from '~/types/api-status'
 
 interface SidebarProps {
   sidebarOpen: boolean
-  setSidebarOpen: () => void
+  setSidebarOpen: (open: boolean) => void
   logoPath: string | null
   appName: string | null
   supportUrl: string | null
@@ -50,7 +49,36 @@ interface SidebarProps {
   repoUrl: string | null
 }
 
-const Sidebar: React.FC<any> = ({
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>
+
+interface NavItem {
+  name: string
+  path: string
+  icon: IconComponent
+}
+
+interface PrimarySubNavItem {
+  name: string
+  path: string
+  icon: IconComponent
+}
+
+interface PrimaryNavItem {
+  name: string
+  path: string
+  icon: IconComponent
+  systemHealthyStatus: SystemHealtyStatus
+  disabled: boolean
+  children: PrimarySubNavItem[]
+}
+
+interface SecondaryNavItem {
+  name: string
+  url: string
+  icon: IconComponent
+}
+
+const Sidebar: React.FC<SidebarProps> = ({
   sidebarOpen,
   setSidebarOpen,
   logoPath = null,
@@ -58,7 +86,7 @@ const Sidebar: React.FC<any> = ({
   supportUrl = null,
   docUrl = null,
   repoUrl = null,
-}: any) => {
+}: SidebarProps) => {
   const location = useLocation()
   const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
@@ -76,7 +104,7 @@ const Sidebar: React.FC<any> = ({
     }
   }
 
-  const primaryNavigation: any = systems.map((system) => {
+  const primaryNavigation: PrimaryNavItem[] = systems.map((system: System) => {
     const systemHealthyStatus = isSystemHealthy(system)
     const disabled = systemHealthyStatus === SystemHealtyStatus.unhealthy
     return {
@@ -86,22 +114,21 @@ const Sidebar: React.FC<any> = ({
       systemHealthyStatus: systemHealthyStatus,
       disabled: disabled,
       children: [
-            {
-              name: "Scheduler",
-              path: '/compute/systems/' + system.name,
-              icon: serviceIconMapper('scheduler'),
-            },
-            {
-              name: "Filesystems",
-              path: '/filesystems/systems/' + system.name,
-              icon: serviceIconMapper('filesystem'),
-            }
-
-          ]
+        {
+          name: 'Scheduler',
+          path: '/compute/systems/' + system.name,
+          icon: serviceIconMapper('scheduler'),
+        },
+        {
+          name: 'Filesystems',
+          path: '/filesystems/systems/' + system.name,
+          icon: serviceIconMapper('filesystem'),
+        },
+      ],
     }
   })
 
-  const secondaryNavigation: any = []
+  const secondaryNavigation: SecondaryNavItem[] = []
 
   if (docUrl && docUrl !== '') {
     secondaryNavigation.push({
@@ -127,12 +154,12 @@ const Sidebar: React.FC<any> = ({
     })
   }
 
-  const isCurrentPath = ({ currentPath }: any) => {
+  const isCurrentPath = ({ currentPath }: { currentPath: string }) => {
     const path = location.pathname
     return path === currentPath
   }
 
-  const isCurrentRootPath = ({ currentRootPath }: any) => {
+  const isCurrentRootPath = ({ currentRootPath }: { currentRootPath: string }) => {
     const path: string = location.pathname
     return path.includes(currentRootPath)
   }
@@ -193,7 +220,7 @@ const Sidebar: React.FC<any> = ({
                       <li key={`link-${item.path}`}>
                         <NavLink
                           to={item.path}
-                          className={({ isActive }: any) =>
+                          className={({ isActive }) =>
                             isActive
                               ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
                               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
@@ -215,128 +242,115 @@ const Sidebar: React.FC<any> = ({
                   </ul>
                   <div className='mt-2 pt-2'>
                     <ul className='space-y-1'>
-                      {primaryNavigation.map((item: any) => {
-                         const statusDotClass = getSystemHealthyStatusDotClass(
-                                        item.systemHealthyStatus,
-                                      )
+                      {primaryNavigation.map((item: PrimaryNavItem) => {
+                        const statusDotClass = getSystemHealthyStatusDotClass(
+                          item.systemHealthyStatus,
+                        )
                         const isDisabled = item.disabled
                         return (
-                        <li key={`link-${item.path}`}>
-                          {'children' in item && item.children ? (
-                            <Disclosure
-                              as='div'
-                              defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
-                            >
-                              {({ open }) => (
-                                <>
-                                  <DisclosureButton
-                                    className={classNames(
-                                      isCurrentRootPath({ currentRootPath: item.path })
-                                        ? 'bg-gray-100 text-gray-900'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
-                                      'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
-                                    )}
-                                  >
-                                    <item.icon
+                          <li key={`link-${item.path}`}>
+                            {'children' in item && item.children ? (
+                              <Disclosure
+                                as='div'
+                                defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
+                              >
+                                {({ open }) => (
+                                  <>
+                                    <DisclosureButton
                                       className={classNames(
                                         isCurrentRootPath({ currentRootPath: item.path })
-                                          ? 'text-gray-500'
-                                          : 'text-gray-400 group-hover:text-gray-500',
-                                        'h-6 w-6 shrink-0 ',
+                                          ? 'bg-gray-100 text-gray-900'
+                                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
+                                        'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
                                       )}
-                                      aria-hidden='true'
-                                    />
-                                    <span
-                                              className={classNames(
-                                                'ml-3 h-2.5 w-2.5 rounded-full',
-                                                statusDotClass,
-                                              )}
-                                            />
-                                    {item.name}
-                                    <ChevronRightIcon
-                                      className={classNames(
-                                        open ? 'rotate-90 text-gray-500' : 'text-gray-400',
-                                        'ml-auto h-5 w-5 shrink-0',
-                                      )}
-                                      aria-hidden='true'
-                                    />
-                                  </DisclosureButton>
-                                  {/* <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                    {item.children.map((subItem: any) => (
-                                      <li key={`link-${subItem.path}`}>
-                                        <DisclosureButton
-                                          as='a'
-                                          href={subItem.path}
-                                          className={classNames(
-                                            isCurrentRootPath({ currentRootPath: subItem.path })
-                                              ? 'bg-gray-100'
-                                              : 'hover:bg-gray-100',
-                                            'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-900',
-                                          )}
-                                        >
-                                          {subItem.name}
-                                        </DisclosureButton>
-                                      </li>
-                                    ))}
-                                  </DisclosurePanel> */}
-                                  <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                    {item.children.map((subItem: any) => {
-                                      
-                                     
-                                      return (
-                                        <li key={`link-${subItem.path}`}>
-                                          <DisclosureButton
-                                            as={isDisabled ? 'div' : 'a'}
-                                            href={isDisabled ? 'undefined' : subItem.path}
-                                            disabled={isDisabled}
-                                            className={classNames(
-                                              'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                              isDisabled
-                                                ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                                : isCurrentRootPath({
-                                                      currentRootPath: subItem.path,
-                                                    })
-                                                  ? 'bg-gray-100 text-gray-900'
-                                                  : 'hover:bg-gray-100 text-gray-900',
+                                    >
+                                      <item.icon
+                                        className={classNames(
+                                          isCurrentRootPath({ currentRootPath: item.path })
+                                            ? 'text-gray-500'
+                                            : 'text-gray-400 group-hover:text-gray-500',
+                                          'h-6 w-6 shrink-0 ',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                      <span
+                                        className={classNames(
+                                          'ml-3 h-2.5 w-2.5 rounded-full',
+                                          statusDotClass,
+                                        )}
+                                      />
+                                      {item.name}
+                                      <ChevronRightIcon
+                                        className={classNames(
+                                          open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                          'ml-auto h-5 w-5 shrink-0',
+                                        )}
+                                        aria-hidden='true'
+                                      />
+                                    </DisclosureButton>
+                                    <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                      {item.children.map((subItem: PrimarySubNavItem) => {
+                                        const linkClassName = classNames(
+                                          'flex items-center justify-between rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                          isDisabled
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                            : isCurrentRootPath({
+                                                  currentRootPath: subItem.path,
+                                                })
+                                              ? 'bg-gray-100 text-gray-900'
+                                              : 'hover:bg-gray-100 text-gray-900',
+                                        )
+                                        return (
+                                          <li key={`link-${subItem.path}`}>
+                                            {isDisabled ? (
+                                              <span aria-disabled='true' className={linkClassName}>
+                                                <span>{subItem.name}</span>
+                                              </span>
+                                            ) : (
+                                              <DisclosureButton
+                                                as={NavLink}
+                                                to={subItem.path}
+                                                className={linkClassName}
+                                              >
+                                                <span>{subItem.name}</span>
+                                              </DisclosureButton>
                                             )}
-                                          >
-                                            <span>{subItem.name}</span>
-                                          </DisclosureButton>
-                                        </li>
-                                      )
-                                    })}
-                                  </DisclosurePanel>
-                                </>
-                              )}
-                            </Disclosure>
-                          ) : (
-                            <NavLink
-                              to={item.path}
-                              className={({ isActive }: any) =>
-                                isActive
-                                  ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
-                              }
-                            >
-                              <item.icon
-                                className={classNames(
-                                  isCurrentPath({ currentPath: item.path })
-                                    ? 'text-gray-500'
-                                    : 'text-gray-400 group-hover:text-gray-500',
-                                  'mr-4 flex-shrink-0 h-6 w-6',
+                                          </li>
+                                        )
+                                      })}
+                                    </DisclosurePanel>
+                                  </>
                                 )}
-                                aria-hidden='true'
-                              />
-                              {item.name}
-                            </NavLink>
-                          )}
-                        </li>
-                      )})}
+                              </Disclosure>
+                            ) : (
+                              <NavLink
+                                to={item.path}
+                                className={({ isActive }) =>
+                                  isActive
+                                    ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md'
+                                }
+                              >
+                                <item.icon
+                                  className={classNames(
+                                    isCurrentPath({ currentPath: item.path })
+                                      ? 'text-gray-500'
+                                      : 'text-gray-400 group-hover:text-gray-500',
+                                    'mr-4 flex-shrink-0 h-6 w-6',
+                                  )}
+                                  aria-hidden='true'
+                                />
+                                {item.name}
+                              </NavLink>
+                            )}
+                          </li>
+                        )
+                      })}
                     </ul>
                   </div>
                   <div className='mt-6 pt-6'>
                     <ul className='space-y-1'>
-                      {secondaryNavigation.map((item: any) => (
+                      {secondaryNavigation.map((item: SecondaryNavItem) => (
                         <li key={`link-${item.name}`}>
                           <Link
                             to={item.url}
@@ -378,11 +392,11 @@ const Sidebar: React.FC<any> = ({
           <div className='mt-5 flex-grow flex flex-col'>
             <nav className='flex-1 px-2 pb-4 space-y-6 divide-y'>
               <ul className='space-y-1'>
-                {userNavigation.map((item: any) => (
+                {userNavigation.map((item: NavItem) => (
                   <li key={`link-${item.path}`}>
                     <NavLink
                       to={item.path}
-                      className={({ isActive }: any) =>
+                      className={({ isActive }) =>
                         isActive
                           ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
@@ -403,119 +417,126 @@ const Sidebar: React.FC<any> = ({
                 ))}
               </ul>
               <div className='mt-2 pt-2'>
-                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>HPC Clusters</span>
+                <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>
+                  HPC Clusters
+                </span>
                 <ul className='space-y-1'>
-                  {primaryNavigation.map((item: any) => {
+                  {primaryNavigation.map((item: PrimaryNavItem) => {
                     const isDisabled = item.disabled
-                                  const statusDotClass = getSystemHealthyStatusDotClass(
-                                    item.systemHealthyStatus,
-                                  )
+                    const statusDotClass = getSystemHealthyStatusDotClass(item.systemHealthyStatus)
                     return (
-                    <li key={`link-${item.path}`}>
-                      {'children' in item && item.children  ? (
-                        <Disclosure
-                          as='div'
-                          defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
-                        >
-                          {({ open }) => (
-                            <>
-                              <DisclosureButton
-                                className={classNames(
-                                  isCurrentRootPath({ currentRootPath: item.path })
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
-                                  'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
-                                )}
-                              >
-                                <item.icon
+                      <li key={`link-${item.path}`}>
+                        {'children' in item && item.children ? (
+                          <Disclosure
+                            as='div'
+                            defaultOpen={isCurrentRootPath({ currentRootPath: item.path })}
+                          >
+                            {({ open }) => (
+                              <>
+                                <DisclosureButton
                                   className={classNames(
                                     isCurrentRootPath({ currentRootPath: item.path })
-                                      ? 'text-gray-500'
-                                      : 'text-gray-400 group-hover:text-gray-500',
-                                    'h-6 w-6 shrink-0 ',
+                                      ? 'bg-gray-100 text-gray-900'
+                                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 ',
+                                    'group flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm font-medium',
                                   )}
-                                  aria-hidden='true'
-                                />
-                                <span
+                                >
+                                  <item.icon
+                                    className={classNames(
+                                      isCurrentRootPath({ currentRootPath: item.path })
+                                        ? 'text-gray-500'
+                                        : 'text-gray-400 group-hover:text-gray-500',
+                                      'h-6 w-6 shrink-0 ',
+                                    )}
+                                    aria-hidden='true'
+                                  />
+                                  <span
+                                    className={classNames(
+                                      ' h-2.5 w-2.5 rounded-full',
+                                      statusDotClass,
+                                    )}
+                                  />
+                                  {item.name}
+
+                                  <ChevronRightIcon
+                                    className={classNames(
+                                      open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                      'ml-auto h-5 w-5 shrink-0',
+                                    )}
+                                    aria-hidden='true'
+                                  />
+                                </DisclosureButton>
+                                <DisclosurePanel as='ul' className='mt-1 px-2'>
+                                  {item.children.map((subItem: PrimarySubNavItem) => {
+                                    const linkClassName = classNames(
+                                      'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
+                                      isDisabled
+                                        ? 'text-gray-400 cursor-not-allowed opacity-60'
+                                        : isCurrentRootPath({ currentRootPath: subItem.path })
+                                          ? 'bg-gray-100 text-gray-900'
+                                          : 'hover:bg-gray-100 text-gray-900',
+                                    )
+                                    const linkContent = (
+                                      <>
+                                        <subItem.icon
                                           className={classNames(
-                                            ' h-2.5 w-2.5 rounded-full',
-                                            statusDotClass,
+                                            isCurrentPath({ currentPath: item.path })
+                                              ? 'text-gray-500'
+                                              : 'text-gray-400 group-hover:text-gray-500',
+                                            'mr-3 flex-shrink-0 h-6 w-6',
                                           )}
+                                          aria-hidden='true'
                                         />
-                                {item.name}
-                                
-                                <ChevronRightIcon
-                                  className={classNames(
-                                    open ? 'rotate-90 text-gray-500' : 'text-gray-400',
-                                    'ml-auto h-5 w-5 shrink-0',
-                                  )}
-                                  aria-hidden='true'
-                                />
-                              </DisclosureButton>
-                              <DisclosurePanel as='ul' className='mt-1 px-2'>
-                                {item.children.map((subItem: any) => {
-                                  
-                                  return (
-                                    <li key={`link-${subItem.path}`}>
-                                      <a
-                                        href={isDisabled ? undefined : subItem.path}
-                                        disabled={isDisabled}
-                                        className={classNames(
-                                          'flex rounded-md py-2 pr-2 pl-9 text-sm leading-6',
-                                          isDisabled
-                                            ? 'text-gray-400 cursor-not-allowed opacity-60'
-                                            : isCurrentRootPath({ currentRootPath: subItem.path })
-                                              ? 'bg-gray-100 text-gray-900'
-                                              : 'hover:bg-gray-100 text-gray-900',
+                                        <span>{subItem.name}</span>
+                                      </>
+                                    )
+                                    return (
+                                      <li key={`link-${subItem.path}`}>
+                                        {isDisabled ? (
+                                          <span aria-disabled='true' className={linkClassName}>
+                                            {linkContent}
+                                          </span>
+                                        ) : (
+                                          <NavLink to={subItem.path} className={linkClassName}>
+                                            {linkContent}
+                                          </NavLink>
                                         )}
-                                      >
-                                      <subItem.icon
-                                        className={classNames(
-                                          isCurrentPath({ currentPath: item.path })
-                                            ? 'text-gray-500'
-                                            : 'text-gray-400 group-hover:text-gray-500',
-                                          'mr-3 flex-shrink-0 h-6 w-6',
-                                        )}
-                                        aria-hidden='true'
-                                      />
-                                      <span>{subItem.name}</span>
-                                        
-                                      </a>
-                                    </li>
-                                  )
-                                })}
-                              </DisclosurePanel>
-                            </>
-                          )}
-                        </Disclosure>
-                      ) : (
-                        <NavLink
-                          to={item.path}
-                          className={({ isActive }: any) =>
-                            isActive
-                              ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
-                          }
-                        >
-                          <item.icon
-                            className={classNames(
-                              isCurrentPath({ currentPath: item.path })
-                                ? 'text-gray-500'
-                                : 'text-gray-400 group-hover:text-gray-500',
-                              'mr-3 flex-shrink-0 h-6 w-6',
+                                      </li>
+                                    )
+                                  })}
+                                </DisclosurePanel>
+                              </>
                             )}
-                            aria-hidden='true'
-                          />
-                          {item.name}
-                        </NavLink>
-                      )}
-                    </li>
-                  )})}
+                          </Disclosure>
+                        ) : (
+                          <NavLink
+                            to={item.path}
+                            className={({ isActive }) =>
+                              isActive
+                                ? 'bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                            }
+                          >
+                            <item.icon
+                              className={classNames(
+                                isCurrentPath({ currentPath: item.path })
+                                  ? 'text-gray-500'
+                                  : 'text-gray-400 group-hover:text-gray-500',
+                                'mr-3 flex-shrink-0 h-6 w-6',
+                              )}
+                              aria-hidden='true'
+                            />
+                            {item.name}
+                          </NavLink>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
               <div className='mt-6 pt-6'>
                 <ul className='space-y-1'>
-                  {secondaryNavigation.map((item: any) => (
+                  {secondaryNavigation.map((item: SecondaryNavItem) => (
                     <li key={`link-${item.name}`}>
                       <Link
                         to={item.url}

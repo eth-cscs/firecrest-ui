@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { useLoaderData, useActionData, useRouteError } from '@remix-run/react'
+import type { LoaderFunctionArgs } from 'react-router'
+import { useLoaderData, useActionData, useRouteError } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -31,13 +31,17 @@ import FileListView from '~/modules/filesystem/components/views/FileListView'
 // types
 import type { File } from '~/types/api-filesystem'
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
     eventAction: LogPage.FILESYSTEM_INDEX,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Get auth access token
   const accessToken = await getAuthAccessToken(request)
@@ -69,7 +73,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
     const { output } = await getOpsLs(accessToken, systemName, path!, request)
     files = output || []
   } catch (err: any) {
-    logger.error('Error fetching filesystem data', { error: err })
+    logger.error({ err }, 'Error fetching filesystem data')
     if (err?.status === 404) {
       remoteFsError = { message: "The filesystem path doesn't exist", status: 404 }
     } else {

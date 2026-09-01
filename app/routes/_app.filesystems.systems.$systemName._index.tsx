@@ -6,8 +6,8 @@
 *************************************************************************/
 
 import { useEffect } from 'react'
-import { useLoaderData, useLocation, useNavigate, useRouteError } from '@remix-run/react'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { useLoaderData, useLocation, useNavigate, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
@@ -23,7 +23,7 @@ import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 // alerts
 import AlertWarning from '~/components/alerts/AlertWarning'
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Check authentication only — groups are fetched client-side by the parent
   // layout's GroupsFetcher (see _app.filesystems.systems.$systemName.tsx).
   const { auth } = await requireAuth(request)

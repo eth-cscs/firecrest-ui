@@ -6,9 +6,8 @@
 *************************************************************************/
 
 import { useEffect } from 'react'
-import { Outlet, useLoaderData, useRouteError, useFetcher } from '@remix-run/react'
-import { data } from '@remix-run/node'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { Outlet, useLoaderData, useRouteError, useFetcher } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
@@ -27,7 +26,7 @@ import { useMaintenance } from '~/contexts/MaintenanceContext'
 // switchers
 import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
@@ -38,7 +37,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   })
   // Get path params
   const groupName = params.accountName || null
-  return data({ groupName, systemName })
+  return { groupName, systemName }
 }
 
 // Fetches groups client-side (useFetcher) rather than through the loader - a deferred/streamed
@@ -65,8 +64,14 @@ function GroupsFetcher({ systemName, groupName }: { systemName: string; groupNam
     }
     const userInfo = fetcher.data as GetUserInfoResponse | null
     setGroups(userInfo?.groups ?? [])
-    if (!groupName && userInfo?.group?.name) {
-      setSelectedGroupName(userInfo.group.name)
+    if (!groupName) {
+      // firecrest-v2 >= 2.6.0 flags the default group per-item (group.default); older
+      // backends signal it via a separate top-level UserInfo.group instead - fall back to
+      // that so this works against either API generation.
+      const defaultGroup = userInfo?.groups?.find((group) => group.default) ?? userInfo?.group
+      if (defaultGroup) {
+        setSelectedGroupName(defaultGroup.name)
+      }
     }
   }, [fetcher.state, fetcher.data, groupName, setGroups, setSelectedGroupName, setMaintenance])
 
@@ -77,7 +82,7 @@ export default function AppComputeIndexRoute() {
   const { groupName, systemName }: any = useLoaderData()
   // Seed the provider with a synthetic group from the URL so child components
   // that depend on selectedGroup render correctly before the real data arrives.
-  const initialGroups = groupName ? [{ id: groupName, name: groupName }] : []
+  const initialGroups = groupName ? [{ id: groupName, name: groupName, default: false }] : []
   return (
     <GroupProvider groups={initialGroups} groupName={groupName}>
       <GroupsFetcher systemName={systemName} groupName={groupName} />

@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React from 'react'
-import { Link, useRouteError, isRouteErrorResponse } from '@remix-run/react'
+import { Link, useRouteError, isRouteErrorResponse } from 'react-router'
 // pages
 import MaintenancePage from './MaintenancePage'
 // apis
@@ -15,17 +15,22 @@ import { MAINTENANCE_REASON } from '~/apis/api'
 const ErrorPage: React.FC = () => {
   const error: any = useRouteError()
 
-  // Deferred loader values (defer()/<Await>) never surface maintenance here as a thrown
-  // Response - they resolve with a flagged payload instead (see api.ts's isMaintenancePayload)
-  // and are handled at the render site that owns the <Await>, not in this route ErrorBoundary.
+  // Deferred loader values (returned promises rendered via <Await>) never surface maintenance
+  // here as a thrown Response - they resolve with a flagged payload instead (see api.ts's
+  // isMaintenancePayload) and are handled at the render site that owns the <Await>, not in this
+  // route ErrorBoundary.
   // A 503 without the maintenance statusText is a real backend outage, not planned maintenance -
   // it falls through to the generic error UI below instead.
-  if (isRouteErrorResponse(error) && error.status === 503 && error.statusText === MAINTENANCE_REASON) {
+  if (
+    isRouteErrorResponse(error) &&
+    error.status === 503 &&
+    error.statusText === MAINTENANCE_REASON
+  ) {
     return <MaintenancePage message={error.data} />
   }
 
   let status = 500
-  let title: any = 'Uknonw error'
+  let title: any = 'Unknown error'
   let message: any = 'Sorry, an error has occurred, please retry or contact our support.'
 
   if (isRouteErrorResponse(error)) {

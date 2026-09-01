@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from 'react-router'
 // types
 import { PostOpsSymlinkRequest } from '~/types/api-filesystem'
 // helpers
@@ -21,7 +21,7 @@ import { postOpsSymlink } from '~/apis/filesystem-api'
 // validations
 import { validateOpsSymlink } from '~/validations/filesystemOpsValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -37,14 +37,21 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostOpsSymlinkRequest = await validateOpsSymlink(formData)
     // Put data
+    const requestId = crypto.randomUUID()
     const response = await postOpsSymlink(
       accessToken,
       system,
       payloadData.targetPath,
       payloadData.linkPath,
       request,
+      requestId,
     )
-    logInfoHttp({ eventAction: LogAction.FS_SYMLINK, request, extraInfo: { username: authUser?.username, system } })
+    logInfoHttp({
+      eventAction: LogAction.FS_SYMLINK,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

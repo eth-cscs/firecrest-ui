@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useFetcher } from 'react-router-dom'
+import { useFetcher } from 'react-router'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 // types
 import { System, FileSystem } from '~/types/api-status'

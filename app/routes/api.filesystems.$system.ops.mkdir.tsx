@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { ActionFunction, ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from 'react-router'
 // types
 import { PostOpsMkdirRequest } from '~/types/api-filesystem'
 // helpers
@@ -21,7 +21,7 @@ import { postOpsMkdir } from '~/apis/filesystem-api'
 // validations
 import { validateOpsMkdir } from '~/validations/filesystemOpsValidation'
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the
@@ -37,8 +37,21 @@ export const action: ActionFunction = async ({ params, request }: ActionFunction
     // Validate
     const payloadData: PostOpsMkdirRequest = await validateOpsMkdir(formData)
     // Put data
-    const response = await postOpsMkdir(accessToken, system, payloadData.path, false, request)
-    logInfoHttp({ eventAction: LogAction.FS_MKDIR, request, extraInfo: { username: authUser?.username, system } })
+    const requestId = crypto.randomUUID()
+    const response = await postOpsMkdir(
+      accessToken,
+      system,
+      payloadData.path,
+      false,
+      request,
+      requestId,
+    )
+    logInfoHttp({
+      eventAction: LogAction.FS_MKDIR,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
     // Notify success message
     await notifySuccessMessage(
       {

@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from '@remix-run/node'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { handleErrorResponse } from '~/helpers/response-helper'
 import { getMimeType } from '~/helpers/file-helper'
@@ -15,7 +15,7 @@ import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { getOpsDownload } from '~/apis/filesystem-api'
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

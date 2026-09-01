@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
-import { data } from '@remix-run/node'
+import { data } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // types
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
@@ -23,7 +23,7 @@ import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from
 // every other error into a normal { ...error } return), so the only thing this catch has to turn
 // into a flagged payload is that one case - plus a timeout, guarding against a backend that just
 // never responds.
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

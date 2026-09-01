@@ -4,7 +4,7 @@
   Please, refer to the LICENSE file in the root directory.
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
-// types
-import { Job } from '~/types/api-job'
 
-export const sortJobs = (jobs: Job[]) => [...jobs].sort((a, b) => Number(b.jobId) - Number(a.jobId))
+import { flatRoutes } from '@react-router/fs-routes'
+
+export default flatRoutes()

@@ -23,7 +23,7 @@ While the FirecREST API empowers users to build complex workflows, a workflow ma
 
 ## Technologies
 
-📖 Refer to the [Remix documentation](https://remix.run/docs) and the [Remix Vite documentation](https://remix.run/docs/en/main/future/vite) for detailed information on supported features.
+📖 Refer to the [React Router documentation](https://reactrouter.com/home) for detailed information on supported features.
 
 ## License Notice for Tailwind UI Components
 

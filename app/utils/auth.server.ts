@@ -148,7 +148,13 @@ export async function requireAuth(request: Request, failureRedirect = '/login') 
   const auth = await getAuth(request)
   const url = new URL(request.url)
   const returnTo = `${url.pathname}${url.search}`
-  if (!auth) throw redirect(`${failureRedirect}?returnTo=${encodeURIComponent(returnTo)}`)
+  if (!auth) {
+    // Never nest an already-failureRedirect URL inside its own returnTo — that's how a
+    // request that lands back on e.g. /login grows its query string on every redirect
+    // instead of terminating.
+    const target = url.pathname === failureRedirect ? '/' : returnTo
+    throw redirect(`${failureRedirect}?returnTo=${encodeURIComponent(target)}`)
+  }
   return { auth, returnTo }
 }
 

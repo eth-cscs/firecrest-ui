@@ -269,8 +269,11 @@ const SystemJobList: React.FC = () => {
   // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
   // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
   // finish a request rather than having it superseded (and effectively never completing) every
-  // time the interval fires.
+  // time the interval fires. Guarded on both names being populated - system/group briefly
+  // resolve after mount (system context, GroupsFetcher), and firing early would poll a
+  // malformed URL (missing path segment) until they do.
   useEffect(() => {
+    if (!selectedSystem?.name || !selectedGroup?.name) return
     fetcher.load(buildUrl(allUsers))
     const intervalId = setInterval(() => {
       if (fetcher.state === 'idle') {
@@ -300,7 +303,7 @@ const SystemJobList: React.FC = () => {
     return null
   }
 
-  const jobsData = fetcher.data as GetSystemJobsResponse
+  const jobsData = fetcher.data
   const currentJobs = sortJobs(jobsData?.jobs ?? [])
   const localError = jobsData?.error ?? null
 
@@ -311,7 +314,7 @@ const SystemJobList: React.FC = () => {
         <label className='inline-flex items-center cursor-pointer'>
           <input
             type='checkbox'
-            defaultChecked={allUsers}
+            checked={allUsers}
             value=''
             className='sr-only peer'
             onChange={onChangeHandler}

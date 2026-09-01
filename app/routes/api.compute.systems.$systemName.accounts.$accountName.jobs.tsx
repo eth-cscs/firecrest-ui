@@ -44,7 +44,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   } catch (error) {
     if (isMaintenanceResponse(error)) {
       return data(
-        { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) },
+        {
+          maintenance: true,
+          reason: MAINTENANCE_REASON,
+          message: await getMaintenanceMessage(error),
+        },
         { headers },
       )
     }
@@ -54,7 +58,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         jobs: [],
         account: accountName,
         allUsers,
-        error: { message: 'Loading jobs took too long. The system might be busy or unavailable.' },
+        error: {
+          message: error instanceof Error ? error.message : 'Unable to load jobs.',
+        },
       },
       { headers },
     )

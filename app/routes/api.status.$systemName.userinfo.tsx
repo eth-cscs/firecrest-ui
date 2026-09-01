@@ -9,6 +9,8 @@ import { data } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
+// loggers
+import logger from '~/logger/logger.server'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
@@ -34,10 +36,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   } catch (error) {
     if (isMaintenanceResponse(error)) {
       return data(
-        { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) },
+        {
+          maintenance: true,
+          reason: MAINTENANCE_REASON,
+          message: await getMaintenanceMessage(error),
+        },
         { headers },
       )
     }
+    logger.warn({ error }, `Failed to load user info for system ${systemName}`)
     return data<null>(null, { headers })
   }
 }

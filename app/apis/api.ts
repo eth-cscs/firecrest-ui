@@ -149,7 +149,7 @@ export interface MaintenancePayload {
 // Only a `reason: "maintenance"` marker (or the equivalent on the wrapped `error` shape) counts
 // as planned maintenance - a bare 503/error.statusCode of 503 alone is a real outage, not
 // maintenance, and should fall through to normal error handling instead of the maintenance page.
-export function isMaintenancePayload(data: any): boolean {
+export function isMaintenancePayload(data: any): data is MaintenancePayload {
   if (!data) return false
   return data.reason === MAINTENANCE_REASON || data?.error?.reason === MAINTENANCE_REASON
 }

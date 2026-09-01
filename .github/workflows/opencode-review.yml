@@ -6,7 +6,16 @@ on:
 
 jobs:
   review:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Skip runs the bot's own push triggered: opencode-agent[bot] occasionally commits back to
+    # the PR branch (its verdict/a trivial fix), which re-fires `synchronize` and would otherwise
+    # have the bot review itself. That self-triggered run reliably fails anyway - GitHub's
+    # collaborator-permission check (which the action uses to gate posting) has no concept of
+    # "permission level" for a bot actor, since Apps aren't repo collaborators, so it comes back
+    # `none` and the step errors out. Skipping it here avoids a spurious red run instead of
+    # relying on the upstream action to handle a bot-authored actor.
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'opencode-agent[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:

@@ -5,17 +5,16 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { redirect } from '@remix-run/node'
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/node'
+import { redirect } from 'react-router'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 // utils
-import { sessionStorage, getSession } from '~/utils/session.server'
+import { getSession, destroySession } from '~/utils/session.server'
 
-const logout = async (request: any) => {
+const logout = async (request: Request) => {
   const session = await getSession(request.headers.get('Cookie'))
   return redirect('/', {
     headers: {
-      // use await on session functions
-      'Set-Cookie': await sessionStorage.destroySession(session),
+      'Set-Cookie': await destroySession(session),
     },
   })
 }

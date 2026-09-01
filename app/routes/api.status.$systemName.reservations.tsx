@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
 // utils
@@ -13,7 +13,7 @@ import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { getReservations } from '~/apis/status-api'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const headers = new Headers()
   const accessToken = await getAuthAccessToken(request, headers)
   try {

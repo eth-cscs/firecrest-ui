@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { data } from '@remix-run/node'
-import type { LoaderFunctionArgs } from '@remix-run/node'
+import { data } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
@@ -45,7 +45,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   } catch (error) {
     if (isMaintenanceResponse(error)) {
       return data(
-        { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) },
+        {
+          maintenance: true,
+          reason: MAINTENANCE_REASON,
+          message: await getMaintenanceMessage(error),
+        },
         { headers },
       )
     }

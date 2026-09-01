@@ -6,13 +6,8 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from '@remix-run/react'
-import {
-  CalendarIcon,
-  ClockIcon,
-  XMarkIcon,
-  CommandLineIcon,
-} from '@heroicons/react/24/outline'
+import { useNavigate } from 'react-router'
+import { CalendarIcon, ClockIcon, XMarkIcon, CommandLineIcon } from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 // helpers
@@ -132,7 +127,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
         {job.user !== '' ? (
           <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
         ) : (
-          <LabelBadge color={LabelColor.GRAY}>undefined</LabelBadge>
+          <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
         )}
       </td>
       <td className='py-3 align-top tabular-nums text-gray-700'>
@@ -255,7 +250,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
   const onChangeHandler = async (event: any) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a Remix navigation/loader re-run,
+    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run,
     // which would cause Suspense to re-suspend and conflict with the in-flight fetchJobs call.
     const url = new URL(window.location.href)
     url.searchParams.set('allUsers', String(checked))
@@ -313,7 +308,9 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
             onChange={onChangeHandler}
           />
           <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-          <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>All users</span>
+          <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>
+            All users
+          </span>
         </label>
       </div>
       <JobsTable jobs={currentJobs ?? []} systemName={selectedSystem?.name || ''} />

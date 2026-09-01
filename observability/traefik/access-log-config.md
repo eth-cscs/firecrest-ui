@@ -9,7 +9,7 @@
 
 ## Why this matters
 
-When the Remix UI logs a slow session read or OIDC call the timestamp is relative to when the
+When the UI logs a slow session read or OIDC call the timestamp is relative to when the
 Node process handled the request. Traefik sits in front and already sees the full round-trip time
 (from TLS termination through response completion). Adding Traefik access logs with:
 

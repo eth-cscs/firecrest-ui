@@ -5,9 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useNavigate } from '@remix-run/react'
+import { useNavigate } from 'react-router'
 import { createPortal } from 'react-dom'
-import React, { useEffect, useState,useMemo,useRef } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid'
 // types
 import { SystemHealtyStatus, type System, type Group } from '~/types/api-status'
@@ -22,13 +22,11 @@ interface GroupSwitcherPortalProps {
   className?: string
 }
 
-
-
 export const GroupSwitcherPortal: React.FC<GroupSwitcherPortalProps> = ({
   systemName,
   basePath,
   layout,
-  className
+  className,
 }) => {
   const [target, setTarget] = useState<HTMLElement | null>(null)
   useEffect(() => {
@@ -36,7 +34,15 @@ export const GroupSwitcherPortal: React.FC<GroupSwitcherPortalProps> = ({
     setTarget(el)
   }, [])
   if (!target) return null
-  return createPortal(<GroupSwitcher systemName={systemName} basePath={basePath} layout={layout} className={className} />, target)
+  return createPortal(
+    <GroupSwitcher
+      systemName={systemName}
+      basePath={basePath}
+      layout={layout}
+      className={className}
+    />,
+    target,
+  )
 }
 export enum GroupSwitcherLayout {
   vertical = 'vertical',
@@ -72,15 +78,11 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
   const filteredGroups = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return groups
-    return groups
-      .filter((g: Group) => {
-        return (g.name ?? '').toLowerCase().includes(q)
-     
-      })
+    return groups.filter((g: Group) => {
+      return (g.name ?? '').toLowerCase().includes(q)
+    })
   }, [groups, search])
 
-  
-  
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
       <div className={isHorizontal ? 'flex items-center gap-2' : 'w-full'}>
@@ -104,9 +106,7 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
               : 'border-gray-300 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-gray-500',
           ].join(' ')}
         >
-          <span className='truncate'>
-            {selectedGroup?.name}
-          </span>
+          <span className='truncate'>{selectedGroup?.name}</span>
           <ChevronDownIcon className='h-4 w-4 text-gray-400' />
         </button>
       </div>
@@ -121,33 +121,29 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
             />
           </div>
 
-                <ul className='py-1'>
-                  {filteredGroups?.map((g: Group) => {
-                    const isSelected =
-                      selectedGroup?.name === g.name
+          <ul className='py-1'>
+            {filteredGroups?.map((g: Group) => {
+              const isSelected = selectedGroup?.name === g.name
 
-                    return (
-                      <li key={g.name}>
-                        <button
-                          onClick={() => handleSwitch(g.name)}
-                          className={[
-                            'flex w-full items-center justify-between px-3 py-1.5 text-sm',
-                              'hover:bg-gray-100',
-                            isSelected ? 'bg-gray-100 font-medium' : '',
-                          ].join(' ')}
-                        >
-                          <span>{g.name}</span>
-                          {isSelected && <CheckIcon className='h-4 w-4 text-gray-700' />}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
+              return (
+                <li key={g.name}>
+                  <button
+                    onClick={() => handleSwitch(g.name)}
+                    className={[
+                      'flex w-full items-center justify-between px-3 py-1.5 text-sm',
+                      'hover:bg-gray-100',
+                      isSelected ? 'bg-gray-100 font-medium' : '',
+                    ].join(' ')}
+                  >
+                    <span>{g.name}</span>
+                    {isSelected && <CheckIcon className='h-4 w-4 text-gray-700' />}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
     </div>
   )
 }
-
-
-

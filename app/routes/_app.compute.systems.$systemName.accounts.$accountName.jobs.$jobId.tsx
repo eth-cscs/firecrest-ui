@@ -5,14 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import type {
-  ActionFunction,
-  ActionFunctionArgs,
-  LoaderFunction,
-  LoaderFunctionArgs,
-} from '@remix-run/node'
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import { useRouteError, useLoaderData, redirect, useActionData } from '@remix-run/react'
+import { useRouteError, useLoaderData, redirect, useActionData } from 'react-router'
 // types
 import { GetJobMetadataResponse, GetJobResponse } from '~/types/api-job'
 import { GetSystemsResponse, System } from '~/types/api-status'
@@ -38,13 +33,17 @@ import JobDetailsConsoleView from '~/modules/compute/components/views/JobDetails
 // observability
 import observability from '~/configs/observability.config'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   logInfoHttp({
     eventAction: LogPage.COMPUTE_JOB_DETAIL,
     request: request,
-    extraInfo: { username: auth.user.username, system: params.systemName, account: params.accountName },
+    extraInfo: {
+      username: auth.user.username,
+      system: params.systemName,
+      account: params.accountName,
+    },
   })
   // Layout
   let layoutMode = 'standard'
@@ -84,7 +83,7 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
   }
 }
 
-export const action: ActionFunction = async ({ params, request }: ActionFunctionArgs) => {
+export const action = async ({ params, request }: ActionFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
   // Authenticate the request and get the accessToken back, this will be the

@@ -22,7 +22,7 @@ export enum ServiceType {
   scheduler = 'scheduler',
   ssh = 'ssh',
   filesystem = 'filesystem',
-  external_storage = 's3',  //To be renamed after f7t 2.6.0 release
+  external_storage = 's3', //To be renamed after f7t 2.6.0 release
 }
 
 export enum SystemHealtyStatus {
@@ -93,7 +93,6 @@ export interface ServiceHealth {
   path?: string
 }
 
-
 export interface ProbingService {
   timeout: number
 }
@@ -143,12 +142,18 @@ export interface User {
 export interface Group {
   id: string
   name: string
-  default: boolean
+  // Only present on firecrest-v2 >= 2.6.0 - older backends signal the default group via
+  // UserInfo.group instead. See GroupsUpdater in the compute/filesystems system routes for
+  // the fallback that reads whichever shape the backend actually sent.
+  default?: boolean
 }
 
 export interface UserInfo {
   user: User
   groups: Group[]
+  // Only present on firecrest-v2 < 2.6.0 - superseded by each Group's own `default` flag on
+  // 2.6.0+. Kept optional here so this type covers both API generations.
+  group?: Group
 }
 
 export interface FileSystemModel {

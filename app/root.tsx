@@ -5,8 +5,6 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
-import type { LinksFunction, LoaderFunctionArgs } from '@remix-run/node'
 import {
   Meta,
   Links,
@@ -15,7 +13,8 @@ import {
   ScrollRestoration,
   useLoaderData,
   useRouteError,
-} from '@remix-run/react'
+} from 'react-router'
+import type { LinksFunction } from 'react-router'
 // styles
 import stylesheet from '~/tailwind.css?url'
 // configs
@@ -23,9 +22,8 @@ import base from './configs/base.config'
 // pages
 import ErrorPage from './components/pages/ErrorPage'
 
-export async function loader({ context }: LoaderFunctionArgs) {
-  return json({
-    nonce: context.nonce as string,
+export async function loader() {
+  return {
     appName: base.appName,
     logoPath: base.logoPath,
     statusUrl: base.statusUrl,
@@ -34,7 +32,7 @@ export async function loader({ context }: LoaderFunctionArgs) {
       APP_VERSION: base.appVersion,
       ENVIRONMENT: base.environment,
     },
-  })
+  }
 }
 
 export const links: LinksFunction = () => [
@@ -43,15 +41,7 @@ export const links: LinksFunction = () => [
   { rel: 'icon', type: 'image/png', href: base.logoPath },
 ]
 
-function Document({
-  children,
-  nonce,
-  title,
-}: {
-  children: React.ReactNode
-  title?: string
-  nonce?: string
-}) {
+function Document({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
     <html lang='en'>
       <head>
@@ -62,8 +52,8 @@ function Document({
       </head>
       <body>
         {children}
-        <ScrollRestoration nonce={nonce} />
-        <Scripts nonce={nonce} />
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   )
@@ -71,12 +61,11 @@ function Document({
 
 export default function App() {
   const data = useLoaderData<typeof loader>()
-  const { nonce, appName } = data
+  const { appName } = data
   return (
-    <Document nonce={nonce} title={appName}>
+    <Document title={appName}>
       <Outlet />
       <script
-        nonce={nonce}
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
           __html: `window.ENV = ${JSON.stringify(data.ENV)}`,

@@ -8,7 +8,7 @@
 import { randomUUID } from 'crypto'
 import express from 'express'
 import pino from 'pino'
-import { createRequestHandler } from '@remix-run/express'
+import { createRequestHandler } from '@react-router/express'
 import dotenv from 'dotenv'
 
 const isProd = process.env.NODE_ENV === 'production'
@@ -64,12 +64,6 @@ global.fetch = (input, init) => {
 const app = express()
 app.disable('x-powered-by')
 
-// In production, serve /assets (Remix client build) and anything in /public
-if (isProd) {
-  app.use('/assets', express.static('build/client', { immutable: true, maxAge: '1y' }))
-  app.use(express.static('public', { maxAge: '1h' }))
-}
-
 let vite // only used in dev
 if (!isProd) {
   vite = await import('vite').then(({ createServer }) =>
@@ -77,9 +71,6 @@ if (!isProd) {
       server: { middlewareMode: true },
     }),
   )
-
-  // Vite must be before your Remix handler
-  app.use(vite.middlewares)
 }
 
 if (isProd) {
@@ -109,29 +100,22 @@ app.use((req, _res, next) => {
   next()
 })
 
-// Remix handler
+// React Router handler
 app.all(
   '*',
   isProd
     ? createRequestHandler({
-        // built server bundle from `remix vite build`
+        // built server bundle from `react-router build`
         build: await import('./build/server/index.js'),
         mode: process.env.NODE_ENV,
-        getLoadContext(_req, _res) {
-          // return whatever you need in loaders/actions
-          return {}
-        },
       })
     : async (req, res, next) => {
         try {
           // fresh build on every request in dev
-          const build = await vite.ssrLoadModule('virtual:remix/server-build')
+          const build = await vite.ssrLoadModule('virtual:react-router/server-build')
           return createRequestHandler({
             build,
             mode: 'development',
-            getLoadContext(_req, _res) {
-              return {}
-            },
           })(req, res, next)
         } catch (err) {
           // Let Vite fix stack traces for better DX

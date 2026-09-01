@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useEffect, useState, useRef, useMemo } from 'react'
-import { useNavigate } from '@remix-run/react'
+import { useNavigate } from 'react-router'
 import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 // types
 import { System } from '~/types/api-status'

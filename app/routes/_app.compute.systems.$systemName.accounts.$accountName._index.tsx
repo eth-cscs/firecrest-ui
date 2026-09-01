@@ -5,9 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useLoaderData, useRouteError } from '@remix-run/react'
-import type { LoaderFunctionArgs } from '@remix-run/node'
-import { defer } from '@remix-run/node'
+import { useLoaderData, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -47,14 +46,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Resolves with an error object on timeout so the job list view renders inline rather than
   // triggering the route ErrorBoundary. Maintenance resolves too, with a flagged payload (see
   // api.ts's isMaintenancePayload) - a rejected Error gets its message wiped by
-  // @remix-run/server-runtime's production sanitization before it crosses the turbo-stream
-  // boundary, so rejecting can't carry the signal.
+  // react-router's production sanitization before it crosses the turbo-stream boundary, so
+  // rejecting can't carry the signal.
   const jobsPromise = promiseWithTimeout(
     getJobs(accessToken, systemName, accountName, allUsers, request),
     DEFERRED_PROMISE_TIMEOUT_MS,
   ).catch(async (error): Promise<GetSystemJobsResponse | MaintenancePayload> => {
     if (isMaintenanceResponse(error)) {
-      return { maintenance: true, reason: MAINTENANCE_REASON, message: await getMaintenanceMessage(error) }
+      return {
+        maintenance: true,
+        reason: MAINTENANCE_REASON,
+        message: await getMaintenanceMessage(error),
+      }
     }
     return {
       system: systemName,
@@ -65,7 +68,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   })
   // Return deferred response
-  return defer({ jobsPromise })
+  return { jobsPromise }
 }
 
 export default function AppComputeIandexRoute() {

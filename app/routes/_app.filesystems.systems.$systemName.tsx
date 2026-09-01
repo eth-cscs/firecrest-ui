@@ -6,9 +6,8 @@
 *************************************************************************/
 
 import { useEffect, startTransition } from 'react'
-import { Outlet, useLoaderData, useRouteError } from '@remix-run/react'
-import { defer } from '@remix-run/node'
-import type { LoaderFunction, LoaderFunctionArgs } from '@remix-run/node'
+import { Outlet, useLoaderData, useRouteError } from 'react-router'
+import type { LoaderFunctionArgs } from 'react-router'
 // loggers
 import logger from '~/logger/logger.server'
 // helpers
@@ -28,7 +27,7 @@ import { GroupProvider, useGroup } from '~/contexts/GroupContext'
 // switchers
 import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
-export const loader: LoaderFunction = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Check authentication
   const { auth } = await requireAuth(request)
   const systemName = params.systemName!
@@ -51,12 +50,12 @@ export const loader: LoaderFunction = async ({ request, params }: LoaderFunction
     logger.warn({ error }, `Failed to load user info for system ${systemName}`)
     return null
   })
-  return defer({ userInfoPromise, groupName, systemName })
+  return { userInfoPromise, groupName, systemName }
 }
 
 // Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,
 // so there is no dehydrated Suspense boundary that can trigger React error #421 during
-// Remix's internal fetchAndApplyManifestPatches hydration pass.
+// React Router's internal fetchAndApplyManifestPatches hydration pass.
 function GroupsUpdater({
   promise,
   groupName,
@@ -72,7 +71,10 @@ function GroupsUpdater({
           setGroups(userInfo.groups)
         }
         if (!groupName) {
-          const defaultGroup = userInfo?.groups?.find((group) => group.default)
+          // firecrest-v2 >= 2.6.0 flags the default group per-item (group.default); older
+          // backends signal it via a separate top-level UserInfo.group instead - fall back to
+          // that so this works against either API generation.
+          const defaultGroup = userInfo?.groups?.find((group) => group.default) ?? userInfo?.group
           if (defaultGroup) {
             setSelectedGroupName(defaultGroup.name)
           }

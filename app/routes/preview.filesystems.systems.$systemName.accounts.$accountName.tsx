@@ -5,10 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { json } from '@remix-run/node'
+import { useLoaderData } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
-import type { LoaderFunctionArgs, LoaderFunction } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
+import type { LoaderFunctionArgs } from 'react-router'
 import { useState } from 'react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 // utils
@@ -17,13 +16,14 @@ import { getAuthAccessToken } from '~/utils/auth.server'
 import { getMimeType } from '~/helpers/file-helper'
 
 const ERROR_MESSAGES: Record<number, string> = {
-  [StatusCodes.REQUEST_TOO_LONG]: 'The file exceeds the maximum size allowed for direct preview. Use the Download option instead.',
+  [StatusCodes.REQUEST_TOO_LONG]:
+    'The file exceeds the maximum size allowed for direct preview. Use the Download option instead.',
   [StatusCodes.FORBIDDEN]: 'You do not have permission to access this file.',
   [StatusCodes.NOT_FOUND]: 'The file could not be found.',
   [StatusCodes.UNAUTHORIZED]: 'You are not authorized to access this file.',
 }
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Auth check only — the browser loads the binary content directly from the resource route
   const headers = new Headers()
   await getAuthAccessToken(request, headers)
@@ -32,7 +32,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderFunction
   const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
   const mimeType = getMimeType(fileName)
   const previewUrl = `/fs/filesystems/systems/${params.systemName}/accounts/${params.accountName}/ops/preview?sourcePath=${sourcePath}`
-  return json({ fileName, sourcePath, mimeType, previewUrl })
+  return { fileName, sourcePath, mimeType, previewUrl }
 }
 
 export default function BinaryFileViewer() {

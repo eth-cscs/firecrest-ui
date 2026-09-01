@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useAsyncError } from '@remix-run/react'
+import { useAsyncError } from 'react-router'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
 

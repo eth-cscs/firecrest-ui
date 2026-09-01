@@ -58,7 +58,7 @@ export default function GroupsFetcher({
       return
     }
 
-    const userInfo = fetcher.data as GetUserInfoResponse | null
+    const userInfo = fetcher.data
     setGroups(userInfo?.groups ?? fallbackGroups)
     if (!groupName) {
       // firecrest-v2 >= 2.6.0 flags the default group per-item (group.default); older

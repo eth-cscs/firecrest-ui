@@ -11,7 +11,6 @@ import { CalendarIcon, ClockIcon, XMarkIcon, CommandLineIcon } from '@heroicons/
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 // helpers
-import { classNames } from '~/helpers/class-helper'
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
@@ -21,7 +20,6 @@ import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 // alerts
 import AlertInfo from '~/components/alerts/AlertInfo'
-import AlertWarning from '~/components/alerts/AlertWarning'
 // dialogs
 import JobDetailsDialog from '~/modules/compute/components/dialogs/JobDetailsDialog'
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
@@ -41,26 +39,6 @@ import { useMaintenance } from '~/contexts/MaintenanceContext'
 import AlertError from '~/components/alerts/AlertError'
 // spinners
 import LoadingSpinner from '~/components/spinners/LoadingSpinner'
-
-const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className = '' }) => {
-  if (!unavailableSystems || unavailableSystems.length <= 0) {
-    return null
-  }
-  return (
-    <AlertWarning className={classNames('', className)} title='System/s NOT available'>
-      <p>The following systems are currently unavailable for interaction:</p>
-      <ul className='list-disc list-inside'>
-        {unavailableSystems.map((unavailableSystem: any, index: number) => (
-          <li key={index}>{unavailableSystem.name}</li>
-        ))}
-      </ul>
-      <p className='pt-2'>
-        You wan&apos;t be able to view or manage jobs running on these systems at the moment. Please
-        check again later or contact support for further assistance.
-      </p>
-    </AlertWarning>
-  )
-}
 
 interface JobTableRowProps {
   job: Job
@@ -95,7 +73,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
-  const goToDetails = (jobId: number) => {
+  const goToDetails = (jobId: string) => {
     navigate(`/compute/systems/${system}/accounts/${account}/jobs/${jobId}`)
   }
 
@@ -253,8 +231,11 @@ const SystemJobList: React.FC = () => {
   // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
   const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
 
-  const buildUrl = (allUsersValue: boolean) =>
-    `/api/compute/systems/${selectedSystem?.name ?? ''}/accounts/${selectedGroup?.name ?? ''}/jobs?allUsers=${allUsersValue}`
+  // Takes the system/group names as required parameters (not read from closure) so a caller
+  // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
+  // are already-validated strings, rather than trusting every call site to check first.
+  const buildUrl = (systemNameValue: string, groupNameValue: string, allUsersValue: boolean) =>
+    `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?allUsers=${allUsersValue}`
 
   const onChangeHandler = (event: any) => {
     const checked = event.currentTarget.checked
@@ -273,11 +254,13 @@ const SystemJobList: React.FC = () => {
   // resolve after mount (system context, GroupsFetcher), and firing early would poll a
   // malformed URL (missing path segment) until they do.
   useEffect(() => {
-    if (!selectedSystem?.name || !selectedGroup?.name) return
-    fetcher.load(buildUrl(allUsers))
+    const systemName = selectedSystem?.name
+    const groupName = selectedGroup?.name
+    if (!systemName || !groupName) return
+    fetcher.load(buildUrl(systemName, groupName, allUsers))
     const intervalId = setInterval(() => {
       if (fetcher.state === 'idle') {
-        fetcher.load(buildUrl(allUsers))
+        fetcher.load(buildUrl(systemName, groupName, allUsers))
       }
     }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)

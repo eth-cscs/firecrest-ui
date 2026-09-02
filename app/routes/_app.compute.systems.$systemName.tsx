@@ -5,25 +5,18 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { useEffect, startTransition } from 'react'
 import { Outlet, useLoaderData, useRouteError } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
-// loggers
-import logger from '~/logger/logger.server'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
-import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
-import { getAuthAccessToken, requireAuth } from '~/utils/auth.server'
-// apis
-import { getUserInfo } from '~/apis/status-api'
-// types
-import type { GetUserInfoResponse } from '~/types/api-status'
+import { requireAuth } from '~/utils/auth.server'
 // views
 import ErrorView from '~/components/views/ErrorView'
 // contexts
-import { GroupProvider, useGroup } from '~/contexts/GroupContext'
+import { GroupProvider } from '~/contexts/GroupContext'
+import GroupsFetcher from '~/contexts/GroupsFetcher'
 // switchers
 import { GroupSwitcherPortal, GroupSwitcherLayout } from '~/components/switchers/GroupSwitcher'
 
@@ -36,65 +29,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     request: request,
     extraInfo: { username: auth.user.username, system: systemName },
   })
-  // Get auth access token
-  const accessToken = await getAuthAccessToken(request)
   // Get path params
   const groupName = params.accountName || null
-  // Defer getUserInfo so the page renders immediately while groups load in background.
-  // Resolve with null on any failure (timeout, HTTP error) rather than rejecting —
-  // the page still works because groups are seeded from the URL, and DeferredGroupsLoader
-  // uses optional chaining so null userInfo is handled gracefully.
-  const userInfoPromise = promiseWithTimeout(
-    getUserInfo(accessToken, systemName, request),
-    DEFERRED_PROMISE_TIMEOUT_MS,
-  ).catch((error) => {
-    logger.warn({ error }, `Failed to load user info for system ${systemName}`)
-    return null
-  })
-  return { userInfoPromise, groupName, systemName }
-}
-
-// Awaits the deferred userInfoPromise via .then() rather than <Await> + useAsyncValue,
-// so there is no dehydrated Suspense boundary that can trigger React error #421 during
-// React Router's internal fetchAndApplyManifestPatches hydration pass.
-function GroupsUpdater({
-  promise,
-  groupName,
-}: {
-  promise: Promise<GetUserInfoResponse | null>
-  groupName: string | null
-}) {
-  const { setGroups, setSelectedGroupName } = useGroup()
-  useEffect(() => {
-    Promise.resolve(promise).then((userInfo) => {
-      startTransition(() => {
-        if (userInfo?.groups) {
-          setGroups(userInfo.groups)
-        }
-        if (!groupName) {
-          // firecrest-v2 >= 2.6.0 flags the default group per-item (group.default); older
-          // backends signal it via a separate top-level UserInfo.group instead - fall back to
-          // that so this works against either API generation.
-          const defaultGroup = userInfo?.groups?.find((group) => group.default) ?? userInfo?.group
-          if (defaultGroup) {
-            setSelectedGroupName(defaultGroup.name)
-          }
-        }
-      })
-    })
-  }, [promise, groupName, setGroups, setSelectedGroupName])
-  return null
+  return { groupName, systemName }
 }
 
 export default function AppComputeIndexRoute() {
-  const { userInfoPromise, groupName, systemName }: any = useLoaderData()
+  const { groupName, systemName }: any = useLoaderData()
   // Seed the provider with a synthetic group from the URL so child components
   // that depend on selectedGroup render correctly before the real data arrives.
   const initialGroups = groupName ? [{ id: groupName, name: groupName, default: false }] : []
   return (
     <GroupProvider groups={initialGroups} groupName={groupName}>
-      {/* Resolve deferred groups and push them into context without remounting children */}
-      <GroupsUpdater promise={userInfoPromise} groupName={groupName} />
+      <GroupsFetcher systemName={systemName} groupName={groupName} />
       <GroupSwitcherPortal
         systemName={systemName}
         basePath='/compute'

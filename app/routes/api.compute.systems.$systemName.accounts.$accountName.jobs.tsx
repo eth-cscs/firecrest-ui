@@ -5,16 +5,24 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { data } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
 // types
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
-import { handleApiErrorResponse } from '~/helpers/response-helper'
+import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
+import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from '~/apis/api'
 
+// Consumed via useFetcher (see JobList.tsx), which needs a normal 200 response either way - a
+// thrown/non-2xx Response wouldn't cleanly populate fetcher.data (see api.ts's isMaintenancePayload
+// comment). getJobs() itself never throws except for a maintenance-classified Response (it swallows
+// every other error into a normal { ...error } return), so the only thing this catch has to turn
+// into a flagged payload is that one case - plus a timeout, guarding against a backend that just
+// never responds.
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()
@@ -22,25 +30,39 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
   const accessToken = await getAuthAccessToken(request, headers)
+  const systemName = params.systemName!
+  const accountName = params.accountName!
+  const [, searchParams] = request.url.split('?')
+  const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
   try {
-    // Get query params
-    // Get params
-    const systemName = params.systemName!
-    const accountName = params.accountName!
-    // Get request info
-    const [, searchParams] = request.url.split('?')
-    // Check if allUsers is set
-    const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
-    // Get data
-    const response: GetSystemJobsResponse = await getJobs(
-      accessToken,
-      systemName,
-      accountName,
-      allUsers,
-      request,
+    const response = await promiseWithTimeout(
+      getJobs(accessToken, systemName, accountName, allUsers, request),
+      DEFERRED_PROMISE_TIMEOUT_MS,
+      `Loading jobs for ${systemName} timed out.`,
     )
-    return Response.json(response, { headers })
+    return data<GetSystemJobsResponse>(response, { headers })
   } catch (error) {
-    return handleApiErrorResponse(error)
+    if (isMaintenanceResponse(error)) {
+      return data(
+        {
+          maintenance: true,
+          reason: MAINTENANCE_REASON,
+          message: await getMaintenanceMessage(error),
+        },
+        { headers },
+      )
+    }
+    return data<GetSystemJobsResponse>(
+      {
+        system: systemName,
+        jobs: [],
+        account: accountName,
+        allUsers,
+        error: {
+          message: error instanceof Error ? error.message : 'Unable to load jobs.',
+        },
+      },
+      { headers },
+    )
   }
 }

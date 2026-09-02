@@ -6,12 +6,11 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useFetcher } from 'react-router'
 import { CalendarIcon, ClockIcon, XMarkIcon, CommandLineIcon } from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 // helpers
-import { classNames } from '~/helpers/class-helper'
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
@@ -21,17 +20,16 @@ import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
 // alerts
 import AlertInfo from '~/components/alerts/AlertInfo'
-import AlertWarning from '~/components/alerts/AlertWarning'
 // dialogs
 import JobDetailsDialog from '~/modules/compute/components/dialogs/JobDetailsDialog'
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 // apis
-import { getLocalJobs } from '~/apis/compute-api'
-import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
+import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
+import type { MaintenancePayload } from '~/apis/api'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
@@ -39,26 +37,8 @@ import { useRefreshing } from '~/contexts/RefreshingContext'
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 // alerts
 import AlertError from '~/components/alerts/AlertError'
-
-const UnavailableSystemAlert: React.FC<any> = ({ unavailableSystems, className = '' }) => {
-  if (!unavailableSystems || unavailableSystems.length <= 0) {
-    return null
-  }
-  return (
-    <AlertWarning className={classNames('', className)} title='System/s NOT available'>
-      <p>The following systems are currently unavailable for interaction:</p>
-      <ul className='list-disc list-inside'>
-        {unavailableSystems.map((unavailableSystem: any, index: number) => (
-          <li key={index}>{unavailableSystem.name}</li>
-        ))}
-      </ul>
-      <p className='pt-2'>
-        You wan&apos;t be able to view or manage jobs running on these systems at the moment. Please
-        check again later or contact support for further assistance.
-      </p>
-    </AlertWarning>
-  )
-}
+// spinners
+import LoadingSpinner from '~/components/spinners/LoadingSpinner'
 
 interface JobTableRowProps {
   job: Job
@@ -93,7 +73,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
-  const goToDetails = (jobId: number) => {
+  const goToDetails = (jobId: string) => {
     navigate(`/compute/systems/${system}/accounts/${account}/jobs/${jobId}`)
   }
 
@@ -234,66 +214,81 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
   )
 }
 
-type SystemJobListProps = {
-  jobs: GetSystemJobsResponse
-}
+const JOBS_POLL_INTERVAL_MS = 2000
 
-const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
-  const [allUsers, setAllUsers] = useState<boolean>(jobs?.allUsers ?? false)
-  const [localError, setLocalError] = useState<any>(jobs?.error ?? null)
+const SystemJobList: React.FC = () => {
+  const [allUsers, setAllUsers] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get('allUsers') === 'true',
+  )
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()
   const { setMaintenance } = useMaintenance()
-  const [currentJobs, setCurrentJobs] = useState<Job[]>(sortJobs(jobs?.jobs ?? []))
+  // useFetcher (rather than a hand-rolled fetch+setState poll) is what makes this safe under a
+  // slow/hanging backend: calling .load() again while a previous one for this fetcher is still
+  // in flight aborts the stale request, so an old, slow-to-resolve response can never land after
+  // and clobber state set by a newer one. Also avoids the deferred/streamed loader response this
+  // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
+  const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
 
-  const onChangeHandler = async (event: any) => {
+  // Takes the system/group names as required parameters (not read from closure) so a caller
+  // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
+  // are already-validated strings, rather than trusting every call site to check first.
+  const buildUrl = (systemNameValue: string, groupNameValue: string, allUsersValue: boolean) =>
+    `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?allUsers=${allUsersValue}`
+
+  const onChangeHandler = (event: any) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run,
-    // which would cause Suspense to re-suspend and conflict with the in-flight fetchJobs call.
+    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run.
     const url = new URL(window.location.href)
     url.searchParams.set('allUsers', String(checked))
     window.history.replaceState({}, '', url.toString())
-    // Trigger immediate fetch for instant feedback with the new value
-    await fetchJobs(checked)
+    // The effect below re-fetches on the `allUsers` change - no need to trigger it here too.
   }
 
-  const fetchJobs = async (allUsersOverride?: boolean) => {
-    try {
-      setRefreshing(true, 'Refreshing jobs...')
-      const startTime = Date.now()
-
-      const response = await getLocalJobs(
-        selectedSystem?.name ?? '',
-        selectedGroup?.name ?? '',
-        allUsersOverride !== undefined ? allUsersOverride : allUsers,
-      )
-
-      setCurrentJobs(sortJobs(response?.jobs ?? []))
-      setLocalError(response?.error ?? null)
-
-      // Ensure minimum display time of 300ms to avoid flickering
-      const elapsed = Date.now() - startTime
-      const minDisplayTime = 300
-      if (elapsed < minDisplayTime) {
-        await new Promise((resolve) => setTimeout(resolve, minDisplayTime - elapsed))
-      }
-    } catch (error) {
-      if (isMaintenanceResponse(error)) {
-        setMaintenance(true, await getMaintenanceMessage(error))
-      } else {
-        setLocalError(error)
-      }
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
+  // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
+  // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
+  // finish a request rather than having it superseded (and effectively never completing) every
+  // time the interval fires. Guarded on both names being populated - system/group briefly
+  // resolve after mount (system context, GroupsFetcher), and firing early would poll a
+  // malformed URL (missing path segment) until they do.
   useEffect(() => {
-    const intervalId = setInterval(fetchJobs, 2000)
+    const systemName = selectedSystem?.name
+    const groupName = selectedGroup?.name
+    if (!systemName || !groupName) return
+    fetcher.load(buildUrl(systemName, groupName, allUsers))
+    const intervalId = setInterval(() => {
+      if (fetcher.state === 'idle') {
+        fetcher.load(buildUrl(systemName, groupName, allUsers))
+      }
+    }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)
   }, [selectedSystem?.name, selectedGroup?.name, allUsers])
+
+  useEffect(() => {
+    setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
+  }, [fetcher.state])
+
+  useEffect(() => {
+    if (isMaintenancePayload(fetcher.data)) {
+      setMaintenance(true, getMaintenancePayloadMessage(fetcher.data))
+    }
+  }, [fetcher.data])
+
+  if (!fetcher.data) {
+    return <LoadingSpinner title='Loading jobs...' className='py-10' />
+  }
+
+  if (isMaintenancePayload(fetcher.data)) {
+    // AppLayout swaps to the maintenance page on the next render once setMaintenance() above
+    // takes effect - nothing meaningful to render here in the meantime.
+    return null
+  }
+
+  const jobsData = fetcher.data
+  const currentJobs = sortJobs(jobsData?.jobs ?? [])
+  const localError = jobsData?.error ?? null
 
   return (
     <>
@@ -302,7 +297,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ jobs }) => {
         <label className='inline-flex items-center cursor-pointer'>
           <input
             type='checkbox'
-            defaultChecked={allUsers}
+            checked={allUsers}
             value=''
             className='sr-only peer'
             onChange={onChangeHandler}

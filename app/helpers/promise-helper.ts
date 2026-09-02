@@ -15,14 +15,21 @@ export async function promiseWithTimeout<T>(
   timeoutMessage: string = 'Request timed out. Please try again.',
 ): Promise<T> {
   // Create a timeout promise that rejects after timeoutMs
+  let timeoutId: ReturnType<typeof setTimeout>
   const timeoutPromise = new Promise<T>((_, reject) => {
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       reject(new Error(`${timeoutMessage} (timeout after ${timeoutMs / 1000}s)`))
     }, timeoutMs)
   })
 
-  // Race the original promise against the timeout
-  return Promise.race([promise, timeoutPromise])
+  // Race the original promise against the timeout, then clear the timer regardless of which
+  // one wins - otherwise it keeps running for the rest of timeoutMs even once `promise` has
+  // already settled the race.
+  try {
+    return await Promise.race([promise, timeoutPromise])
+  } finally {
+    clearTimeout(timeoutId!)
+  }
 }
 
 export async function promiseWithTimeoutOrDefault<T>(

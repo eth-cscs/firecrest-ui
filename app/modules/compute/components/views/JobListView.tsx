@@ -5,16 +5,11 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { Suspense, memo } from 'react'
-import { Link, Await } from 'react-router'
+import React from 'react'
+import { Link } from 'react-router'
 import { PlusIcon } from '@heroicons/react/20/solid'
 // lables
 import { LABEL_COMPUTE_TITLE } from '~/labels'
-// types
-import type { GetSystemJobsResponse } from '~/types/api-job'
-import type { MaintenancePayload } from '~/apis/api'
-// apis
-import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // views
 import SimpleView, { SimpleViewSize } from '~/components/views/SimpleView'
 // panels
@@ -24,37 +19,8 @@ import JobList from '~/modules/compute/components/lists/JobList'
 // contexts
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
-// spinners
-import LoadingSpinner from '~/components/spinners/LoadingSpinner'
-// errors
-import AsyncError from '~/components/errors/AsyncError'
-// pages
-import MaintenancePage from '~/components/pages/MaintenancePage'
 
-// Isolated from GroupContext re-renders so the dehydrated <Await> boundary inside is
-// never traversed before it resolves, preventing React error #421.
-const JobsPanel = memo(
-  ({ jobsPromise }: { jobsPromise: Promise<GetSystemJobsResponse | MaintenancePayload> }) => (
-    <Suspense fallback={<LoadingSpinner title='Loading jobs...' className='py-10' />}>
-      <Await resolve={jobsPromise} errorElement={<AsyncError />}>
-        {(result: GetSystemJobsResponse | MaintenancePayload) =>
-          isMaintenancePayload(result) ? (
-            <MaintenancePage message={getMaintenancePayloadMessage(result)} />
-          ) : (
-            <JobList jobs={result as GetSystemJobsResponse} />
-          )
-        }
-      </Await>
-    </Suspense>
-  ),
-)
-JobsPanel.displayName = 'JobsPanel'
-
-interface JobListViewProps {
-  jobsPromise: Promise<GetSystemJobsResponse | MaintenancePayload>
-}
-
-const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewProps) => {
+const JobListView: React.FC = () => {
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
 
@@ -77,7 +43,7 @@ const JobListView: React.FC<JobListViewProps> = ({ jobsPromise }: JobListViewPro
         className='mb-4'
         actionsButtons={actionsButtons}
       >
-        <JobsPanel jobsPromise={jobsPromise} />
+        <JobList />
       </SimplePanel>
     </SimpleView>
   )

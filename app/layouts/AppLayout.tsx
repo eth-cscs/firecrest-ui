@@ -95,7 +95,7 @@ const AppLayoutContent: React.FC<AppLayoutProps> = ({
           />
           <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
             <Header setSidebarOpen={setSidebarOpen} authUser={authUser} fixed={true} />
-            <main className='min-h-0 flex flex-1 flex-col pr-[30rem] mt-[4rem]'>
+            <main className='min-h-0 flex flex-1 flex-col lg:pr-[30rem] mt-[4rem]'>
               <Outlet />
             </main>
             <Footer

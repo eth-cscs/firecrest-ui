@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({
 }: HeaderProps) => {
   return (
     <div
-      className={`top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow ${fixed ? 'fixed right-0 left-64' : 'sticky'}`}
+      className={`top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow ${fixed ? 'fixed right-0 left-0 md:left-64' : 'sticky'}`}
     >
       <button
         type='button'

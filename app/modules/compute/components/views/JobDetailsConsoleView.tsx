@@ -7,12 +7,13 @@
 
 import { Link } from 'react-router'
 import React, { useEffect, useRef, useMemo, useState } from 'react'
-import { ArrowDownCircleIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowDownCircleIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // types
 import type { System } from '~/types/api-status'
 import { GetOpsTailResponse, GetOpsLsResponse, File } from '~/types/api-filesystem'
 import { GetJobResponse, Job, JobMetadata, JobStateStatus } from '~/types/api-job'
 // helpers
+import { classNames } from '~/helpers/class-helper'
 import { formatTime } from '~/helpers/time-helper'
 import { nidStringToArray } from '~/helpers/nid-parser'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
@@ -223,6 +224,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   dashboards,
   onChangeTab,
 }) => {
+  const [detailsOpen, setDetailsOpen] = useState(true)
   if (!dashboards || dashboards.length === 0) {
     OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
   }
@@ -245,7 +247,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           {dashboards && dashboards.length > 0 && <option value='resources'>Dashboards</option>}
         </select>
       </div>
-      <div className='min-w-0 h-full min-h-0 pt-4 '>
+      <div className='min-w-0 min-h-[50vh] pt-4 flex flex-col lg:h-full lg:min-h-0'>
         {activeTab === 'stdout' && <ConsolePane content={stdout} />}
         {activeTab === 'stdin' && <ConsolePane content={stdin} />}
         {activeTab === 'stderr' && <ConsolePane content={stderr} />}
@@ -254,8 +256,20 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
         )}
       </div>
-      <aside className='fixed right-0 top-16 bottom-12 w-[30rem] border-l bg-white overflow-y-auto'>
-        <div className='p-4'>
+      <aside className='w-full border-t bg-white mt-6 lg:fixed lg:right-0 lg:top-16 lg:bottom-12 lg:w-[30rem] lg:mt-0 lg:border-t-0 lg:border-l lg:overflow-y-auto'>
+        <button
+          type='button'
+          className='flex w-full items-center justify-between p-4 text-left font-semibold lg:hidden'
+          onClick={() => setDetailsOpen((open) => !open)}
+          aria-expanded={detailsOpen}
+        >
+          <span>Job details</span>
+          <ChevronDownIcon
+            className={classNames('h-5 w-5 transition-transform', detailsOpen ? 'rotate-180' : '')}
+            aria-hidden='true'
+          />
+        </button>
+        <div className={classNames(detailsOpen ? 'block' : 'hidden', 'p-4 lg:block')}>
           <JobDetailsPanel
             job={job}
             jobMetadata={jobMetadata}
@@ -296,7 +310,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content }) => {
   }, [cleanedContent])
 
   return (
-    <section className='h-full min-h-0 flex flex-col'>
+    <section className='flex-1 min-h-0 flex flex-col'>
       <div
         ref={scrollerRef}
         className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
@@ -316,7 +330,7 @@ interface ResourcePaneProps {
 
 const ResourcePane: React.FC<ResourcePaneProps> = ({ src, title }) => {
   return (
-    <section className='h-full min-h-0 flex flex-col'>
+    <section className='flex-1 min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white px-3 py-2 shrink-0'>
         <div className='text-sm font-medium'>{title || 'Resources'}</div>
       </div>
@@ -383,7 +397,7 @@ const ResourcesPaneMulti: React.FC<ResourcesPaneMultiProps> = ({ job, dashboards
     [dashboards, activeId],
   )
   return (
-    <section className='h-full min-h-0 flex flex-col'>
+    <section className='flex-1 min-h-0 flex flex-col'>
       <div className='flex items-center justify-between border-b bg-white px-3 py-2 shrink-0'>
         <div className='flex items-center gap-2'>
           <div className='text-sm font-medium'>{title || 'Resources'}</div>

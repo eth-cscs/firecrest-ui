@@ -31,7 +31,7 @@ const Footer: React.FC<FooterProps> = ({
 
   return (
     <footer
-      className={`bottom-0 z-10 h-12 bg-white shadow ${fixed ? 'fixed left-64 right-0' : 'sticky'}`}
+      className={`bottom-0 z-10 h-12 bg-white shadow ${fixed ? 'fixed left-0 right-0 md:left-64' : 'sticky'}`}
     >
       <div className='flex items-center justify-between'>
         <div className='pl-3 pt-3'>

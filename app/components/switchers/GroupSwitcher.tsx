@@ -89,7 +89,7 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
         <div
           className={
             isHorizontal
-              ? 'text-sm font-bold text-gray-600 whitespace-nowrap'
+              ? 'hidden sm:block text-sm font-bold text-gray-600 whitespace-nowrap'
               : 'mb-1 text-sm font-bold text-gray-500'
           }
         >

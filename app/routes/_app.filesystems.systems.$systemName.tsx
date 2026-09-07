@@ -46,7 +46,7 @@ export default function AppFilesystemsIndexRoute() {
         systemName={systemName}
         basePath='/filesystems'
         layout={GroupSwitcherLayout.horizontal}
-        className='hidden lg:block w-[360px]'
+        className='block w-32 sm:w-48 lg:w-[360px]'
       />
       <Outlet />
     </GroupProvider>

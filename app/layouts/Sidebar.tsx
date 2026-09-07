@@ -5,11 +5,12 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { Fragment } from 'react'
+import React, { Fragment, useEffect } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import {
   Dialog,
   DialogBackdrop,
+  DialogPanel,
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
@@ -91,6 +92,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { systems } = useSystem()
   const userNavigation = [{ name: 'Dashboard', path: '/', icon: HomeIcon }]
 
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname, setSidebarOpen])
+
   const getSystemHealthyStatusDotClass = (systemHealthyStatus: SystemHealtyStatus) => {
     switch (systemHealthyStatus) {
       case SystemHealtyStatus.healthy:
@@ -167,7 +172,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       <Transition show={sidebarOpen} as={Fragment}>
-        <Dialog as='div' className='fixed inset-0 flex z-40 md:hidden' onClose={setSidebarOpen}>
+        <Dialog
+          as='div'
+          className='fixed inset-0 flex z-40 md:hidden'
+          onClose={() => setSidebarOpen(false)}
+        >
           <TransitionChild
             as={Fragment}
             enter='transition-opacity ease-linear duration-300'
@@ -188,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             leaveFrom='translate-x-0'
             leaveTo='-translate-x-full'
           >
-            <div className='relative flex-1 flex flex-col max-w-xs w-full pt-5 pb-4 bg-white'>
+            <DialogPanel className='relative flex-1 flex flex-col max-w-xs w-full pt-5 pb-4 bg-white'>
               <TransitionChild
                 as={Fragment}
                 enter='ease-in-out duration-300'
@@ -307,13 +316,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 <span>{subItem.name}</span>
                                               </span>
                                             ) : (
-                                              <DisclosureButton
-                                                as={NavLink}
-                                                to={subItem.path}
-                                                className={linkClassName}
-                                              >
+                                              <NavLink to={subItem.path} className={linkClassName}>
                                                 <span>{subItem.name}</span>
-                                              </DisclosureButton>
+                                              </NavLink>
                                             )}
                                           </li>
                                         )
@@ -374,7 +379,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </nav>
               </div>
-            </div>
+            </DialogPanel>
           </TransitionChild>
           <div className='flex-shrink-0 w-14' aria-hidden='true'>
             {/* Dummy element to force sidebar to shrink to fit close icon */}

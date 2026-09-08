@@ -197,21 +197,35 @@ const FileItem: React.FC<FileItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </div>
+        {/* Below md, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile stays a 2-column layout (this cell + actions). */}
+        <div className='md:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
+          <span>{prettyBytes(parseInt(file.size))}</span>
+          <span>&middot;</span>
+          <span>{formatDateTime({ dateTime: file.lastModified })}</span>
+        </div>
+        <div className='md:hidden mt-1 flex flex-wrap items-center gap-1'>
+          <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
+          <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
+          <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
+        </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
       </td>
-      <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+        {prettyBytes(parseInt(file.size))}
+      </td>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium text-right'>
+      <td className='px-1 md:px-4 py-3 font-medium text-right'>
         <div className='inline-flex items-center gap-3 rounded-md shadow-sm'>
           {file.type === FileType.file &&
             isPreviewable(file.name) &&
@@ -439,21 +453,35 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </a>
+        {/* Below md, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile stays a 2-column layout (this cell + actions). */}
+        <div className='md:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
+          <span>{prettyBytes(parseInt(file.size))}</span>
+          <span>&middot;</span>
+          <span>{formatDateTime({ dateTime: file.lastModified })}</span>
+        </div>
+        <div className='md:hidden mt-1 flex flex-wrap items-center gap-1'>
+          <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
+          <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
+          <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
+        </div>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
       </td>
-      <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+        {prettyBytes(parseInt(file.size))}
+      </td>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
       </td>
       <td className='px-4 py-3 font-medium hidden md:table-cell'>
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium text-right'>
+      <td className='px-1 md:px-4 py-3 font-medium text-right'>
         <div className='inline-flex rounded-md shadow-sm'>
           <Menu as='div' className='relative -ml-px block'>
             <div>
@@ -716,7 +744,18 @@ const FileListTable: React.FC<FileListTableProps> = ({
 
   return (
     <div className='overflow-x-auto border border-gray-200 rounded-md'>
-      <table className='table-auto w-full text-left text-sm '>
+      <table className='table-fixed w-full text-left text-sm '>
+        <colgroup>
+          {/* Below md, only Name and Actions render - the rest fold into the Name cell instead
+              of causing horizontal scroll. At md+ all 7 columns render (widths sum to 12/12). */}
+          <col className='w-[calc(100%-5rem)] md:w-4/12' />
+          <col className='hidden md:table-column md:w-2/12' />
+          <col className='hidden md:table-column md:w-1/12' />
+          <col className='hidden md:table-column md:w-1/12' />
+          <col className='hidden md:table-column md:w-1/12' />
+          <col className='hidden md:table-column md:w-1/12' />
+          <col className='w-20 md:w-2/12' />
+        </colgroup>
         <thead className='bg-gray-100'>
           <tr>
             {sortableColumns.map((fileTableSortableColumn: FileTableSortableColumn) => (

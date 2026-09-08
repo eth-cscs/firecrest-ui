@@ -78,6 +78,23 @@ const copyToClipboard = (file: File, fileSystem: FileSystem) => {
   navigator.clipboard.writeText(path)
 }
 
+// Shared between FileItem and DirectoryItem so the mobile-folded metadata (everything hidden
+// below lg - Last Modified/Size/Group/User/Permissions) isn't authored twice.
+const FileMobileMetaSummary: React.FC<{ file: File }> = ({ file }) => (
+  <>
+    <div className='lg:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
+      <span>{prettyBytes(parseInt(file.size))}</span>
+      <span>&middot;</span>
+      <span>{formatDateTime({ dateTime: file.lastModified })}</span>
+    </div>
+    <div className='lg:hidden mt-1 flex flex-wrap items-center gap-1'>
+      <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
+      <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
+      <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
+    </div>
+  </>
+)
+
 interface FileItemProps {
   file: File
   currentPath: string
@@ -197,18 +214,10 @@ const FileItem: React.FC<FileItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </div>
-        {/* Below md, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
-            instead of losing them, so mobile stays a 2-column layout (this cell + actions). */}
-        <div className='lg:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
-          <span>{prettyBytes(parseInt(file.size))}</span>
-          <span>&middot;</span>
-          <span>{formatDateTime({ dateTime: file.lastModified })}</span>
-        </div>
-        <div className='lg:hidden mt-1 flex flex-wrap items-center gap-1'>
-          <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
-          <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
-          <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
-        </div>
+        {/* Below lg, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile/tablet stays a 2-column layout (this cell +
+            actions). See the comment on the colgroup below for why lg rather than md. */}
+        <FileMobileMetaSummary file={file} />
       </td>
       <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
@@ -453,18 +462,10 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </a>
-        {/* Below md, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
-            instead of losing them, so mobile stays a 2-column layout (this cell + actions). */}
-        <div className='lg:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
-          <span>{prettyBytes(parseInt(file.size))}</span>
-          <span>&middot;</span>
-          <span>{formatDateTime({ dateTime: file.lastModified })}</span>
-        </div>
-        <div className='lg:hidden mt-1 flex flex-wrap items-center gap-1'>
-          <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
-          <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
-          <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
-        </div>
+        {/* Below lg, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile/tablet stays a 2-column layout (this cell +
+            actions). See the comment on the colgroup below for why lg rather than md. */}
+        <FileMobileMetaSummary file={file} />
       </td>
       <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
@@ -736,6 +737,10 @@ const FileListTable: React.FC<FileListTableProps> = ({
   accountName,
   fileDownloadLimit,
 }) => {
+  // Pre-existing: this never gets populated (the effect that would fill it from localStorage/
+  // defaults is commented out below), so the <thead> renders no header cells at all. Not
+  // touched here - the colgroup widths below don't depend on it - but flagging it since this
+  // table is now under active responsive work.
   const [sortableColumns, setSortableColumns] = useState<FileTableSortableColumn[]>([])
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
   const localStorageKey = 'firecrest-web-ui-file-manager'

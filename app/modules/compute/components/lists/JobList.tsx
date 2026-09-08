@@ -91,26 +91,54 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
           <ClockIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
           {formatTime({ time: job.time.elapsed })}
         </div>
+        {/* Below md, the Job/User/Info columns are hidden - fold their content in here instead
+            of losing it, so mobile stays a 2-column layout (this cell + actions). */}
+        <div className='md:hidden mt-3'>
+          <button
+            type='button'
+            onClick={() => goToDetails(job.jobId)}
+            className='truncate font-medium text-gray-900 text-sm cursor-pointer hover:underline text-left block'
+          >
+            {job.name}
+          </button>
+          <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+          <div className='mb-1'>
+            {job.user !== '' ? (
+              <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
+            ) : (
+              <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
+            )}
+          </div>
+          {(job.status.state === JobStateStatus.RUNNING ||
+            job.status.state === JobStateStatus.COMPLETED) && (
+            <div className='truncate text-gray-500 text-xs'>Partition: {job.partition}</div>
+          )}
+          {job.status.state === 'PENDING' && (
+            <div className='truncate text-gray-500 text-xs'>
+              Pending reason: {job.status.stateReason}
+            </div>
+          )}
+        </div>
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
         <button
           type='button'
           onClick={() => goToDetails(job.jobId)}
-          className='truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
+          className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
         >
           {job.name}
         </button>
 
         <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
         {job.user !== '' ? (
           <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
         ) : (
           <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
         )}
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
         {(job.status.state === JobStateStatus.RUNNING ||
           job.status.state === JobStateStatus.COMPLETED) && (
           <>
@@ -173,26 +201,31 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
   }
   return (
     <div className='overflow-x-auto'>
-      <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
+      <table className='w-full table-fixed whitespace-nowrap text-left text-sm leading-6'>
         <colgroup>
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
+          {/* Below md only the content and actions columns render - give them the full width
+              between them so the actions column can't get pushed past the viewport edge. At
+              md+, all 5 columns render - these widths sum to 12/12, unlike the previous
+              lg:w-3/12 on every column (5 x 25% = 125%), which only "worked" because table-auto
+              ignored col widths that didn't fit - table-fixed enforces them for real. */}
+          <col className='w-[calc(100%-5rem)] md:w-3/12' />
+          <col className='hidden md:table-column md:w-4/12' />
+          <col className='hidden md:table-column md:w-2/12' />
+          <col className='hidden md:table-column md:w-2/12' />
+          <col className='w-20 md:w-1/12' />
         </colgroup>
         <thead className='border-b border-gray-200 text-gray-900'>
           <tr>
             <th scope='col' className='px-0 py-3 font-semibold'>
               Status
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
               Job
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
               User
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
               Info
             </th>
             <th scope='col' className='px-0 py-3 font-semibold'></th>

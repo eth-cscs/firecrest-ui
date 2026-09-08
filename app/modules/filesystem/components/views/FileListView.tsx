@@ -737,10 +737,12 @@ const FileListTable: React.FC<FileListTableProps> = ({
   accountName,
   fileDownloadLimit,
 }) => {
-  // Pre-existing: this never gets populated (the effect that would fill it from localStorage/
-  // defaults is commented out below), so the <thead> renders no header cells at all. Not
-  // touched here - the colgroup widths below don't depend on it - but flagging it since this
-  // table is now under active responsive work.
+  // Pre-existing: neither of these is ever set (the effect that would populate sortableColumns
+  // from localStorage/defaults is commented out below, and fileSystemList's setter is never
+  // called at all - rendering below uses the files prop directly, not fileSystemList). So the
+  // <thead> renders no header cells, and fileSystemList is dead state. Not touched here - the
+  // colgroup widths and row rendering don't depend on either - but flagging it since this table
+  // is now under active responsive work.
   const [sortableColumns, setSortableColumns] = useState<FileTableSortableColumn[]>([])
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
   const localStorageKey = 'firecrest-web-ui-file-manager'

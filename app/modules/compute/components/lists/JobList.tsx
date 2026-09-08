@@ -44,7 +44,6 @@ interface JobTableRowProps {
   job: Job
   system: string
   account: string
-  user: string
 }
 
 enum DisplayField {
@@ -107,7 +106,6 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   system,
   job,
   account,
-  user,
 }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
@@ -242,7 +240,6 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
               key={`${job.jobId}`}
               job={job}
               account={job.account}
-              user={job.user}
             />
           ))}
         </tbody>

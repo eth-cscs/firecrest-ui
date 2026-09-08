@@ -133,9 +133,12 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
           <ClockIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
           <span className='truncate min-w-0'>{formatTime({ time: job.time.elapsed })}</span>
         </div>
-        {/* Below md, the Job/User/Info columns are hidden - fold their content in here instead
-            of losing it, so mobile stays a 2-column layout (this cell + actions). */}
-        <div className='md:hidden mt-3'>
+        {/* Below lg, the Job/User/Info columns are hidden - fold their content in here instead
+            of losing it, so mobile/tablet stays a 2-column layout (this cell + actions). Cuts
+            in at lg rather than md because the persistent sidebar (md:w-64) also appears at md,
+            eating ~256px right when a narrower breakpoint would otherwise try to fit 5 columns
+            into whatever's left. */}
+        <div className='lg:hidden mt-3'>
           <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
           <div className='mb-1'>
             <JobUserBadge job={job} />
@@ -143,13 +146,13 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
           <JobPartitionOrPendingReason job={job} />
         </div>
       </td>
-      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
         <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
       </td>
-      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
         <JobUserBadge job={job} />
       </td>
-      <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
         <JobPartitionOrPendingReason job={job} />
       </td>
       <td className='py-3 align-top text-right'>
@@ -202,29 +205,31 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
     <div className='overflow-x-auto'>
       <table className='w-full table-fixed whitespace-nowrap text-left text-sm leading-6'>
         <colgroup>
-          {/* Below md only the content and actions columns render - give them the full width
-              between them so the actions column can't get pushed past the viewport edge. At
-              md+, all 5 columns render - these widths sum to 12/12, unlike the previous
+          {/* Below lg only the content and actions columns render - give them the full width
+              between them so the actions column can't get pushed past the viewport edge. Cuts in
+              at lg, not md, because the persistent sidebar also appears at md and eats ~256px -
+              revealing more columns at the same breakpoint the sidebar shows up left too little
+              room. At lg+, all 5 columns render - these widths sum to 12/12, unlike the original
               lg:w-3/12 on every column (5 x 25% = 125%), which only "worked" because table-auto
               ignored col widths that didn't fit - table-fixed enforces them for real. */}
-          <col className='w-[calc(100%-5rem)] md:w-3/12' />
-          <col className='hidden md:table-column md:w-4/12' />
-          <col className='hidden md:table-column md:w-2/12' />
-          <col className='hidden md:table-column md:w-2/12' />
-          <col className='w-20 md:w-1/12' />
+          <col className='w-[calc(100%-5rem)] lg:w-3/12' />
+          <col className='hidden lg:table-column lg:w-4/12' />
+          <col className='hidden lg:table-column lg:w-2/12' />
+          <col className='hidden lg:table-column lg:w-2/12' />
+          <col className='w-20 lg:w-1/12' />
         </colgroup>
         <thead className='border-b border-gray-200 text-gray-900'>
           <tr>
             <th scope='col' className='px-0 py-3 font-semibold'>
               Status
             </th>
-            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               Job
             </th>
-            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               User
             </th>
-            <th scope='col' className='hidden md:table-cell px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               Info
             </th>
             <th scope='col' className='px-0 py-3 font-semibold'></th>

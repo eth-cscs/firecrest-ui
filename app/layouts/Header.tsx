@@ -47,13 +47,15 @@ const Header: React.FC<HeaderProps> = ({
           {/* Profile dropdown */}
           <Menu as='div' className='relative'>
             <div>
-              <Menu.Button className='max-w-xs bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 lg:py-2 lg:rounded-md lg:hover:bg-gray-50'>
-                <span className='sr-only'>
-                  Open user menu for {authUser.firstName} {authUser.lastName} ({authUser.username}
-                  )
-                </span>
+              <Menu.Button
+                className='max-w-xs bg-white rounded-full flex items-center p-1.5 lg:p-0 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 lg:py-2 lg:rounded-md lg:hover:bg-gray-50'
+                aria-label={`Open user menu for ${authUser.firstName} ${authUser.lastName} (${authUser.username})`}
+              >
                 <UserCircleIcon className='h-8 w-8 text-gray-400 lg:hidden' aria-hidden='true' />
-                <span className='hidden ml-3 text-gray-700 text-sm font-medium lg:block'>
+                <span
+                  className='hidden ml-3 text-gray-700 text-sm font-medium lg:block'
+                  aria-hidden='true'
+                >
                   {authUser.firstName} {authUser.lastName} ({authUser.username})
                 </span>
                 <ChevronDownIcon
@@ -72,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
               leaveTo='transform opacity-0 scale-95'
             >
               <Menu.Items className='origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none'>
-                <div className='px-4 py-2 border-b border-gray-100 lg:hidden'>
+                <div className='px-4 py-2 border-b border-gray-100 lg:hidden' role='presentation'>
                   <p className='text-sm font-medium text-gray-900 truncate'>
                     {authUser.firstName} {authUser.lastName}
                   </p>

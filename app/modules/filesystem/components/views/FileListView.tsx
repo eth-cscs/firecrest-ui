@@ -744,7 +744,7 @@ const FileListTable: React.FC<FileListTableProps> = ({
 
   return (
     <div className='overflow-x-auto border border-gray-200 rounded-md'>
-      <table className='table-fixed w-full text-left text-sm '>
+      <table className='table-fixed w-full text-left text-sm'>
         <colgroup>
           {/* Below md, only Name and Actions render - the rest fold into the Name cell instead
               of causing horizontal scroll. At md+ all 7 columns render (widths sum to 12/12). */}

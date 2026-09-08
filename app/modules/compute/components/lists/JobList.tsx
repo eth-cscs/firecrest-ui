@@ -63,6 +63,46 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
+// Shared between the desktop Job column and the mobile-only stacked summary folded into the
+// Status cell, so the two don't drift out of sync (and there's one place to fix, e.g. the
+// PENDING check below using the enum instead of a stray string literal).
+const JobNameAndId: React.FC<{ job: Job; onGoToDetails: () => void }> = ({
+  job,
+  onGoToDetails,
+}) => (
+  <>
+    <button
+      type='button'
+      onClick={onGoToDetails}
+      className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
+    >
+      {job.name}
+    </button>
+    <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+  </>
+)
+
+const JobUserBadge: React.FC<{ job: Job }> = ({ job }) =>
+  job.user !== '' ? (
+    <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
+  ) : (
+    <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
+  )
+
+const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
+  <>
+    {(job.status.state === JobStateStatus.RUNNING ||
+      job.status.state === JobStateStatus.COMPLETED) && (
+      <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
+    )}
+    {job.status.state === JobStateStatus.PENDING && (
+      <div className='truncate text-gray-500 text-xs mb-1'>
+        Pending reason: {job.status.stateReason}
+      </div>
+    )}
+  </>
+)
+
 const JobTableRow: React.FC<JobTableRowProps> = ({
   system,
   job,
@@ -85,73 +125,32 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
         </div>
         <div className='flex items-center text-xs text-gray-500 mb-1'>
           <CalendarIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
-          {formatDateTimeFromTimestamp({ timestamp: job.time.start })}
+          <span className='truncate min-w-0'>
+            {formatDateTimeFromTimestamp({ timestamp: job.time.start })}
+          </span>
         </div>
         <div className='flex items-center text-xs text-gray-500'>
           <ClockIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
-          {formatTime({ time: job.time.elapsed })}
+          <span className='truncate min-w-0'>{formatTime({ time: job.time.elapsed })}</span>
         </div>
         {/* Below md, the Job/User/Info columns are hidden - fold their content in here instead
             of losing it, so mobile stays a 2-column layout (this cell + actions). */}
         <div className='md:hidden mt-3'>
-          <button
-            type='button'
-            onClick={() => goToDetails(job.jobId)}
-            className='truncate font-medium text-gray-900 text-sm cursor-pointer hover:underline text-left block'
-          >
-            {job.name}
-          </button>
-          <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+          <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
           <div className='mb-1'>
-            {job.user !== '' ? (
-              <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
-            ) : (
-              <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
-            )}
+            <JobUserBadge job={job} />
           </div>
-          {(job.status.state === JobStateStatus.RUNNING ||
-            job.status.state === JobStateStatus.COMPLETED) && (
-            <div className='truncate text-gray-500 text-xs'>Partition: {job.partition}</div>
-          )}
-          {job.status.state === 'PENDING' && (
-            <div className='truncate text-gray-500 text-xs'>
-              Pending reason: {job.status.stateReason}
-            </div>
-          )}
+          <JobPartitionOrPendingReason job={job} />
         </div>
       </td>
       <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
-        <button
-          type='button'
-          onClick={() => goToDetails(job.jobId)}
-          className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
-        >
-          {job.name}
-        </button>
-
-        <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+        <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
       </td>
       <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
-        {job.user !== '' ? (
-          <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
-        ) : (
-          <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
-        )}
+        <JobUserBadge job={job} />
       </td>
       <td className='hidden md:table-cell py-3 align-top tabular-nums text-gray-700'>
-        {(job.status.state === JobStateStatus.RUNNING ||
-          job.status.state === JobStateStatus.COMPLETED) && (
-          <>
-            <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
-          </>
-        )}
-        {job.status.state === 'PENDING' && (
-          <>
-            <div className='truncate text-gray-500 text-xs mb-1'>
-              Pending reason: {job.status.stateReason}
-            </div>
-          </>
-        )}
+        <JobPartitionOrPendingReason job={job} />
       </td>
       <td className='py-3 align-top text-right'>
         <JobDetailsDialog

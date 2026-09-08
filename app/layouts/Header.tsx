@@ -8,7 +8,11 @@
 import React, { Fragment } from 'react'
 import { Link } from 'react-router'
 import { Menu, Transition } from '@headlessui/react'
-import { ChevronDownIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline'
+import {
+  ChevronDownIcon,
+  Bars3BottomLeftIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/outline'
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void
@@ -44,11 +48,13 @@ const Header: React.FC<HeaderProps> = ({
           <Menu as='div' className='relative'>
             <div>
               <Menu.Button className='max-w-xs bg-white rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 lg:py-2 lg:rounded-md lg:hover:bg-gray-50'>
+                <span className='sr-only'>
+                  Open user menu for {authUser.firstName} {authUser.lastName} ({authUser.username}
+                  )
+                </span>
+                <UserCircleIcon className='h-8 w-8 text-gray-400 lg:hidden' aria-hidden='true' />
                 <span className='hidden ml-3 text-gray-700 text-sm font-medium lg:block'>
-                  <span className='sr-only'>Open user menu for </span>
-                  <span>
-                    {authUser.firstName} {authUser.lastName} ({authUser.username})
-                  </span>
+                  {authUser.firstName} {authUser.lastName} ({authUser.username})
                 </span>
                 <ChevronDownIcon
                   className='hidden flex-shrink-0 ml-1 h-5 w-5 text-gray-400 lg:block'

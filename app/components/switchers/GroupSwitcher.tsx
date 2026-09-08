@@ -116,7 +116,7 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder='Search accounts...'
+              placeholder='Search...'
               className='w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:ring-blue-300'
             />
           </div>
@@ -135,8 +135,8 @@ export const GroupSwitcher: React.FC<GroupSwitcherProps> = ({
                       isSelected ? 'bg-gray-100 font-medium' : '',
                     ].join(' ')}
                   >
-                    <span>{g.name}</span>
-                    {isSelected && <CheckIcon className='h-4 w-4 text-gray-700' />}
+                    <span className='truncate'>{g.name}</span>
+                    {isSelected && <CheckIcon className='h-4 w-4 flex-shrink-0 text-gray-700' />}
                   </button>
                 </li>
               )

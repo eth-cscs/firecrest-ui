@@ -203,7 +203,7 @@ export const FileSystemSelectableTable: React.FC<FileListTableProps> = ({
   const changeSorting = () => {}
 
   return (
-    <div className='border border-gray-200 rounded-md'>
+    <div className='overflow-x-auto border border-gray-200 rounded-md'>
       <table className='table-auto w-full text-left text-sm'>
         <thead className='bg-gray-100'>
           <tr>

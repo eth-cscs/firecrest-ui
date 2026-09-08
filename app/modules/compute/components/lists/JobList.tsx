@@ -172,7 +172,7 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
     return <AlertInfo message='Job/s not found' />
   }
   return (
-    <>
+    <div className='overflow-x-auto'>
       <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
         <colgroup>
           <col className='lg:w-3/12' />
@@ -210,7 +210,7 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   )
 }
 

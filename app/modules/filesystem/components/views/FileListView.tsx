@@ -78,6 +78,23 @@ const copyToClipboard = (file: File, fileSystem: FileSystem) => {
   navigator.clipboard.writeText(path)
 }
 
+// Shared between FileItem and DirectoryItem so the mobile-folded metadata (everything hidden
+// below lg - Last Modified/Size/Group/User/Permissions) isn't authored twice.
+const FileMobileMetaSummary: React.FC<{ file: File }> = ({ file }) => (
+  <>
+    <div className='lg:hidden mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500'>
+      <span>{prettyBytes(parseInt(file.size))}</span>
+      <span>&middot;</span>
+      <span>{formatDateTime({ dateTime: file.lastModified })}</span>
+    </div>
+    <div className='lg:hidden mt-1 flex flex-wrap items-center gap-1'>
+      <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
+      <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
+      <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
+    </div>
+  </>
+)
+
 interface FileItemProps {
   file: File
   currentPath: string
@@ -197,21 +214,27 @@ const FileItem: React.FC<FileItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </div>
+        {/* Below lg, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile/tablet stays a 2-column layout (this cell +
+            actions). See the comment on the colgroup below for why lg rather than md. */}
+        <FileMobileMetaSummary file={file} />
       </td>
-      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
       </td>
-      <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
+        {prettyBytes(parseInt(file.size))}
+      </td>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium text-right'>
+      <td className='px-1 lg:px-4 py-3 font-medium text-right'>
         <div className='inline-flex items-center gap-3 rounded-md shadow-sm'>
           {file.type === FileType.file &&
             isPreviewable(file.name) &&
@@ -439,21 +462,27 @@ const DirectoryItem: React.FC<DirectoryItemProps> = ({
           </span>{' '}
           <div className='flex-1 min-w-0 max-w-sm break-words truncate'>{file.name}</div>
         </a>
+        {/* Below lg, Last Modified/Size/Group/User/Permissions are hidden - fold them in here
+            instead of losing them, so mobile/tablet stays a 2-column layout (this cell +
+            actions). See the comment on the colgroup below for why lg rather than md. */}
+        <FileMobileMetaSummary file={file} />
       </td>
-      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         {formatDateTime({ dateTime: file.lastModified })}
       </td>
-      <td className='px-4 py-3 font-medium'>{prettyBytes(parseInt(file.size))}</td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
+        {prettyBytes(parseInt(file.size))}
+      </td>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.YELLOW}>{file.group}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.BLUE}>{file.user}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium hidden md:table-cell'>
+      <td className='px-4 py-3 font-medium hidden lg:table-cell'>
         <LabelBadge color={LabelColor.GRAY}>{file.permissions}</LabelBadge>
       </td>
-      <td className='px-4 py-3 font-medium text-right'>
+      <td className='px-1 lg:px-4 py-3 font-medium text-right'>
         <div className='inline-flex rounded-md shadow-sm'>
           <Menu as='div' className='relative -ml-px block'>
             <div>
@@ -708,6 +737,12 @@ const FileListTable: React.FC<FileListTableProps> = ({
   accountName,
   fileDownloadLimit,
 }) => {
+  // Pre-existing: neither of these is ever set (the effect that would populate sortableColumns
+  // from localStorage/defaults is commented out below, and fileSystemList's setter is never
+  // called at all - rendering below uses the files prop directly, not fileSystemList). So the
+  // <thead> renders no header cells, and fileSystemList is dead state. Not touched here - the
+  // colgroup widths and row rendering don't depend on either - but flagging it since this table
+  // is now under active responsive work.
   const [sortableColumns, setSortableColumns] = useState<FileTableSortableColumn[]>([])
   const [fileSystemList, setFileSystemList] = useState<any[]>([])
   const localStorageKey = 'firecrest-web-ui-file-manager'
@@ -715,8 +750,23 @@ const FileListTable: React.FC<FileListTableProps> = ({
   const changeSorting = () => {}
 
   return (
-    <div className='border border-gray-200 rounded-md'>
-      <table className='table-auto w-full text-left text-sm '>
+    <div className='overflow-x-auto border border-gray-200 rounded-md'>
+      <table className='table-fixed w-full text-left text-sm'>
+        <colgroup>
+          {/* Below lg, only Name and Actions render - the rest fold into the Name cell instead
+              of causing horizontal scroll. Cuts in at lg, not md, because the persistent sidebar
+              also appears at md and eats ~256px - revealing more columns at the same breakpoint
+              the sidebar shows up leaves too little room (visible as columns wrapping onto
+              multiple lines between md and lg otherwise). At lg+ all 7 columns render (widths
+              sum to 12/12). */}
+          <col className='w-[calc(100%-5rem)] lg:w-4/12' />
+          <col className='hidden lg:table-column lg:w-2/12' />
+          <col className='hidden lg:table-column lg:w-1/12' />
+          <col className='hidden lg:table-column lg:w-1/12' />
+          <col className='hidden lg:table-column lg:w-1/12' />
+          <col className='hidden lg:table-column lg:w-1/12' />
+          <col className='w-20 lg:w-2/12' />
+        </colgroup>
         <thead className='bg-gray-100'>
           <tr>
             {sortableColumns.map((fileTableSortableColumn: FileTableSortableColumn) => (

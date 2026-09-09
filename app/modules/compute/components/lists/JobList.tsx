@@ -44,7 +44,6 @@ interface JobTableRowProps {
   job: Job
   system: string
   account: string
-  user: string
 }
 
 enum DisplayField {
@@ -63,11 +62,50 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
   return true
 }
 
+// Shared between the desktop Job column and the mobile-only stacked summary folded into the
+// Status cell, so the two don't drift out of sync (and there's one place to fix, e.g. the
+// PENDING check below using the enum instead of a stray string literal).
+const JobNameAndId: React.FC<{ job: Job; onGoToDetails: () => void }> = ({
+  job,
+  onGoToDetails,
+}) => (
+  <>
+    <button
+      type='button'
+      onClick={onGoToDetails}
+      className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
+    >
+      {job.name}
+    </button>
+    <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+  </>
+)
+
+const JobUserBadge: React.FC<{ job: Job }> = ({ job }) =>
+  job.user !== '' ? (
+    <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
+  ) : (
+    <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
+  )
+
+const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
+  <>
+    {(job.status.state === JobStateStatus.RUNNING ||
+      job.status.state === JobStateStatus.COMPLETED) && (
+      <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
+    )}
+    {job.status.state === JobStateStatus.PENDING && (
+      <div className='truncate text-gray-500 text-xs mb-1'>
+        Pending reason: {job.status.stateReason}
+      </div>
+    )}
+  </>
+)
+
 const JobTableRow: React.FC<JobTableRowProps> = ({
   system,
   job,
   account,
-  user,
 }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
@@ -85,45 +123,35 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
         </div>
         <div className='flex items-center text-xs text-gray-500 mb-1'>
           <CalendarIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
-          {formatDateTimeFromTimestamp({ timestamp: job.time.start })}
+          <span className='truncate min-w-0'>
+            {formatDateTimeFromTimestamp({ timestamp: job.time.start })}
+          </span>
         </div>
         <div className='flex items-center text-xs text-gray-500'>
           <ClockIcon aria-hidden='true' className='mr-1 h-4 w-4 flex-shrink-0 text-gray-500' />
-          {formatTime({ time: job.time.elapsed })}
+          <span className='truncate min-w-0'>{formatTime({ time: job.time.elapsed })}</span>
+        </div>
+        {/* Below lg, the Job/User/Info columns are hidden - fold their content in here instead
+            of losing it, so mobile/tablet stays a 2-column layout (this cell + actions). Cuts
+            in at lg rather than md because the persistent sidebar (md:w-64) also appears at md,
+            eating ~256px right when a narrower breakpoint would otherwise try to fit 5 columns
+            into whatever's left. */}
+        <div className='lg:hidden mt-3'>
+          <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
+          <div className='mb-1'>
+            <JobUserBadge job={job} />
+          </div>
+          <JobPartitionOrPendingReason job={job} />
         </div>
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
-        <button
-          type='button'
-          onClick={() => goToDetails(job.jobId)}
-          className='truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
-        >
-          {job.name}
-        </button>
-
-        <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
+        <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
-        {job.user !== '' ? (
-          <LabelBadge color={LabelColor.BLUE}>{job.user}</LabelBadge>
-        ) : (
-          <LabelBadge color={LabelColor.GRAY}>N/A</LabelBadge>
-        )}
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
+        <JobUserBadge job={job} />
       </td>
-      <td className='py-3 align-top tabular-nums text-gray-700'>
-        {(job.status.state === JobStateStatus.RUNNING ||
-          job.status.state === JobStateStatus.COMPLETED) && (
-          <>
-            <div className='truncate text-gray-500 text-xs mb-1'>Partition: {job.partition}</div>
-          </>
-        )}
-        {job.status.state === 'PENDING' && (
-          <>
-            <div className='truncate text-gray-500 text-xs mb-1'>
-              Pending reason: {job.status.stateReason}
-            </div>
-          </>
-        )}
+      <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
+        <JobPartitionOrPendingReason job={job} />
       </td>
       <td className='py-3 align-top text-right'>
         <JobDetailsDialog
@@ -172,27 +200,34 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
     return <AlertInfo message='Job/s not found' />
   }
   return (
-    <>
-      <table className='w-full whitespace-nowrap text-left text-sm leading-6'>
+    <div className='overflow-x-auto'>
+      <table className='w-full table-fixed whitespace-nowrap text-left text-sm leading-6'>
         <colgroup>
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
-          <col className='lg:w-3/12' />
+          {/* Below lg only the content and actions columns render - give them the full width
+              between them so the actions column can't get pushed past the viewport edge. Cuts in
+              at lg, not md, because the persistent sidebar also appears at md and eats ~256px -
+              revealing more columns at the same breakpoint the sidebar shows up left too little
+              room. At lg+, all 5 columns render - these widths sum to 12/12, unlike the original
+              lg:w-3/12 on every column (5 x 25% = 125%), which only "worked" because table-auto
+              ignored col widths that didn't fit - table-fixed enforces them for real. */}
+          <col className='w-[calc(100%-5rem)] lg:w-3/12' />
+          <col className='hidden lg:table-column lg:w-4/12' />
+          <col className='hidden lg:table-column lg:w-2/12' />
+          <col className='hidden lg:table-column lg:w-2/12' />
+          <col className='w-20 lg:w-1/12' />
         </colgroup>
         <thead className='border-b border-gray-200 text-gray-900'>
           <tr>
             <th scope='col' className='px-0 py-3 font-semibold'>
               Status
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               Job
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               User
             </th>
-            <th scope='col' className='px-0 py-3 font-semibold'>
+            <th scope='col' className='hidden lg:table-cell px-0 py-3 font-semibold'>
               Info
             </th>
             <th scope='col' className='px-0 py-3 font-semibold'></th>
@@ -205,12 +240,11 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
               key={`${job.jobId}`}
               job={job}
               account={job.account}
-              user={job.user}
             />
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   )
 }
 

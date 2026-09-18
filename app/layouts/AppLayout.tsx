@@ -80,7 +80,7 @@ const AppLayoutContent: React.FC<AppLayoutProps> = ({
   if (isFixedRight) {
     return (
       <RefreshingProvider>
-        <div className='min-h-full bg-gray-100'>
+        <div className='h-screen bg-gray-100'>
           <div className='stacked-notifications'>
             <NotificationOverlay messages={notificationMessages} />
           </div>
@@ -93,9 +93,9 @@ const AppLayoutContent: React.FC<AppLayoutProps> = ({
             repoUrl={repoUrl}
             logoPath={logoPath}
           />
-          <div className='md:pl-64 flex flex-col flex-1 min-h-screen'>
+          <div className='md:pl-64 flex flex-col h-full min-h-0'>
             <Header setSidebarOpen={setSidebarOpen} authUser={authUser} fixed={true} />
-            <main className='min-h-0 flex flex-1 flex-col lg:pr-[30rem] mt-[4rem]'>
+            <main className='min-h-0 flex flex-1 flex-col overflow-y-auto lg:pr-[30rem] mt-[4rem]'>
               <Outlet />
             </main>
             <Footer

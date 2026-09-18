@@ -32,6 +32,12 @@ export interface UseWindowedFileViewResult {
   fileSize: number
   loading: boolean
   error: unknown
+  // False until the first fetch actually resolves (buffer position is still unknown - e.g.
+  // still loading, or the initial fetch errored). atStart/atEnd are meaningless before this is
+  // true and callers should treat position-relative actions as unavailable until then, rather
+  // than reading atStart/atEnd as false-because-unknown ("not confirmed at start" is not the
+  // same claim as "confirmed not at start").
+  ready: boolean
   // True once the loaded buffer reaches the beginning of the file - i.e. "load earlier" has
   // nothing left to fetch.
   atStart: boolean
@@ -70,6 +76,7 @@ export const useWindowedFileView = ({
   // `jumpToEnd` reset) clobbering newer state.
   const requestSeqRef = useRef(0)
 
+  const ready = bufferStart !== null && bufferEnd !== null
   const atStart = bufferStart === 0
   const atEnd = bufferEnd !== null && fileSize !== 0 && bufferEnd === fileSize
 
@@ -183,6 +190,7 @@ export const useWindowedFileView = ({
     fileSize,
     loading,
     error,
+    ready,
     atStart,
     atEnd,
     loadEarlier,

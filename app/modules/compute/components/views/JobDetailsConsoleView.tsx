@@ -282,6 +282,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               onClick={() => onChangeLogMode('tail')}
               disabled={!isLogTab}
               data-active={logMode === 'tail'}
+              title='Show the last lines of the file and keep following new output as it arrives'
               className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
             >
               <SignalIcon className='h-4 w-4' />
@@ -292,6 +293,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               onClick={() => onChangeLogMode('view')}
               disabled={!isLogTab}
               data-active={logMode === 'view'}
+              title='Page through the file in windows instead of downloading it whole - better suited to large files'
               className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-l disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
             >
               <QueueListIcon className='h-4 w-4' />
@@ -309,7 +311,11 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               onToggleTailPaused={onToggleTailPaused}
             />
           ) : (
-            <WindowedConsolePane view={stdoutView} />
+            <WindowedConsolePane
+              view={stdoutView}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+            />
           ))}
         {activeTab === 'stdin' && <ConsolePane content={stdin} />}
         {activeTab === 'stderr' &&
@@ -320,7 +326,11 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               onToggleTailPaused={onToggleTailPaused}
             />
           ) : (
-            <WindowedConsolePane view={stderrView} />
+            <WindowedConsolePane
+              view={stderrView}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+            />
           ))}
         {activeTab === 'script' && <ConsolePane content={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
@@ -368,11 +378,44 @@ const cleanConsoleContent = (content?: string): string | null => {
 }
 
 // Shared by ConsolePane's and WindowedConsolePane's header rows so both panes come out exactly
-// the same height regardless of which mode is active.
+// the same height regardless of which mode is active. overflow-x-auto is a safety net for very
+// narrow viewports - whitespace-nowrap on the buttons below is what actually keeps the row a
+// single line in the first place (without it, a button's own label text wraps to two lines
+// before the row would ever need to scroll, growing the row's height either way).
 const CONSOLE_TOOLBAR_ROW_CLASS =
-  'flex items-center justify-between gap-2 border-b bg-white px-3 py-2 shrink-0 text-sm text-neutral-600'
+  'flex items-center justify-between gap-2 border-b bg-white px-3 py-2 shrink-0 text-sm text-neutral-600 overflow-x-auto'
 const CONSOLE_TOOLBAR_BUTTON_CLASS =
-  'flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed'
+  'flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0'
+
+interface LiveTailingControlProps {
+  tailPaused: boolean
+  onToggleTailPaused: () => void
+}
+
+// Shared by ConsolePane's and WindowedConsolePane's header rows - always grouped together (the
+// dot/label right next to the button it explains) so both panes read the same way regardless of
+// mode.
+const LiveTailingControl: React.FC<LiveTailingControlProps> = ({
+  tailPaused,
+  onToggleTailPaused,
+}) => (
+  <div className='flex items-center gap-3'>
+    <div className='flex items-center gap-1.5 whitespace-nowrap shrink-0'>
+      <span
+        className={classNames(
+          'inline-block h-2 w-2 rounded-full',
+          tailPaused ? 'bg-neutral-400' : 'bg-green-500',
+        )}
+        aria-hidden='true'
+      />
+      {tailPaused ? 'Paused' : 'Live'}
+    </div>
+    <button type='button' onClick={onToggleTailPaused} className={CONSOLE_TOOLBAR_BUTTON_CLASS}>
+      {tailPaused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
+      {tailPaused ? 'Resume tailing' : 'Pause tailing'}
+    </button>
+  </div>
+)
 
 interface ConsolePaneProps {
   content?: string
@@ -384,12 +427,21 @@ interface ConsolePaneProps {
 
 const ConsolePane: React.FC<ConsolePaneProps> = ({ content, tailPaused, onToggleTailPaused }) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  // The "was I already near the bottom" check below is unsatisfiable on the very first render -
+  // scrollTop starts at 0, so with more than a screenful of content it always reads as "not near
+  // bottom" and the initial tail never actually lands at the bottom. Force it once.
+  const hasScrolledOnceRef = useRef(false)
 
   const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
 
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
+    if (!hasScrolledOnceRef.current && cleanedContent) {
+      el.scrollTop = el.scrollHeight
+      hasScrolledOnceRef.current = true
+      return
+    }
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [cleanedContent])
@@ -398,24 +450,8 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content, tailPaused, onToggle
     <section className='flex-1 min-h-0 flex flex-col'>
       {onToggleTailPaused && (
         <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
-          <div className='flex items-center gap-1.5'>
-            <span
-              className={classNames(
-                'inline-block h-2 w-2 rounded-full',
-                tailPaused ? 'bg-neutral-400' : 'bg-green-500',
-              )}
-              aria-hidden='true'
-            />
-            {tailPaused ? 'Paused' : 'Live'}
-          </div>
-          <button
-            type='button'
-            onClick={onToggleTailPaused}
-            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
-          >
-            {tailPaused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
-            {tailPaused ? 'Resume tailing' : 'Pause tailing'}
-          </button>
+          <div />
+          <LiveTailingControl tailPaused={!!tailPaused} onToggleTailPaused={onToggleTailPaused} />
         </div>
       )}
       <div
@@ -432,6 +468,10 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content, tailPaused, onToggle
 
 interface WindowedConsolePaneProps {
   view: UseWindowedFileViewResult
+  // Shared with ConsolePane's tail-mode polling: pausing stops auto-refresh while anchored at
+  // EOF (only time this view auto-updates), same "follow the live log" toggle either way.
+  tailPaused: boolean
+  onToggleTailPaused: () => void
 }
 
 // Byte-windowed counterpart to ConsolePane: paged navigation instead of a fixed tail, backed by
@@ -439,11 +479,16 @@ interface WindowedConsolePaneProps {
 // prepends above the current viewport) by measuring scrollHeight before the fetch and correcting
 // scrollTop by the delta once the new content has rendered, rather than trying to infer a
 // prepend/append from the content itself.
-const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({ view }) => {
+const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
+  view,
+  tailPaused,
+  onToggleTailPaused,
+}) => {
   const {
     content,
     loading,
     error,
+    ready,
     atStart,
     atEnd,
     loadEarlier,
@@ -452,20 +497,36 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({ view }) => {
     jumpToStart,
   } = view
   const scrollerRef = useRef<HTMLDivElement | null>(null)
-  const pendingScrollAdjustRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null)
-  // Set right before jumpToStart/jumpToEnd, which replace the whole buffer - tells the effect
-  // below to land the scroll position at the corresponding edge once the new content renders,
-  // rather than falling through to the "was I near the bottom" heuristic used for paging.
+  // Set right before jumpToStart/jumpToEnd/loadEarlier, which all land the buffer's new content
+  // at the very start - tells the effect below to scroll there once it renders, rather than
+  // falling through to the "was I near the bottom" heuristic used for auto-refresh.
   const pendingJumpRef = useRef<'start' | 'end' | null>(null)
+  // Set right before loadLater, to the pre-fetch scrollHeight - since content is only ever
+  // appended, that's exactly where the newly-loaded content starts, so scrolling there brings
+  // it into view instead of leaving the scroll position wherever it happened to be.
+  const pendingRevealFromRef = useRef<number | null>(null)
+  // The hook always anchors at EOF on its very first fetch (see useWindowedFileView), but the
+  // "was I already near the bottom" heuristic below can't know that - scrollTop starts at 0, so
+  // with more than a screenful of content the first load would otherwise land at the top of the
+  // tail window instead of the bottom.
+  const hasScrolledOnceRef = useRef(false)
 
   const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
 
   const handleLoadEarlier = () => {
+    // Content is prepended, so the newly-loaded page always ends up at the very top of the
+    // buffer regardless of how many times this has been clicked before - same scroll target as
+    // "Load top".
+    pendingJumpRef.current = 'start'
+    loadEarlier()
+  }
+
+  const handleLoadLater = () => {
     const el = scrollerRef.current
     if (el) {
-      pendingScrollAdjustRef.current = { scrollHeight: el.scrollHeight, scrollTop: el.scrollTop }
+      pendingRevealFromRef.current = el.scrollHeight
     }
-    loadEarlier()
+    loadLater()
   }
 
   const handleJumpToStart = () => {
@@ -481,23 +542,24 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({ view }) => {
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
+    const isFirstLoad = !hasScrolledOnceRef.current && !!cleanedContent
+    if (cleanedContent) hasScrolledOnceRef.current = true
+    if (isFirstLoad) {
+      el.scrollTop = el.scrollHeight
+      return
+    }
     if (pendingJumpRef.current) {
       el.scrollTop = pendingJumpRef.current === 'start' ? 0 : el.scrollHeight
       pendingJumpRef.current = null
       return
     }
-    const pending = pendingScrollAdjustRef.current
-    if (pending) {
-      // Content was prepended (loadEarlier) - keep whatever the user was looking at in place
-      // rather than letting the browser's default "stay at scrollTop 0" behavior yank them to
-      // the newly-loaded content.
-      const delta = el.scrollHeight - pending.scrollHeight
-      el.scrollTop = pending.scrollTop + delta
-      pendingScrollAdjustRef.current = null
+    if (pendingRevealFromRef.current !== null) {
+      el.scrollTop = pendingRevealFromRef.current
+      pendingRevealFromRef.current = null
       return
     }
-    // Otherwise this is the initial load, a loadLater, or an auto-refresh append - only follow
-    // it to the bottom if the user was already near the bottom, same heuristic as ConsolePane.
+    // Otherwise this is an auto-refresh append while anchored at EOF - only follow it to the
+    // bottom if the user was already near the bottom (they may have paged away in the meantime).
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [cleanedContent])
@@ -506,52 +568,54 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({ view }) => {
     <section className='flex-1 min-h-0 flex flex-col'>
       <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
         <div className='flex items-center gap-2'>
-          {!atStart && (
-            <button
-              type='button'
-              onClick={handleJumpToStart}
-              disabled={loading}
-              className={CONSOLE_TOOLBAR_BUTTON_CLASS}
-              title='Load the beginning of the file'
-            >
-              <ChevronDoubleUpIcon className='h-4 w-4' />
-              Load top
-            </button>
-          )}
+          <button
+            type='button'
+            onClick={handleJumpToStart}
+            // Absolute jump (offset=0), doesn't need a known position - only disable once we've
+            // confirmed we're already there, never merely because position is still unknown
+            // (e.g. the initial fetch errored), so it still works as a retry.
+            disabled={loading || (ready && atStart)}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Load the beginning of the file'
+          >
+            <ChevronDoubleUpIcon className='h-4 w-4' />
+            Load top
+          </button>
           <button
             type='button'
             onClick={handleLoadEarlier}
-            disabled={atStart || loading}
+            // Relative paging needs a known bufferStart to compute the next offset from, so
+            // unlike the jump buttons this does need `ready`.
+            disabled={loading || !ready || atStart}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
           >
             <ChevronUpIcon className='h-4 w-4' />
             Load earlier
           </button>
-        </div>
-        <div>{error ? 'Failed to load file window' : loading ? 'Loading…' : null}</div>
-        <div className='flex items-center gap-2'>
           <button
             type='button'
-            onClick={loadLater}
-            disabled={atEnd || loading}
+            onClick={handleLoadLater}
+            disabled={loading || !ready || atEnd}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
           >
             <ChevronDownIcon className='h-4 w-4' />
             Load later
           </button>
-          {!atEnd && (
-            <button
-              type='button'
-              onClick={handleJumpToEnd}
-              disabled={loading}
-              className={CONSOLE_TOOLBAR_BUTTON_CLASS}
-              title='Load the end of the file'
-            >
-              <ChevronDoubleDownIcon className='h-4 w-4' />
-              Load bottom
-            </button>
-          )}
+          <button
+            type='button'
+            onClick={handleJumpToEnd}
+            disabled={loading || (ready && atEnd)}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Load the end of the file'
+          >
+            <ChevronDoubleDownIcon className='h-4 w-4' />
+            Load bottom
+          </button>
         </div>
+        <div className='whitespace-nowrap'>
+          {error ? 'Failed to load file window' : loading ? 'Loading…' : null}
+        </div>
+        <LiveTailingControl tailPaused={tailPaused} onToggleTailPaused={onToggleTailPaused} />
       </div>
       <div
         ref={scrollerRef}
@@ -844,17 +908,21 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     currentJob !== null &&
     ![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJob.status.state)
 
+  // Shared with tail mode's own polling - pausing "follows the live log" regardless of which
+  // mode you're currently looking at it through.
+  const viewAutoRefreshIntervalMs = isJobActive && !tailPaused ? 2000 : null
+
   const stdoutView = useWindowedFileView({
     systemName: system?.name,
     filePath: jobMetadata?.standardOutput,
     enabled: logMode === 'view',
-    autoRefreshIntervalMs: isJobActive ? 2000 : null,
+    autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
   })
   const stderrView = useWindowedFileView({
     systemName: system?.name,
     filePath: jobMetadata?.standardError,
     enabled: logMode === 'view',
-    autoRefreshIntervalMs: isJobActive ? 2000 : null,
+    autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
   })
 
   const handlePollingError = async (error: any) => {

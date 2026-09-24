@@ -487,9 +487,10 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   const {
     content,
     loading,
+    loadingReplace,
+    loadingEarlier,
+    loadingLater,
     error,
-    ready,
-    atStart,
     atEnd,
     loadEarlier,
     loadLater,
@@ -513,16 +514,38 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
 
   const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
 
+  // A small tolerance for float scrollTop/scrollHeight rounding, not a "close enough" threshold -
+  // anything above this means there's genuinely more already-rendered content off-screen.
+  const EDGE_EPSILON_PX = 2
+
   const handleLoadEarlier = () => {
-    // Content is prepended, so the newly-loaded page always ends up at the very top of the
-    // buffer regardless of how many times this has been clicked before - same scroll target as
-    // "Load top".
+    const el = scrollerRef.current
+    // The buffer only ever grows (never evicted), so after paging backward a few times it can
+    // easily hold much more than one screenful. If there's already-loaded content above the
+    // current scroll position, reveal it by scrolling - no fetch needed, and nothing for the
+    // buffer's actual bufferStart to have moved, which is exactly why a click could otherwise
+    // look like it "did nothing" despite being nowhere near the real start of the file.
+    if (el && el.scrollTop > EDGE_EPSILON_PX) {
+      el.scrollTop = Math.max(0, el.scrollTop - el.clientHeight)
+      return
+    }
+    // Already at the top of what's currently rendered - fetch the previous page (a no-op if the
+    // buffer has already reached byte 0).
     pendingJumpRef.current = 'start'
     loadEarlier()
   }
 
   const handleLoadLater = () => {
     const el = scrollerRef.current
+    // Symmetric with handleLoadEarlier above.
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight > EDGE_EPSILON_PX) {
+      el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + el.clientHeight)
+      return
+    }
+    // Already at the bottom of what's currently rendered - fetch the next page. Skipped once we
+    // already know we're at the live end (atEnd), since that fetch would just re-confirm the same
+    // position - the background auto-refresh (not this handler) is what watches for new growth.
+    if (atEnd) return
     if (el) {
       pendingRevealFromRef.current = el.scrollHeight
     }
@@ -554,7 +577,10 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
       return
     }
     if (pendingRevealFromRef.current !== null) {
-      el.scrollTop = pendingRevealFromRef.current
+      // If this load-later just reached the live end, land at the true bottom rather than the
+      // top of the newly-revealed page - otherwise the buttons correctly show "nothing more to
+      // load" while the pane still looks like there's unseen content below the fold.
+      el.scrollTop = atEnd ? el.scrollHeight : pendingRevealFromRef.current
       pendingRevealFromRef.current = null
       return
     }
@@ -562,7 +588,7 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     // bottom if the user was already near the bottom (they may have paged away in the meantime).
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
-  }, [cleanedContent])
+  }, [cleanedContent, atEnd])
 
   return (
     <section className='flex-1 min-h-0 flex flex-col'>
@@ -571,10 +597,12 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           <button
             type='button'
             onClick={handleJumpToStart}
-            // Absolute jump (offset=0), doesn't need a known position - only disable once we've
-            // confirmed we're already there, never merely because position is still unknown
-            // (e.g. the initial fetch errored), so it still works as a retry.
-            disabled={loading || (ready && atStart)}
+            // Deliberately not gated on atStart/ready: keeping button enablement in sync with
+            // buffer position (which the background auto-refresh mutates independently) proved
+            // fragile in practice. Instead the buttons stay clickable and the hook's own guards
+            // (e.g. loadEarlier bailing out at bufferStart === 0) make an already-there click a
+            // no-op - only "is my own request already in flight" disables a button.
+            disabled={loadingReplace}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
             title='Load the beginning of the file'
           >
@@ -584,9 +612,9 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           <button
             type='button'
             onClick={handleLoadEarlier}
-            // Relative paging needs a known bufferStart to compute the next offset from, so
-            // unlike the jump buttons this does need `ready`.
-            disabled={loading || !ready || atStart}
+            // See Load top above - not gated on atStart/ready, the hook no-ops if there's
+            // nothing earlier to fetch (or no position known yet).
+            disabled={loadingReplace || loadingEarlier}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
           >
             <ChevronUpIcon className='h-4 w-4' />
@@ -595,7 +623,9 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           <button
             type='button'
             onClick={handleLoadLater}
-            disabled={loading || !ready || atEnd}
+            // See Load top above - not gated on atEnd/ready, the hook no-ops (or just re-confirms
+            // the same live end) if there's nothing later to fetch yet.
+            disabled={loadingReplace || loadingLater}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
           >
             <ChevronDownIcon className='h-4 w-4' />
@@ -604,7 +634,8 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           <button
             type='button'
             onClick={handleJumpToEnd}
-            disabled={loading || (ready && atEnd)}
+            // See Load top above.
+            disabled={loadingReplace}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
             title='Load the end of the file'
           >

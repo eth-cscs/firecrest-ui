@@ -30,7 +30,20 @@ interface UseWindowedFileViewOptions {
 export interface UseWindowedFileViewResult {
   content: string
   fileSize: number
+  // True while any fetch is in flight - for a generic "Loading..." indicator only. The four
+  // controls each disable off their own direction's flag below instead, so a background
+  // auto-refresh tick (which only ever extends forward) can't flicker-disable the backward
+  // controls, and vice versa - see loadingEarlier/loadingLater.
   loading: boolean
+  // Jump-to-start/jump-to-end replace the whole buffer, so both directions are transiently
+  // unknown while one is in flight - Load top and Load bottom key off this.
+  loadingReplace: boolean
+  // Load earlier keys off this alone (not loadingLater) - a background auto-refresh extending
+  // the live end shouldn't disable backward paging.
+  loadingEarlier: boolean
+  // Load later/auto-refresh keys off this alone (not loadingEarlier) - paging backward shouldn't
+  // disable the forward controls either.
+  loadingLater: boolean
   error: unknown
   // False until the first fetch actually resolves (buffer position is still unknown - e.g.
   // still loading, or the initial fetch errored). atStart/atEnd are meaningless before this is
@@ -69,12 +82,20 @@ export const useWindowedFileView = ({
   const [fileSize, setFileSize] = useState(0)
   const [bufferStart, setBufferStart] = useState<number | null>(null)
   const [bufferEnd, setBufferEnd] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loadingReplace, setLoadingReplace] = useState(false)
+  const [loadingEarlier, setLoadingEarlier] = useState(false)
+  const [loadingLater, setLoadingLater] = useState(false)
   const [error, setError] = useState<unknown>(null)
 
-  // Guards against out-of-order responses (e.g. a slow "load earlier" landing after a later
-  // `jumpToEnd` reset) clobbering newer state.
-  const requestSeqRef = useRef(0)
+  // Separate per-direction sequence counters, so a backward loadEarlier fetch and a forward
+  // loadLater fetch (e.g. the background auto-refresh) never invalidate each other just for
+  // being concurrent - they touch different halves of the buffer (bufferStart vs bufferEnd) and
+  // are not actually in conflict. `replaceGenerationRef` is bumped by jumpToStart/jumpToEnd
+  // (which discard the whole buffer) and is checked by all three, so a reset still correctly
+  // drops any earlier/later fetch that was already in flight.
+  const replaceGenerationRef = useRef(0)
+  const earlierSeqRef = useRef(0)
+  const laterSeqRef = useRef(0)
 
   const ready = bufferStart !== null && bufferEnd !== null
   const atStart = bufferStart === 0
@@ -85,12 +106,20 @@ export const useWindowedFileView = ({
   const loadAndReplace = useCallback(
     (offset: number) => {
       if (!filePath) return
-      const seq = ++requestSeqRef.current
-      setLoading(true)
+      const gen = ++replaceGenerationRef.current
+      // Bumping these too means an earlier/later fetch already in flight can no longer apply its
+      // (now stale, buffer-relative) result once this resolves - see the two generation checks
+      // below. Their own `finally` will then skip resetting the flag (its seq no longer matches),
+      // so clear both directly here rather than leaving them stuck at true with nothing in flight.
+      ++earlierSeqRef.current
+      ++laterSeqRef.current
+      setLoadingEarlier(false)
+      setLoadingLater(false)
+      setLoadingReplace(true)
       setError(null)
       getLocalOpsView(systemName, filePath, pageSizeBytes, offset)
         .then((response) => {
-          if (seq !== requestSeqRef.current) return
+          if (gen !== replaceGenerationRef.current) return
           const view = response.output
           if (!view) return
           setContent(view.content)
@@ -99,12 +128,12 @@ export const useWindowedFileView = ({
           setBufferEnd(view.startOffset + view.content.length)
         })
         .catch((err) => {
-          if (seq !== requestSeqRef.current) return
+          if (gen !== replaceGenerationRef.current) return
           setError(err)
         })
         .finally(() => {
-          if (seq !== requestSeqRef.current) return
-          setLoading(false)
+          if (gen !== replaceGenerationRef.current) return
+          setLoadingReplace(false)
         })
     },
     [systemName, filePath, pageSizeBytes],
@@ -126,17 +155,18 @@ export const useWindowedFileView = ({
   }, [enabled, systemName, filePath, jumpToEnd])
 
   const loadEarlier = useCallback(() => {
-    if (!filePath || loading || bufferStart === null || bufferStart === 0) return
-    const seq = ++requestSeqRef.current
+    if (!filePath || loadingEarlier || bufferStart === null || bufferStart === 0) return
+    const gen = replaceGenerationRef.current
+    const seq = ++earlierSeqRef.current
     // Requesting a negative offset means "relative to EOF" on the backend, not "clamp to BOF" -
     // so when the previous page would go negative, request exactly what's left up to BOF instead.
     const size = Math.min(pageSizeBytes, bufferStart)
     const offset = bufferStart - size
-    setLoading(true)
+    setLoadingEarlier(true)
     setError(null)
     getLocalOpsView(systemName, filePath, size, offset)
       .then((response) => {
-        if (seq !== requestSeqRef.current) return
+        if (gen !== replaceGenerationRef.current || seq !== earlierSeqRef.current) return
         const view = response.output
         if (!view) return
         setContent((prev) => view.content + prev)
@@ -144,23 +174,24 @@ export const useWindowedFileView = ({
         setBufferStart(view.startOffset)
       })
       .catch((err) => {
-        if (seq !== requestSeqRef.current) return
+        if (gen !== replaceGenerationRef.current || seq !== earlierSeqRef.current) return
         setError(err)
       })
       .finally(() => {
-        if (seq !== requestSeqRef.current) return
-        setLoading(false)
+        if (seq !== earlierSeqRef.current) return
+        setLoadingEarlier(false)
       })
-  }, [systemName, filePath, pageSizeBytes, loading, bufferStart])
+  }, [systemName, filePath, pageSizeBytes, loadingEarlier, bufferStart])
 
   const loadLater = useCallback(() => {
-    if (!filePath || loading || bufferEnd === null) return
-    const seq = ++requestSeqRef.current
-    setLoading(true)
+    if (!filePath || loadingLater || bufferEnd === null) return
+    const gen = replaceGenerationRef.current
+    const seq = ++laterSeqRef.current
+    setLoadingLater(true)
     setError(null)
     getLocalOpsView(systemName, filePath, pageSizeBytes, bufferEnd)
       .then((response) => {
-        if (seq !== requestSeqRef.current) return
+        if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
         const view = response.output
         if (!view) return
         setContent((prev) => prev + view.content)
@@ -168,14 +199,14 @@ export const useWindowedFileView = ({
         setBufferEnd(view.startOffset + view.content.length)
       })
       .catch((err) => {
-        if (seq !== requestSeqRef.current) return
+        if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
         setError(err)
       })
       .finally(() => {
-        if (seq !== requestSeqRef.current) return
-        setLoading(false)
+        if (seq !== laterSeqRef.current) return
+        setLoadingLater(false)
       })
-  }, [systemName, filePath, pageSizeBytes, loading, bufferEnd])
+  }, [systemName, filePath, pageSizeBytes, loadingLater, bufferEnd])
 
   // Auto-refresh: only while anchored at EOF, and only ever extends the buffer forward (reuses
   // loadLater rather than resetting), so it never disturbs content the user has scrolled up into.
@@ -188,7 +219,10 @@ export const useWindowedFileView = ({
   return {
     content,
     fileSize,
-    loading,
+    loading: loadingReplace || loadingEarlier || loadingLater,
+    loadingReplace,
+    loadingEarlier,
+    loadingLater,
     error,
     ready,
     atStart,

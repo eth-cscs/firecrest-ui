@@ -6,8 +6,19 @@
 *************************************************************************/
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { StatusCodes } from 'http-status-codes'
 // apis
 import { getLocalOpsView } from '~/apis/filesystem-api'
+
+// This app's local /api/* routes wrap every thrown HTTP error into a `{error: {statusCode, ...}}`
+// envelope before it reaches the client (see helpers/response-helper.ts) - a 404 here specifically
+// means the backend (or Slurm's own accounting behind it) no longer exposes this file at all, as
+// opposed to a transient failure. Distinguishing it lets the UI say something more useful than a
+// generic "failed to load" and stop silently retrying via auto-refresh, since a 404 won't resolve
+// itself on the next tick the way a network hiccup might.
+const isNotFoundError = (err: unknown): boolean =>
+  (err as { error?: { statusCode?: number } } | undefined)?.error?.statusCode ===
+  StatusCodes.NOT_FOUND
 
 // TODO: 64 KiB is a placeholder default. Once this is validated against a real backend running
 // the `Extends-view-for-top-and-bottom-offset` branch, revisit based on observed `/ops/view`
@@ -65,6 +76,10 @@ export interface UseWindowedFileViewResult {
   // disable the forward controls either.
   loadingLater: boolean
   error: unknown
+  // True when the most recent error was specifically a 404 - the file is confirmed gone (backend/
+  // Slurm no longer exposes it), not just a transient failure. Callers should show a clearer
+  // "no longer available" message instead of a generic failure for this case.
+  notFound: boolean
   // Current loaded byte range - exposed so a caller can encode "where am I" into e.g. a
   // shareable URL. Both null until `ready`.
   bufferStart: number | null
@@ -135,6 +150,10 @@ export const useWindowedFileView = ({
   const ready = bufferStart !== null && bufferEnd !== null
   const atStart = bufferStart === 0
   const atEnd = bufferEnd !== null && fileSize !== 0 && bufferEnd === fileSize
+  // Derived from `error` rather than tracked separately, so it automatically clears the instant a
+  // new fetch is dispatched (every loadX function calls setError(null) first) - no separate reset
+  // logic needed for a manual retry to correctly leave this state.
+  const notFound = isNotFoundError(error)
 
   // Shared by jumpToEnd (offset=-pageSize) and jumpToStart (offset=0): discards whatever's
   // buffered and replaces it with a single fresh window anchored at the given offset.
@@ -299,11 +318,14 @@ export const useWindowedFileView = ({
 
   // Auto-refresh: only while anchored at EOF, and only ever extends the buffer forward (reuses
   // loadLater rather than resetting), so it never disturbs content the user has scrolled up into.
+  // Stopped once a 404 is confirmed (notFound) - the file being gone isn't something the next tick
+  // will fix, so silently retrying every interval would just be repeated pointless requests. A
+  // manual Load later click can still retry, same as any other error.
   useEffect(() => {
-    if (!enabled || !autoRefreshIntervalMs || !atEnd) return
+    if (!enabled || !autoRefreshIntervalMs || !atEnd || notFound) return
     const intervalId = setInterval(loadLater, autoRefreshIntervalMs)
     return () => clearInterval(intervalId)
-  }, [enabled, autoRefreshIntervalMs, atEnd, loadLater])
+  }, [enabled, autoRefreshIntervalMs, atEnd, notFound, loadLater])
 
   return {
     content,
@@ -313,6 +335,7 @@ export const useWindowedFileView = ({
     loadingEarlier,
     loadingLater,
     error,
+    notFound,
     bufferStart,
     bufferEnd,
     pageSizeBytes,

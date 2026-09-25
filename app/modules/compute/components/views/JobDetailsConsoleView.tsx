@@ -562,6 +562,7 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     loadingEarlier,
     loadingLater,
     error,
+    notFound,
     bufferStart,
     bufferEnd,
     pageSizeBytes,
@@ -759,7 +760,13 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           </button>
         </div>
         <div className='whitespace-nowrap'>
-          {error ? 'Failed to load file window' : loading ? 'Loading…' : null}
+          {notFound
+            ? 'This job output is no longer available on the cluster'
+            : error
+              ? 'Failed to load file window'
+              : loading
+                ? 'Loading…'
+                : null}
         </div>
         <LiveTailingControl
           tailPaused={tailPaused}

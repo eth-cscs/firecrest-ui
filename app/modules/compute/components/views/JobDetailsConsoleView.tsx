@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import React, { useEffect, useRef, useMemo, useState } from 'react'
 import {
   ArrowDownCircleIcon,
@@ -257,6 +257,10 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
     OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
   }
   const isLogTab = activeTab === 'stdout' || activeTab === 'stderr'
+  // A finished job's log is static - there's nothing left to tail, so Live/Pause has no meaning
+  // and showing it (especially the green "Live" dot) would be misleading.
+  const isJobActive =
+    !!job && ![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(job.status.state)
   return (
     <div
       className='flex-1 min-h-0 rounded-xl border bg-white shadow-sm m-6 pt-2'
@@ -309,12 +313,14 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               content={stdout}
               tailPaused={tailPaused}
               onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
             />
           ) : (
             <WindowedConsolePane
               view={stdoutView}
               tailPaused={tailPaused}
               onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
             />
           ))}
         {activeTab === 'stdin' && <ConsolePane content={stdin} />}
@@ -324,12 +330,14 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
               content={stderr}
               tailPaused={tailPaused}
               onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
             />
           ) : (
             <WindowedConsolePane
               view={stderrView}
               tailPaused={tailPaused}
               onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
             />
           ))}
         {activeTab === 'script' && <ConsolePane content={script} />}
@@ -364,6 +372,42 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   )
 }
 
+// Parses a URL search param as a byte offset/size for the windowed view's shareable-link state -
+// anything malformed or out of range returns null so the caller falls back to its own default
+// (e.g. anchoring at the live end) rather than acting on garbage.
+const parsePositiveInt = (
+  raw: string | null,
+  { allowZero = true }: { allowZero?: boolean } = {},
+) => {
+  if (raw === null) return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return null
+  if (allowZero ? n < 0 : n <= 0) return null
+  return n
+}
+
+// Rewrites the address bar's query string in place via the raw History API, deliberately
+// bypassing react-router's useSearchParams setter. This route has no shouldRevalidate override,
+// so react-router's default behaviour re-runs the whole route loader (refetching job/metadata/
+// systems) on every navigation - including a searchParams-only one. That's fine for the rare,
+// user-initiated tab/mode change, but the shareable-window offset/size updates on every settled
+// scroll (see WindowedConsolePane below), and doing that through the router created a genuine
+// feedback loop in testing: each update revalidated the loader, which remounted this component,
+// whose own mount effect then rewrote the params again, triggering another revalidation, forever -
+// observed hammering the backend continuously. history.replaceState only changes what's displayed
+// in the address bar; it never touches the router, so it can't cause any of that.
+const replaceUrlSearchParams = (mutate: (params: URLSearchParams) => void) => {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  mutate(params)
+  const query = params.toString()
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+  )
+}
+
 // Normalizes line endings the same way for both the tail-based and windowed-view console panes.
 const cleanConsoleContent = (content?: string): string | null => {
   if (!content) return null
@@ -390,6 +434,11 @@ const CONSOLE_TOOLBAR_BUTTON_CLASS =
 interface LiveTailingControlProps {
   tailPaused: boolean
   onToggleTailPaused: () => void
+  // True once the job has finished - there's nothing left to tail, so the toggle is disabled
+  // rather than removed, so the toolbar row keeps the same height/layout as an active job's
+  // (removing the whole control instead would make Tail and View mode's panes come out different
+  // sizes for a finished job, but not for a running one).
+  disabled?: boolean
 }
 
 // Shared by ConsolePane's and WindowedConsolePane's header rows - always grouped together (the
@@ -398,19 +447,26 @@ interface LiveTailingControlProps {
 const LiveTailingControl: React.FC<LiveTailingControlProps> = ({
   tailPaused,
   onToggleTailPaused,
+  disabled,
 }) => (
   <div className='flex items-center gap-3'>
     <div className='flex items-center gap-1.5 whitespace-nowrap shrink-0'>
       <span
         className={classNames(
           'inline-block h-2 w-2 rounded-full',
-          tailPaused ? 'bg-neutral-400' : 'bg-green-500',
+          disabled || tailPaused ? 'bg-neutral-400' : 'bg-green-500',
         )}
         aria-hidden='true'
       />
-      {tailPaused ? 'Paused' : 'Live'}
+      {disabled ? 'Static' : tailPaused ? 'Paused' : 'Live'}
     </div>
-    <button type='button' onClick={onToggleTailPaused} className={CONSOLE_TOOLBAR_BUTTON_CLASS}>
+    <button
+      type='button'
+      onClick={onToggleTailPaused}
+      disabled={disabled}
+      className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+      title={disabled ? 'This job has finished - there is nothing left to tail' : undefined}
+    >
       {tailPaused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
       {tailPaused ? 'Resume tailing' : 'Pause tailing'}
     </button>
@@ -423,9 +479,15 @@ interface ConsolePaneProps {
   // entirely (e.g. StdIn/Script tabs, where live tailing doesn't apply).
   tailPaused?: boolean
   onToggleTailPaused?: () => void
+  isJobActive?: boolean
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ content, tailPaused, onToggleTailPaused }) => {
+const ConsolePane: React.FC<ConsolePaneProps> = ({
+  content,
+  tailPaused,
+  onToggleTailPaused,
+  isJobActive,
+}) => {
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   // The "was I already near the bottom" check below is unsatisfiable on the very first render -
   // scrollTop starts at 0, so with more than a screenful of content it always reads as "not near
@@ -451,7 +513,11 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ content, tailPaused, onToggle
       {onToggleTailPaused && (
         <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
           <div />
-          <LiveTailingControl tailPaused={!!tailPaused} onToggleTailPaused={onToggleTailPaused} />
+          <LiveTailingControl
+            tailPaused={!!tailPaused}
+            onToggleTailPaused={onToggleTailPaused}
+            disabled={!isJobActive}
+          />
         </div>
       )}
       <div
@@ -472,6 +538,10 @@ interface WindowedConsolePaneProps {
   // EOF (only time this view auto-updates), same "follow the live log" toggle either way.
   tailPaused: boolean
   onToggleTailPaused: () => void
+  // Hides the Live/Pause control once the job has finished - a finished job's log is static, so
+  // there's nothing to tail and the auto-refresh this toggles never runs anyway (see
+  // viewAutoRefreshIntervalMs).
+  isJobActive: boolean
 }
 
 // Byte-windowed counterpart to ConsolePane: paged navigation instead of a fixed tail, backed by
@@ -483,6 +553,7 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   view,
   tailPaused,
   onToggleTailPaused,
+  isJobActive,
 }) => {
   const {
     content,
@@ -491,6 +562,9 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     loadingEarlier,
     loadingLater,
     error,
+    bufferStart,
+    bufferEnd,
+    pageSizeBytes,
     atEnd,
     loadEarlier,
     loadLater,
@@ -562,6 +636,43 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     jumpToEnd()
   }
 
+  // Keeps the URL's offset/size in sync with whatever's actually visible - not just with what's
+  // been fetched. Load earlier/later often just reveal already-loaded content (see
+  // handleLoadEarlier/handleLoadLater above) without moving bufferStart/bufferEnd at all, and
+  // plain manual scrolling never does either, so tying the shareable link to the buffer bounds
+  // alone missed both of those. Debounced since scroll fires continuously - only the settled
+  // position is worth a URL write. Called both from the native scroll handler below (covers
+  // manual scrolling and most of our own programmatic jumps, since setting `scrollTop` normally
+  // fires a scroll event same as a user dragging the scrollbar) AND directly at the end of the
+  // scroll-correction effect further down - the latter is needed because a jump that happens to
+  // land on the *same* scrollTop it was already at (e.g. several successive "load earlier" pages
+  // each landing back at 0) is a no-op as far as the DOM is concerned and fires no scroll event,
+  // which left the URL stuck reporting a stale position in testing against a large file.
+  const reportVisibleOffsetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleReportVisibleOffset = () => {
+    if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
+    reportVisibleOffsetTimeoutRef.current = setTimeout(() => {
+      const el = scrollerRef.current
+      if (!el || bufferStart === null || bufferEnd === null) return
+      const maxScrollable = el.scrollHeight - el.clientHeight
+      // Fraction (0..1) of the way down the buffer the viewport's top edge currently sits -
+      // content is plain text, not byte-indexed, so this is an approximation, not the exact byte
+      // at that pixel row. Good enough for "land back in roughly this spot" on a shared link.
+      const scrollRatio = maxScrollable > 0 ? el.scrollTop / maxScrollable : 0
+      const visibleOffset = bufferStart + Math.round(scrollRatio * (bufferEnd - bufferStart))
+      replaceUrlSearchParams((params) => {
+        params.set('offset', String(visibleOffset))
+        params.set('size', String(pageSizeBytes))
+      })
+    }, 400)
+  }
+  useEffect(
+    () => () => {
+      if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
+    },
+    [],
+  )
+
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
@@ -569,11 +680,13 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     if (cleanedContent) hasScrolledOnceRef.current = true
     if (isFirstLoad) {
       el.scrollTop = el.scrollHeight
+      scheduleReportVisibleOffset()
       return
     }
     if (pendingJumpRef.current) {
       el.scrollTop = pendingJumpRef.current === 'start' ? 0 : el.scrollHeight
       pendingJumpRef.current = null
+      scheduleReportVisibleOffset()
       return
     }
     if (pendingRevealFromRef.current !== null) {
@@ -582,12 +695,14 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
       // load" while the pane still looks like there's unseen content below the fold.
       el.scrollTop = atEnd ? el.scrollHeight : pendingRevealFromRef.current
       pendingRevealFromRef.current = null
+      scheduleReportVisibleOffset()
       return
     }
     // Otherwise this is an auto-refresh append while anchored at EOF - only follow it to the
     // bottom if the user was already near the bottom (they may have paged away in the meantime).
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
+    scheduleReportVisibleOffset()
   }, [cleanedContent, atEnd])
 
   return (
@@ -646,10 +761,15 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
         <div className='whitespace-nowrap'>
           {error ? 'Failed to load file window' : loading ? 'Loading…' : null}
         </div>
-        <LiveTailingControl tailPaused={tailPaused} onToggleTailPaused={onToggleTailPaused} />
+        <LiveTailingControl
+          tailPaused={tailPaused}
+          onToggleTailPaused={onToggleTailPaused}
+          disabled={!isJobActive}
+        />
       </div>
       <div
         ref={scrollerRef}
+        onScroll={scheduleReportVisibleOffset}
         className='flex-1 min-h-0 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
       >
         <pre className='px-3 py-2 whitespace-pre-wrap'>
@@ -930,8 +1050,31 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   const [jobStandardError, setJobStandardError] = useState<GetOpsTailResponse | null>(null)
   const [jobStandardErrorFile, setJobStandardErrorFile] = useState<File | null>(null)
   const [localError, setLocalError] = useState<any>(error)
-  const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
-  const [logMode, setLogMode] = useState<LogMode>(defaultLogMode === 'view' ? 'view' : 'tail')
+  // `searchParams` also carries the shareable view state (tab/mode/offset/size) - read once below
+  // to seed the initial tab/mode/window, then kept in sync (one-way, state -> URL, via
+  // replaceUrlSearchParams below - never this hook's own setter, see why there) by effects near
+  // the bottom of this component and in WindowedConsolePane. See
+  // project_windowed_log_preview_assessment memory for the design behind sharing a specific log
+  // window via URL.
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = React.useState<OutputTabId>(() => {
+    const tab = searchParams.get('tab')
+    return tab === 'stdout' || tab === 'stderr' ? tab : 'stdout'
+  })
+  const [logMode, setLogMode] = useState<LogMode>(() => {
+    const mode = searchParams.get('mode')
+    if (mode === 'view' || mode === 'tail') return mode
+    return defaultLogMode === 'view' ? 'view' : 'tail'
+  })
+  // Parsed once from the URL this component mounted with - only ever consumed by the matching
+  // view's very first fetch (see initialOffset/initialSize on useWindowedFileView), never updated
+  // again, so re-reading `searchParams` later (once we start writing to it ourselves) can't loop.
+  const [initialViewOffset] = useState<number | null>(() =>
+    parsePositiveInt(searchParams.get('offset')),
+  )
+  const [initialViewSize] = useState<number | null>(() =>
+    parsePositiveInt(searchParams.get('size'), { allowZero: false }),
+  )
   const [tailPaused, setTailPaused] = useState(false)
   const { setMaintenance } = useMaintenance()
 
@@ -943,18 +1086,40 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   // mode you're currently looking at it through.
   const viewAutoRefreshIntervalMs = isJobActive && !tailPaused ? 2000 : null
 
+  // The URL's offset/size only ever apply to whichever tab it named - the other view still just
+  // anchors at the live end as usual.
   const stdoutView = useWindowedFileView({
     systemName: system?.name,
     filePath: jobMetadata?.standardOutput,
     enabled: logMode === 'view',
     autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
+    initialOffset: activeTab === 'stdout' ? initialViewOffset : null,
+    initialSize: activeTab === 'stdout' ? initialViewSize : null,
   })
   const stderrView = useWindowedFileView({
     systemName: system?.name,
     filePath: jobMetadata?.standardError,
     enabled: logMode === 'view',
     autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
+    initialOffset: activeTab === 'stderr' ? initialViewOffset : null,
+    initialSize: activeTab === 'stderr' ? initialViewSize : null,
   })
+
+  // Keeps the URL's tab/mode in sync so copying the address bar always names the right one.
+  // offset/size are a different component's concern (WindowedConsolePane, below) since they need
+  // the actual visible scroll position, not just what's been fetched - it merges its own updates
+  // in independently rather than colliding with this effect. Clearing them here on every tab/mode
+  // change (rather than trying to decide whether they're still valid) is deliberate: they belong
+  // to whichever tab/mode was active when last set, and the newly-active WindowedConsolePane (if
+  // any) reports its own within the same render pass anyway.
+  useEffect(() => {
+    replaceUrlSearchParams((params) => {
+      params.set('tab', activeTab)
+      params.set('mode', logMode)
+      params.delete('offset')
+      params.delete('size')
+    })
+  }, [activeTab, logMode])
 
   const handlePollingError = async (error: any) => {
     if (isMaintenanceResponse(error)) {

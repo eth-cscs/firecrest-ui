@@ -5,9 +5,20 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import React, { useEffect, useRef, useMemo, useState } from 'react'
-import { ArrowDownCircleIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowDownCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronDoubleUpIcon,
+  ChevronDoubleDownIcon,
+  XMarkIcon,
+  SignalIcon,
+  QueueListIcon,
+  PauseIcon,
+  PlayIcon,
+} from '@heroicons/react/24/outline'
 // types
 import type { System } from '~/types/api-status'
 import { GetOpsTailResponse, GetOpsLsResponse, File } from '~/types/api-filesystem'
@@ -32,6 +43,11 @@ import { getLocalOpsTail, getLocalOpsLs } from '~/apis/filesystem-api'
 import { isMaintenanceResponse, getMaintenanceMessage } from '~/apis/api'
 // grafana
 import EmbedPanelGrafana from '~/modules/compute/components/grafana/EmbedPanelGrafana'
+// hooks
+import {
+  useWindowedFileView,
+  UseWindowedFileViewResult,
+} from '~/modules/compute/hooks/useWindowedFileView'
 
 // contexts
 import { useGroup } from '~/contexts/GroupContext'
@@ -208,6 +224,12 @@ interface JobDetailCenterProps {
   script?: string
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
+  logMode: LogMode
+  onChangeLogMode: (mode: LogMode) => void
+  tailPaused: boolean
+  onToggleTailPaused: () => void
+  stdoutView: UseWindowedFileViewResult
+  stderrView: UseWindowedFileViewResult
 }
 
 const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
@@ -223,17 +245,28 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   script,
   dashboards,
   onChangeTab,
+  logMode,
+  onChangeLogMode,
+  tailPaused,
+  onToggleTailPaused,
+  stdoutView,
+  stderrView,
 }) => {
   const [detailsOpen, setDetailsOpen] = useState(true)
   if (!dashboards || dashboards.length === 0) {
     OUTPUT_TABS.find((t) => t.id === 'resources')!.enabled = false
   }
+  const isLogTab = activeTab === 'stdout' || activeTab === 'stderr'
+  // A finished job's log is static - there's nothing left to tail, so Live/Pause has no meaning
+  // and showing it (especially the green "Live" dot) would be misleading.
+  const isJobActive =
+    !!job && ![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(job.status.state)
   return (
     <div
-      className='flex-1 rounded-xl border bg-white shadow-sm m-6 pt-2'
+      className='flex-1 min-h-0 rounded-xl border bg-white shadow-sm m-6 pt-2'
       style={{ marginTop: '20px' }}
     >
-      <div className='sticky top-16 flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
+      <div className='flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
         <select
           name='datasource'
           value={activeTab}
@@ -246,11 +279,67 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <option value='script'>Job Script</option>
           {dashboards && dashboards.length > 0 && <option value='resources'>Dashboards</option>}
         </select>
+        <div className='flex items-center gap-3'>
+          <div className='flex items-center rounded-lg border overflow-hidden'>
+            <button
+              type='button'
+              onClick={() => onChangeLogMode('tail')}
+              disabled={!isLogTab}
+              data-active={logMode === 'tail'}
+              title='Show the last lines of the file and keep following new output as it arrives'
+              className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
+            >
+              <SignalIcon className='h-4 w-4' />
+              Tail
+            </button>
+            <button
+              type='button'
+              onClick={() => onChangeLogMode('view')}
+              disabled={!isLogTab}
+              data-active={logMode === 'view'}
+              title='Page through the file in windows instead of downloading it whole - better suited to large files'
+              className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-l disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
+            >
+              <QueueListIcon className='h-4 w-4' />
+              View
+            </button>
+          </div>
+        </div>
       </div>
       <div className='min-w-0 min-h-[50vh] pt-4 flex flex-col lg:h-full lg:min-h-0'>
-        {activeTab === 'stdout' && <ConsolePane content={stdout} />}
+        {activeTab === 'stdout' &&
+          (logMode === 'tail' ? (
+            <ConsolePane
+              content={stdout}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
+            />
+          ) : (
+            <WindowedConsolePane
+              view={stdoutView}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
+            />
+          ))}
         {activeTab === 'stdin' && <ConsolePane content={stdin} />}
-        {activeTab === 'stderr' && <ConsolePane content={stderr} />}
+        {activeTab === 'stderr' &&
+          (logMode === 'tail' ? (
+            <ConsolePane
+              content={stderr}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
+            />
+          ) : (
+            <WindowedConsolePane
+              view={stderrView}
+              tailPaused={tailPaused}
+              onToggleTailPaused={onToggleTailPaused}
+              isJobActive={isJobActive}
+            />
+          ))}
         {activeTab === 'script' && <ConsolePane content={script} />}
         {activeTab === 'resources' && dashboards && dashboards.length > 0 && (
           <ResourcesPaneMulti job={job!} dashboards={dashboards} title='Resources' />
@@ -283,37 +372,412 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   )
 }
 
-interface ConsolePaneProps {
-  content?: string
+// Parses a URL search param as a byte offset/size for the windowed view's shareable-link state -
+// anything malformed or out of range returns null so the caller falls back to its own default
+// (e.g. anchoring at the live end) rather than acting on garbage.
+const parsePositiveInt = (
+  raw: string | null,
+  { allowZero = true }: { allowZero?: boolean } = {},
+) => {
+  if (raw === null) return null
+  const n = Number(raw)
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return null
+  if (allowZero ? n < 0 : n <= 0) return null
+  return n
 }
 
-const ConsolePane: React.FC<ConsolePaneProps> = ({ content }) => {
-  const scrollerRef = useRef<HTMLDivElement | null>(null)
+// Rewrites the address bar's query string in place via the raw History API, deliberately
+// bypassing react-router's useSearchParams setter. This route has no shouldRevalidate override,
+// so react-router's default behaviour re-runs the whole route loader (refetching job/metadata/
+// systems) on every navigation - including a searchParams-only one. That's fine for the rare,
+// user-initiated tab/mode change, but the shareable-window offset/size updates on every settled
+// scroll (see WindowedConsolePane below), and doing that through the router created a genuine
+// feedback loop in testing: each update revalidated the loader, which remounted this component,
+// whose own mount effect then rewrote the params again, triggering another revalidation, forever -
+// observed hammering the backend continuously. history.replaceState only changes what's displayed
+// in the address bar; it never touches the router, so it can't cause any of that.
+const replaceUrlSearchParams = (mutate: (params: URLSearchParams) => void) => {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  mutate(params)
+  const query = params.toString()
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+  )
+}
 
-  const cleanedContent = useMemo(() => {
-    if (!content) return null
-    return content
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map((line) => {
-        const parts = line.split('\r')
-        return parts[parts.length - 1]
-      })
-      .join('\n')
-  }, [content])
+// Normalizes line endings the same way for both the tail-based and windowed-view console panes.
+const cleanConsoleContent = (content?: string): string | null => {
+  if (!content) return null
+  return content
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => {
+      const parts = line.split('\r')
+      return parts[parts.length - 1]
+    })
+    .join('\n')
+}
+
+// Shared by ConsolePane's and WindowedConsolePane's header rows so both panes come out exactly
+// the same height regardless of which mode is active. overflow-x-auto is a safety net for very
+// narrow viewports - whitespace-nowrap on the buttons below is what actually keeps the row a
+// single line in the first place (without it, a button's own label text wraps to two lines
+// before the row would ever need to scroll, growing the row's height either way).
+const CONSOLE_TOOLBAR_ROW_CLASS =
+  'flex items-center justify-between gap-2 border-b bg-white px-3 py-2 shrink-0 text-sm text-neutral-600 overflow-x-auto'
+const CONSOLE_TOOLBAR_BUTTON_CLASS =
+  'flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0'
+
+interface LiveTailingControlProps {
+  tailPaused: boolean
+  onToggleTailPaused: () => void
+  // True once the job has finished - there's nothing left to tail, so the toggle is disabled
+  // rather than removed, so the toolbar row keeps the same height/layout as an active job's
+  // (removing the whole control instead would make Tail and View mode's panes come out different
+  // sizes for a finished job, but not for a running one).
+  disabled?: boolean
+}
+
+// Shared by ConsolePane's and WindowedConsolePane's header rows - always grouped together (the
+// dot/label right next to the button it explains) so both panes read the same way regardless of
+// mode.
+const LiveTailingControl: React.FC<LiveTailingControlProps> = ({
+  tailPaused,
+  onToggleTailPaused,
+  disabled,
+}) => (
+  <div className='flex items-center gap-3'>
+    <div className='flex items-center gap-1.5 whitespace-nowrap shrink-0'>
+      <span
+        className={classNames(
+          'inline-block h-2 w-2 rounded-full',
+          disabled || tailPaused ? 'bg-neutral-400' : 'bg-green-500',
+        )}
+        aria-hidden='true'
+      />
+      {disabled ? 'Static' : tailPaused ? 'Paused' : 'Live'}
+    </div>
+    <button
+      type='button'
+      onClick={onToggleTailPaused}
+      disabled={disabled}
+      className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+      title={disabled ? 'This job has finished - there is nothing left to tail' : undefined}
+    >
+      {tailPaused ? <PlayIcon className='h-4 w-4' /> : <PauseIcon className='h-4 w-4' />}
+      {tailPaused ? 'Resume tailing' : 'Pause tailing'}
+    </button>
+  </div>
+)
+
+interface ConsolePaneProps {
+  content?: string
+  // Only provided for the stdout/stderr tabs - when omitted, this pane skips the header row
+  // entirely (e.g. StdIn/Script tabs, where live tailing doesn't apply).
+  tailPaused?: boolean
+  onToggleTailPaused?: () => void
+  isJobActive?: boolean
+}
+
+const ConsolePane: React.FC<ConsolePaneProps> = ({
+  content,
+  tailPaused,
+  onToggleTailPaused,
+  isJobActive,
+}) => {
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
+  // The "was I already near the bottom" check below is unsatisfiable on the very first render -
+  // scrollTop starts at 0, so with more than a screenful of content it always reads as "not near
+  // bottom" and the initial tail never actually lands at the bottom. Force it once.
+  const hasScrolledOnceRef = useRef(false)
+
+  const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
 
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
+    if (!hasScrolledOnceRef.current && cleanedContent) {
+      el.scrollTop = el.scrollHeight
+      hasScrolledOnceRef.current = true
+      return
+    }
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     if (nearBottom) el.scrollTop = el.scrollHeight
   }, [cleanedContent])
 
   return (
     <section className='flex-1 min-h-0 flex flex-col'>
+      {onToggleTailPaused && (
+        <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
+          <div />
+          <LiveTailingControl
+            tailPaused={!!tailPaused}
+            onToggleTailPaused={onToggleTailPaused}
+            disabled={!isJobActive}
+          />
+        </div>
+      )}
       <div
         ref={scrollerRef}
-        className='flex-1 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
+        className='flex-1 min-h-0 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
+      >
+        <pre className='px-3 py-2 whitespace-pre-wrap'>
+          {cleanedContent || '# No data available'}
+        </pre>
+      </div>
+    </section>
+  )
+}
+
+interface WindowedConsolePaneProps {
+  view: UseWindowedFileViewResult
+  // Shared with ConsolePane's tail-mode polling: pausing stops auto-refresh while anchored at
+  // EOF (only time this view auto-updates), same "follow the live log" toggle either way.
+  tailPaused: boolean
+  onToggleTailPaused: () => void
+  // Hides the Live/Pause control once the job has finished - a finished job's log is static, so
+  // there's nothing to tail and the auto-refresh this toggles never runs anyway (see
+  // viewAutoRefreshIntervalMs).
+  isJobActive: boolean
+}
+
+// Byte-windowed counterpart to ConsolePane: paged navigation instead of a fixed tail, backed by
+// useWindowedFileView. Preserves the user's visual scroll position on "load earlier" (which
+// prepends above the current viewport) by measuring scrollHeight before the fetch and correcting
+// scrollTop by the delta once the new content has rendered, rather than trying to infer a
+// prepend/append from the content itself.
+const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
+  view,
+  tailPaused,
+  onToggleTailPaused,
+  isJobActive,
+}) => {
+  const {
+    content,
+    loading,
+    loadingReplace,
+    loadingEarlier,
+    loadingLater,
+    error,
+    notFound,
+    bufferStart,
+    bufferEnd,
+    pageSizeBytes,
+    atEnd,
+    loadEarlier,
+    loadLater,
+    jumpToEnd,
+    jumpToStart,
+  } = view
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
+  // Set right before jumpToStart/jumpToEnd/loadEarlier, which all land the buffer's new content
+  // at the very start - tells the effect below to scroll there once it renders, rather than
+  // falling through to the "was I near the bottom" heuristic used for auto-refresh.
+  const pendingJumpRef = useRef<'start' | 'end' | null>(null)
+  // Set right before loadLater, to the pre-fetch scrollHeight - since content is only ever
+  // appended, that's exactly where the newly-loaded content starts, so scrolling there brings
+  // it into view instead of leaving the scroll position wherever it happened to be.
+  const pendingRevealFromRef = useRef<number | null>(null)
+  // The hook always anchors at EOF on its very first fetch (see useWindowedFileView), but the
+  // "was I already near the bottom" heuristic below can't know that - scrollTop starts at 0, so
+  // with more than a screenful of content the first load would otherwise land at the top of the
+  // tail window instead of the bottom.
+  const hasScrolledOnceRef = useRef(false)
+
+  const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
+
+  // A small tolerance for float scrollTop/scrollHeight rounding, not a "close enough" threshold -
+  // anything above this means there's genuinely more already-rendered content off-screen.
+  const EDGE_EPSILON_PX = 2
+
+  const handleLoadEarlier = () => {
+    const el = scrollerRef.current
+    // The buffer only ever grows (never evicted), so after paging backward a few times it can
+    // easily hold much more than one screenful. If there's already-loaded content above the
+    // current scroll position, reveal it by scrolling - no fetch needed, and nothing for the
+    // buffer's actual bufferStart to have moved, which is exactly why a click could otherwise
+    // look like it "did nothing" despite being nowhere near the real start of the file.
+    if (el && el.scrollTop > EDGE_EPSILON_PX) {
+      el.scrollTop = Math.max(0, el.scrollTop - el.clientHeight)
+      return
+    }
+    // Already at the top of what's currently rendered - fetch the previous page (a no-op if the
+    // buffer has already reached byte 0).
+    pendingJumpRef.current = 'start'
+    loadEarlier()
+  }
+
+  const handleLoadLater = () => {
+    const el = scrollerRef.current
+    // Symmetric with handleLoadEarlier above.
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight > EDGE_EPSILON_PX) {
+      el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + el.clientHeight)
+      return
+    }
+    // Already at the bottom of what's currently rendered - fetch the next page. Skipped once we
+    // already know we're at the live end (atEnd), since that fetch would just re-confirm the same
+    // position - the background auto-refresh (not this handler) is what watches for new growth.
+    if (atEnd) return
+    if (el) {
+      pendingRevealFromRef.current = el.scrollHeight
+    }
+    loadLater()
+  }
+
+  const handleJumpToStart = () => {
+    pendingJumpRef.current = 'start'
+    jumpToStart()
+  }
+
+  const handleJumpToEnd = () => {
+    pendingJumpRef.current = 'end'
+    jumpToEnd()
+  }
+
+  // Keeps the URL's offset/size in sync with whatever's actually visible - not just with what's
+  // been fetched. Load earlier/later often just reveal already-loaded content (see
+  // handleLoadEarlier/handleLoadLater above) without moving bufferStart/bufferEnd at all, and
+  // plain manual scrolling never does either, so tying the shareable link to the buffer bounds
+  // alone missed both of those. Debounced since scroll fires continuously - only the settled
+  // position is worth a URL write. Called both from the native scroll handler below (covers
+  // manual scrolling and most of our own programmatic jumps, since setting `scrollTop` normally
+  // fires a scroll event same as a user dragging the scrollbar) AND directly at the end of the
+  // scroll-correction effect further down - the latter is needed because a jump that happens to
+  // land on the *same* scrollTop it was already at (e.g. several successive "load earlier" pages
+  // each landing back at 0) is a no-op as far as the DOM is concerned and fires no scroll event,
+  // which left the URL stuck reporting a stale position in testing against a large file.
+  const reportVisibleOffsetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleReportVisibleOffset = () => {
+    if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
+    reportVisibleOffsetTimeoutRef.current = setTimeout(() => {
+      const el = scrollerRef.current
+      if (!el || bufferStart === null || bufferEnd === null) return
+      const maxScrollable = el.scrollHeight - el.clientHeight
+      // Fraction (0..1) of the way down the buffer the viewport's top edge currently sits -
+      // content is plain text, not byte-indexed, so this is an approximation, not the exact byte
+      // at that pixel row. Good enough for "land back in roughly this spot" on a shared link.
+      const scrollRatio = maxScrollable > 0 ? el.scrollTop / maxScrollable : 0
+      const visibleOffset = bufferStart + Math.round(scrollRatio * (bufferEnd - bufferStart))
+      replaceUrlSearchParams((params) => {
+        params.set('offset', String(visibleOffset))
+        params.set('size', String(pageSizeBytes))
+      })
+    }, 400)
+  }
+  useEffect(
+    () => () => {
+      if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const isFirstLoad = !hasScrolledOnceRef.current && !!cleanedContent
+    if (cleanedContent) hasScrolledOnceRef.current = true
+    if (isFirstLoad) {
+      el.scrollTop = el.scrollHeight
+      scheduleReportVisibleOffset()
+      return
+    }
+    if (pendingJumpRef.current) {
+      el.scrollTop = pendingJumpRef.current === 'start' ? 0 : el.scrollHeight
+      pendingJumpRef.current = null
+      scheduleReportVisibleOffset()
+      return
+    }
+    if (pendingRevealFromRef.current !== null) {
+      // If this load-later just reached the live end, land at the true bottom rather than the
+      // top of the newly-revealed page - otherwise the buttons correctly show "nothing more to
+      // load" while the pane still looks like there's unseen content below the fold.
+      el.scrollTop = atEnd ? el.scrollHeight : pendingRevealFromRef.current
+      pendingRevealFromRef.current = null
+      scheduleReportVisibleOffset()
+      return
+    }
+    // Otherwise this is an auto-refresh append while anchored at EOF - only follow it to the
+    // bottom if the user was already near the bottom (they may have paged away in the meantime).
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (nearBottom) el.scrollTop = el.scrollHeight
+    scheduleReportVisibleOffset()
+  }, [cleanedContent, atEnd])
+
+  return (
+    <section className='flex-1 min-h-0 flex flex-col'>
+      <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
+        <div className='flex items-center gap-2'>
+          <button
+            type='button'
+            onClick={handleJumpToStart}
+            // Deliberately not gated on atStart/ready: keeping button enablement in sync with
+            // buffer position (which the background auto-refresh mutates independently) proved
+            // fragile in practice. Instead the buttons stay clickable and the hook's own guards
+            // (e.g. loadEarlier bailing out at bufferStart === 0) make an already-there click a
+            // no-op - only "is my own request already in flight" disables a button.
+            disabled={loadingReplace}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Load the beginning of the file'
+          >
+            <ChevronDoubleUpIcon className='h-4 w-4' />
+            Load top
+          </button>
+          <button
+            type='button'
+            onClick={handleLoadEarlier}
+            // See Load top above - not gated on atStart/ready, the hook no-ops if there's
+            // nothing earlier to fetch (or no position known yet).
+            disabled={loadingReplace || loadingEarlier}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+          >
+            <ChevronUpIcon className='h-4 w-4' />
+            Load earlier
+          </button>
+          <button
+            type='button'
+            onClick={handleLoadLater}
+            // See Load top above - not gated on atEnd/ready, the hook no-ops (or just re-confirms
+            // the same live end) if there's nothing later to fetch yet.
+            disabled={loadingReplace || loadingLater}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+          >
+            <ChevronDownIcon className='h-4 w-4' />
+            Load later
+          </button>
+          <button
+            type='button'
+            onClick={handleJumpToEnd}
+            // See Load top above.
+            disabled={loadingReplace}
+            className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Load the end of the file'
+          >
+            <ChevronDoubleDownIcon className='h-4 w-4' />
+            Load bottom
+          </button>
+        </div>
+        <div className='whitespace-nowrap'>
+          {notFound
+            ? 'This job output is no longer available on the cluster'
+            : error
+              ? 'Failed to load file window'
+              : loading
+                ? 'Loading…'
+                : null}
+        </div>
+        <LiveTailingControl
+          tailPaused={tailPaused}
+          onToggleTailPaused={onToggleTailPaused}
+          disabled={!isJobActive}
+        />
+      </div>
+      <div
+        ref={scrollerRef}
+        onScroll={scheduleReportVisibleOffset}
+        className='flex-1 min-h-0 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
       >
         <pre className='px-3 py-2 whitespace-pre-wrap'>
           {cleanedContent || '# No data available'}
@@ -491,6 +955,11 @@ let OUTPUT_TABS = [
 
 type OutputTabId = (typeof OUTPUT_TABS)[number]['id']
 
+// 'tail' mirrors today's behaviour (last N lines, polled while the job runs). 'view' pages
+// through the file with GET /ops/view, anchored at EOF by default - see
+// project_windowed_log_preview_assessment memory for the design discussion behind this.
+type LogMode = 'tail' | 'view'
+
 interface JobDetailsLayoutProps {
   job?: Job
   jobMetadata?: JobMetadata
@@ -504,6 +973,12 @@ interface JobDetailsLayoutProps {
   script?: string
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
+  logMode: LogMode
+  onChangeLogMode: (mode: LogMode) => void
+  tailPaused: boolean
+  onToggleTailPaused: () => void
+  stdoutView: UseWindowedFileViewResult
+  stderrView: UseWindowedFileViewResult
 }
 
 const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
@@ -519,10 +994,16 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   script,
   dashboards,
   onChangeTab,
+  logMode,
+  onChangeLogMode,
+  tailPaused,
+  onToggleTailPaused,
+  stdoutView,
+  stderrView,
 }) => {
   return (
-    <div className='flex flex-1 flex-col gap-4 pb-20'>
-      <div className='flex flex-1 h-full'>
+    <div className='flex flex-1 min-h-0 flex-col gap-4 pb-20'>
+      <div className='flex flex-1 h-full min-h-0'>
         <JobDetailCenter
           job={job}
           jobMetadata={jobMetadata}
@@ -536,6 +1017,12 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
           script={script}
           dashboards={dashboards}
           onChangeTab={onChangeTab}
+          logMode={logMode}
+          onChangeLogMode={onChangeLogMode}
+          tailPaused={tailPaused}
+          onToggleTailPaused={onToggleTailPaused}
+          stdoutView={stdoutView}
+          stderrView={stderrView}
         />
       </div>
     </div>
@@ -548,6 +1035,7 @@ interface JobDetailsConsoleViewProps {
   system: any
   error: any
   dashboard: any
+  defaultLogMode?: string
 }
 
 const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
@@ -556,6 +1044,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   system,
   error,
   dashboard,
+  defaultLogMode,
 }: JobDetailsConsoleViewProps) => {
   const job = useMemo<Job | null>(() => (jobs && jobs.length > 0 ? jobs[0] : null), [jobs])
   const jobMetadata = useMemo<JobMetadata | null>(
@@ -568,8 +1057,76 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   const [jobStandardError, setJobStandardError] = useState<GetOpsTailResponse | null>(null)
   const [jobStandardErrorFile, setJobStandardErrorFile] = useState<File | null>(null)
   const [localError, setLocalError] = useState<any>(error)
-  const [activeTab, setActiveTab] = React.useState<OutputTabId>('stdout')
+  // `searchParams` also carries the shareable view state (tab/mode/offset/size) - read once below
+  // to seed the initial tab/mode/window, then kept in sync (one-way, state -> URL, via
+  // replaceUrlSearchParams below - never this hook's own setter, see why there) by effects near
+  // the bottom of this component and in WindowedConsolePane. See
+  // project_windowed_log_preview_assessment memory for the design behind sharing a specific log
+  // window via URL.
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = React.useState<OutputTabId>(() => {
+    const tab = searchParams.get('tab')
+    return tab === 'stdout' || tab === 'stderr' ? tab : 'stdout'
+  })
+  const [logMode, setLogMode] = useState<LogMode>(() => {
+    const mode = searchParams.get('mode')
+    if (mode === 'view' || mode === 'tail') return mode
+    return defaultLogMode === 'view' ? 'view' : 'tail'
+  })
+  // Parsed once from the URL this component mounted with - only ever consumed by the matching
+  // view's very first fetch (see initialOffset/initialSize on useWindowedFileView), never updated
+  // again, so re-reading `searchParams` later (once we start writing to it ourselves) can't loop.
+  const [initialViewOffset] = useState<number | null>(() =>
+    parsePositiveInt(searchParams.get('offset')),
+  )
+  const [initialViewSize] = useState<number | null>(() =>
+    parsePositiveInt(searchParams.get('size'), { allowZero: false }),
+  )
+  const [tailPaused, setTailPaused] = useState(false)
   const { setMaintenance } = useMaintenance()
+
+  const isJobActive =
+    currentJob !== null &&
+    ![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(currentJob.status.state)
+
+  // Shared with tail mode's own polling - pausing "follows the live log" regardless of which
+  // mode you're currently looking at it through.
+  const viewAutoRefreshIntervalMs = isJobActive && !tailPaused ? 2000 : null
+
+  // The URL's offset/size only ever apply to whichever tab it named - the other view still just
+  // anchors at the live end as usual.
+  const stdoutView = useWindowedFileView({
+    systemName: system?.name,
+    filePath: jobMetadata?.standardOutput,
+    enabled: logMode === 'view',
+    autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
+    initialOffset: activeTab === 'stdout' ? initialViewOffset : null,
+    initialSize: activeTab === 'stdout' ? initialViewSize : null,
+  })
+  const stderrView = useWindowedFileView({
+    systemName: system?.name,
+    filePath: jobMetadata?.standardError,
+    enabled: logMode === 'view',
+    autoRefreshIntervalMs: viewAutoRefreshIntervalMs,
+    initialOffset: activeTab === 'stderr' ? initialViewOffset : null,
+    initialSize: activeTab === 'stderr' ? initialViewSize : null,
+  })
+
+  // Keeps the URL's tab/mode in sync so copying the address bar always names the right one.
+  // offset/size are a different component's concern (WindowedConsolePane, below) since they need
+  // the actual visible scroll position, not just what's been fetched - it merges its own updates
+  // in independently rather than colliding with this effect. Clearing them here on every tab/mode
+  // change (rather than trying to decide whether they're still valid) is deliberate: they belong
+  // to whichever tab/mode was active when last set, and the newly-active WindowedConsolePane (if
+  // any) reports its own within the same render pass anyway.
+  useEffect(() => {
+    replaceUrlSearchParams((params) => {
+      params.set('tab', activeTab)
+      params.set('mode', logMode)
+      params.delete('offset')
+      params.delete('size')
+    })
+  }, [activeTab, logMode])
 
   const handlePollingError = async (error: any) => {
     if (isMaintenanceResponse(error)) {
@@ -597,7 +1154,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     setter: React.Dispatch<React.SetStateAction<GetOpsTailResponse | null>>,
   ) => {
     try {
-      const response: GetOpsTailResponse = await getLocalOpsTail(system.name, filePath, '100')
+      const response: GetOpsTailResponse = await getLocalOpsTail(system.name, filePath, '500')
       setter(response)
     } catch (error) {
       await handlePollingError(error)
@@ -645,7 +1202,12 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
         if (jobMetadata && jobMetadata !== null) {
           // Get job standard output/s
           if (![JobStateStatus.PENDING].includes(jobStateStatus)) {
-            fetchJobStandardFileContent(jobMetadata)
+            // The file metadata (for the download button) is independent of log mode/pause -
+            // only the tail content fetch itself is gated. In 'view' mode, useWindowedFileView
+            // fetches its own content separately.
+            if (logMode === 'tail' && !tailPaused) {
+              fetchJobStandardFileContent(jobMetadata)
+            }
             fecthJobStandardFile(jobMetadata)
           }
         }
@@ -659,7 +1221,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
         return () => clearInterval(intervalId)
       }
     }
-  }, [job])
+  }, [job, logMode, tailPaused])
 
   useEffect(() => {
     setLocalError(error ?? null)
@@ -692,6 +1254,12 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       script={jobMetadata?.script || undefined}
       dashboards={dashboards}
       onChangeTab={setActiveTab}
+      logMode={logMode}
+      onChangeLogMode={setLogMode}
+      tailPaused={tailPaused}
+      onToggleTailPaused={() => setTailPaused((paused) => !paused)}
+      stdoutView={stdoutView}
+      stderrView={stderrView}
     />
   )
 }

@@ -142,6 +142,8 @@ export const useWindowedFileView = ({
   const replaceGenerationRef = useRef(0)
   const earlierSeqRef = useRef(0)
   const laterSeqRef = useRef(0)
+  // Whether a forward fetch (manual or silent auto-refresh) is in flight - see fetchLater.
+  const laterInFlightRef = useRef(false)
   // Consumed at most once - see initialOffset/initialSize on UseWindowedFileViewOptions, and the
   // mount effect and loadAndReplace below for why this is only set once a replace's response
   // actually lands, not when it's dispatched.
@@ -167,6 +169,7 @@ export const useWindowedFileView = ({
       // so clear both directly here rather than leaving them stuck at true with nothing in flight.
       ++earlierSeqRef.current
       ++laterSeqRef.current
+      laterInFlightRef.current = false
       setLoadingEarlier(false)
       setLoadingLater(false)
       setLoadingReplace(true)
@@ -275,57 +278,73 @@ export const useWindowedFileView = ({
       })
   }, [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingEarlier, bufferStart])
 
-  const loadLater = useCallback(() => {
-    if (!filePath || loadingLater || bufferEnd === null) return
-    const gen = replaceGenerationRef.current
-    const seq = ++laterSeqRef.current
-    setLoadingLater(true)
-    setError(null)
-    getLocalOpsView(systemName, filePath, pageSizeBytes, bufferEnd)
-      .then((response) => {
-        if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
-        const view = response.output
-        if (!view) return
-        // Symmetric with loadEarlier above: appending grows the buffer from the end, so any
-        // overflow is trimmed off the *start* instead - this is also what keeps a long-running
-        // live tail (autoRefreshIntervalMs, which just calls this repeatedly) bounded in memory
-        // rather than growing forever.
-        let trimmedFromStart = 0
-        setContent((prev) => {
-          const merged = prev + view.content
-          const overflow = merged.length - maxBufferBytes
-          if (overflow <= 0) return merged
-          trimmedFromStart = overflow
-          return merged.slice(overflow)
+  // `silent` is for the background auto-refresh tick: it skips setLoadingLater, so a poll every
+  // couple of seconds doesn't flash "Load later" disabled and "Loading…" on and off each time
+  // (observed as visible flicker in testing). Overlap between ticks is guarded by
+  // laterInFlightRef instead of the loadingLater state. A manual Load later click is never silent,
+  // and still supersedes an in-flight silent tick via laterSeqRef as usual.
+  const fetchLater = useCallback(
+    (silent: boolean) => {
+      if (!filePath || bufferEnd === null) return
+      if (silent ? laterInFlightRef.current : loadingLater) return
+      const gen = replaceGenerationRef.current
+      const seq = ++laterSeqRef.current
+      laterInFlightRef.current = true
+      if (!silent) setLoadingLater(true)
+      // A silent tick leaves any existing error showing until it actually succeeds, rather than
+      // clearing it at dispatch and re-setting it moments later if the failure persists.
+      if (!silent) setError(null)
+      getLocalOpsView(systemName, filePath, pageSizeBytes, bufferEnd)
+        .then((response) => {
+          if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
+          const view = response.output
+          if (!view) return
+          if (silent) setError(null)
+          // Symmetric with loadEarlier above: appending grows the buffer from the end, so any
+          // overflow is trimmed off the *start* instead - this is also what keeps a long-running
+          // live tail (autoRefreshIntervalMs, which just calls this repeatedly) bounded in memory
+          // rather than growing forever.
+          let trimmedFromStart = 0
+          setContent((prev) => {
+            const merged = prev + view.content
+            const overflow = merged.length - maxBufferBytes
+            if (overflow <= 0) return merged
+            trimmedFromStart = overflow
+            return merged.slice(overflow)
+          })
+          setFileSize(view.fileSize)
+          setBufferEnd(view.startOffset + view.content.length)
+          if (trimmedFromStart > 0) {
+            setBufferStart((prevStart) =>
+              prevStart === null ? prevStart : prevStart + trimmedFromStart,
+            )
+          }
         })
-        setFileSize(view.fileSize)
-        setBufferEnd(view.startOffset + view.content.length)
-        if (trimmedFromStart > 0) {
-          setBufferStart((prevStart) =>
-            prevStart === null ? prevStart : prevStart + trimmedFromStart,
-          )
-        }
-      })
-      .catch((err) => {
-        if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
-        setError(err)
-      })
-      .finally(() => {
-        if (seq !== laterSeqRef.current) return
-        setLoadingLater(false)
-      })
-  }, [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingLater, bufferEnd])
+        .catch((err) => {
+          if (gen !== replaceGenerationRef.current || seq !== laterSeqRef.current) return
+          setError(err)
+        })
+        .finally(() => {
+          if (seq !== laterSeqRef.current) return
+          laterInFlightRef.current = false
+          setLoadingLater(false)
+        })
+    },
+    [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingLater, bufferEnd],
+  )
+  const loadLater = useCallback(() => fetchLater(false), [fetchLater])
 
   // Auto-refresh: only while anchored at EOF, and only ever extends the buffer forward (reuses
-  // loadLater rather than resetting), so it never disturbs content the user has scrolled up into.
+  // fetchLater rather than resetting), so it never disturbs content the user has scrolled up into.
+  // Runs silently (see fetchLater) so the toolbar doesn't flicker on every tick.
   // Stopped once a 404 is confirmed (notFound) - the file being gone isn't something the next tick
   // will fix, so silently retrying every interval would just be repeated pointless requests. A
   // manual Load later click can still retry, same as any other error.
   useEffect(() => {
     if (!enabled || !autoRefreshIntervalMs || !atEnd || notFound) return
-    const intervalId = setInterval(loadLater, autoRefreshIntervalMs)
+    const intervalId = setInterval(() => fetchLater(true), autoRefreshIntervalMs)
     return () => clearInterval(intervalId)
-  }, [enabled, autoRefreshIntervalMs, atEnd, notFound, loadLater])
+  }, [enabled, autoRefreshIntervalMs, atEnd, notFound, fetchLater])
 
   return {
     content,

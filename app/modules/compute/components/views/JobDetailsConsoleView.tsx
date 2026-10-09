@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import { Link, useSearchParams } from 'react-router'
-import React, { useEffect, useRef, useMemo, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useState } from 'react'
 import {
   ArrowDownCircleIcon,
   ChevronDownIcon,
@@ -29,6 +29,16 @@ import { formatTime } from '~/helpers/time-helper'
 import { nidStringToArray } from '~/helpers/nid-parser'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
+import {
+  ByteAnchor,
+  DEFAULT_BYTES_PER_LINE,
+  MIN_LINES_FOR_ESTIMATE,
+  anchorForScrollTop,
+  buildLineIndex,
+  computeLayout,
+  isViewportOutsideWindow,
+  scrollTopForAnchor,
+} from '~/modules/compute/helpers/windowed-scroll-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -263,7 +273,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
     !!job && ![JobStateStatus.COMPLETED, JobStateStatus.FAILED].includes(job.status.state)
   return (
     <div
-      className='flex-1 min-h-0 rounded-xl border bg-white shadow-sm m-6 pt-2'
+      className='flex-1 min-h-0 min-w-0 rounded-xl border bg-white shadow-sm m-6 pt-2'
       style={{ marginTop: '20px' }}
     >
       <div className='flex items-center justify-between bg-white p-4 px-3 py-2 shrink-0 z-9 '>
@@ -532,6 +542,11 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({
   )
 }
 
+// Within this many px of the bottom counts as "following the live end".
+const FOLLOW_EPSILON_PX = 80
+// How long a scrollbar drag must rest in an unloaded region before a window is fetched there.
+const JUMP_DEBOUNCE_MS = 150
+
 interface WindowedConsolePaneProps {
   view: UseWindowedFileViewResult
   // Shared with ConsolePane's tail-mode polling: pausing stops auto-refresh while anchored at
@@ -544,11 +559,15 @@ interface WindowedConsolePaneProps {
   isJobActive: boolean
 }
 
-// Byte-windowed counterpart to ConsolePane: paged navigation instead of a fixed tail, backed by
-// useWindowedFileView. Preserves the user's visual scroll position on "load earlier" (which
-// prepends above the current viewport) by measuring scrollHeight before the fetch and correcting
-// scrollTop by the delta once the new content has rendered, rather than trying to infer a
-// prepend/append from the content itself.
+// Byte-windowed counterpart to ConsolePane, backed by useWindowedFileView. Only a window of the
+// file is ever rendered, but the scroller is sized for the *whole* file: blank spacers above and
+// below the window stand in for the unloaded bytes (height estimated from the window's average line
+// length), so the scrollbar thumb always reflects where the window sits in the file and stays put
+// as the user pages. Scroll position is tracked as a byte anchor (the file offset of the line at
+// the viewport top), not a pixel value, so whenever the window changes - pages prepended/appended,
+// far end trimmed, estimate refined - the same line is put back under the viewport. See
+// helpers/windowed-scroll-helper.ts for the geometry. Lines don't wrap (fixed line height keeps
+// the in-window layout exact); long lines scroll horizontally.
 const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   view,
   tailPaused,
@@ -557,157 +576,233 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
 }) => {
   const {
     content,
+    fileSize,
     loading,
     loadingReplace,
     loadingEarlier,
     loadingLater,
     error,
     notFound,
+    ready,
     bufferStart,
     bufferEnd,
     pageSizeBytes,
-    atEnd,
+    initialAnchor,
+    loadWindowAt,
     loadEarlier,
     loadLater,
     jumpToEnd,
     jumpToStart,
   } = view
   const scrollerRef = useRef<HTMLDivElement | null>(null)
-  // Set right before jumpToStart/jumpToEnd/loadEarlier, which all land the buffer's new content
-  // at the very start - tells the effect below to scroll there once it renders, rather than
-  // falling through to the "was I near the bottom" heuristic used for auto-refresh.
-  const pendingJumpRef = useRef<'start' | 'end' | null>(null)
-  // Set right before loadLater, to the pre-fetch scrollHeight - since content is only ever
-  // appended, that's exactly where the newly-loaded content starts, so scrolling there brings
-  // it into view instead of leaving the scroll position wherever it happened to be.
-  const pendingRevealFromRef = useRef<number | null>(null)
-  // The hook always anchors at EOF on its very first fetch (see useWindowedFileView), but the
-  // "was I already near the bottom" heuristic below can't know that - scrollTop starts at 0, so
-  // with more than a screenful of content the first load would otherwise land at the top of the
-  // tail window instead of the bottom.
-  const hasScrolledOnceRef = useRef(false)
 
   const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
+  const lineIndex = useMemo(() => buildLineIndex(content), [content])
+  const lines = lineIndex.length
+  // Kept across windows (only replaced once a window has enough lines to average over), so the
+  // estimate - and with it the spacer sizes - doesn't wobble as small windows come and go.
+  const bytesPerLineRef = useRef(DEFAULT_BYTES_PER_LINE)
+  const bytesPerLine = useMemo(() => {
+    if (lines >= MIN_LINES_FOR_ESTIMATE && content.length > 0) {
+      bytesPerLineRef.current = content.length / lines
+    }
+    return bytesPerLineRef.current
+  }, [content, lines])
+  const layout = useMemo(
+    () =>
+      computeLayout({
+        bufferStart: bufferStart ?? 0,
+        bufferEnd: bufferEnd ?? 0,
+        fileSize,
+        lines,
+        bytesPerLine,
+      }),
+    [bufferStart, bufferEnd, fileSize, lines, bytesPerLine],
+  )
 
-  // A small tolerance for float scrollTop/scrollHeight rounding, not a "close enough" threshold -
-  // anything above this means there's genuinely more already-rendered content off-screen.
-  const EDGE_EPSILON_PX = 2
+  // Latest render's values for the event handlers, timers and layout effect below - they are
+  // created once (or capture an old render) but must always read current geometry and actions.
+  const latestRef = useRef({
+    layout,
+    lineIndex,
+    ready,
+    bufferStart,
+    bufferEnd,
+    fileSize,
+    pageSizeBytes,
+    notFound,
+    busy: loadingReplace || loadingEarlier || loadingLater,
+    actions: { loadWindowAt, loadEarlier, loadLater },
+  })
+  latestRef.current = {
+    layout,
+    lineIndex,
+    ready,
+    bufferStart,
+    bufferEnd,
+    fileSize,
+    pageSizeBytes,
+    notFound,
+    busy: loadingReplace || loadingEarlier || loadingLater,
+    actions: { loadWindowAt, loadEarlier, loadLater },
+  }
 
-  const handleLoadEarlier = () => {
+  // What the user is looking at, in file terms - restored after every window/layout change.
+  const anchorRef = useRef<ByteAnchor | null>(null)
+  // True while the viewport sits at the live end of the file; keeps following auto-refresh growth.
+  const followRef = useRef(false)
+  // Set right before Load top / Load bottom replace the window, to land at the matching edge.
+  const pendingJumpRef = useRef<'start' | 'end' | null>(null)
+  const initializedRef = useRef(false)
+  const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const captureAnchor = () => {
     const el = scrollerRef.current
-    // The buffer only ever grows (never evicted), so after paging backward a few times it can
-    // easily hold much more than one screenful. If there's already-loaded content above the
-    // current scroll position, reveal it by scrolling - no fetch needed, and nothing for the
-    // buffer's actual bufferStart to have moved, which is exactly why a click could otherwise
-    // look like it "did nothing" despite being nowhere near the real start of the file.
-    if (el && el.scrollTop > EDGE_EPSILON_PX) {
-      el.scrollTop = Math.max(0, el.scrollTop - el.clientHeight)
+    const s = latestRef.current
+    if (!el || !s.ready || s.bufferEnd === null) return
+    anchorRef.current = anchorForScrollTop(s.layout, s.lineIndex, el.scrollTop)
+    followRef.current =
+      s.bufferEnd >= s.fileSize &&
+      el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_EPSILON_PX
+  }
+
+  // Decides whether the viewport needs more of the file and asks for it: the user dragged into an
+  // unloaded region (fetch a fresh window there, debounced so a drag only fetches where it lands),
+  // or is within a screenful of the window's edge (fetch the adjacent page before they hit it).
+  const evaluateLoads = () => {
+    const el = scrollerRef.current
+    const s = latestRef.current
+    if (!el || !s.ready || s.bufferStart === null || s.bufferEnd === null || s.notFound) return
+    const viewTop = el.scrollTop
+    const viewBottom = viewTop + el.clientHeight
+    const winTop = s.layout.topPx
+    const winBottom = winTop + s.layout.windowPx
+    if (isViewportOutsideWindow(s.layout, viewTop, el.clientHeight)) {
+      if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current)
+      jumpTimerRef.current = setTimeout(() => {
+        jumpTimerRef.current = null
+        const el2 = scrollerRef.current
+        const s2 = latestRef.current
+        if (!el2 || !s2.ready) return
+        const mid = anchorForScrollTop(
+          s2.layout,
+          s2.lineIndex,
+          el2.scrollTop + el2.clientHeight / 2,
+        ).byte
+        s2.actions.loadWindowAt(Math.min(mid, s2.fileSize) - s2.pageSizeBytes / 2)
+      }, JUMP_DEBOUNCE_MS)
       return
     }
-    // Already at the top of what's currently rendered - fetch the previous page (a no-op if the
-    // buffer has already reached byte 0).
-    pendingJumpRef.current = 'start'
-    loadEarlier()
+    if (jumpTimerRef.current) {
+      clearTimeout(jumpTimerRef.current)
+      jumpTimerRef.current = null
+    }
+    if (s.busy) return
+    const margin = el.clientHeight
+    if (viewTop - winTop < margin && s.bufferStart > 0) {
+      s.actions.loadEarlier()
+    } else if (winBottom - viewBottom < margin && s.bufferEnd < s.fileSize) {
+      s.actions.loadLater()
+    }
+  }
+
+  // Load earlier/later just scroll a screenful - the edge check above fetches the neighbouring
+  // page as the viewport nears it, so both buttons work the same whether or not it's loaded yet.
+  const handleLoadEarlier = () => {
+    const el = scrollerRef.current
+    if (el) el.scrollTop = Math.max(0, el.scrollTop - el.clientHeight)
   }
 
   const handleLoadLater = () => {
     const el = scrollerRef.current
-    // Symmetric with handleLoadEarlier above.
-    if (el && el.scrollHeight - el.scrollTop - el.clientHeight > EDGE_EPSILON_PX) {
-      el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + el.clientHeight)
-      return
-    }
-    // Already at the bottom of what's currently rendered - fetch the next page. Skipped once we
-    // already know we're at the live end (atEnd), since that fetch would just re-confirm the same
-    // position - the background auto-refresh (not this handler) is what watches for new growth.
-    if (atEnd) return
-    if (el) {
-      pendingRevealFromRef.current = el.scrollHeight
-    }
-    loadLater()
+    if (el) el.scrollTop += el.clientHeight
   }
 
   const handleJumpToStart = () => {
+    const el = scrollerRef.current
+    if (el && bufferStart === 0) {
+      el.scrollTop = 0
+      return
+    }
     pendingJumpRef.current = 'start'
     jumpToStart()
   }
 
   const handleJumpToEnd = () => {
+    const el = scrollerRef.current
+    if (el && bufferEnd !== null && bufferEnd >= fileSize) {
+      el.scrollTop = el.scrollHeight
+      return
+    }
     pendingJumpRef.current = 'end'
     jumpToEnd()
   }
 
-  // Keeps the URL's offset/size in sync with whatever's actually visible - not just with what's
-  // been fetched. Load earlier/later often just reveal already-loaded content (see
-  // handleLoadEarlier/handleLoadLater above) without moving bufferStart/bufferEnd at all, and
-  // plain manual scrolling never does either, so tying the shareable link to the buffer bounds
-  // alone missed both of those. Debounced since scroll fires continuously - only the settled
-  // position is worth a URL write. Called both from the native scroll handler below (covers
-  // manual scrolling and most of our own programmatic jumps, since setting `scrollTop` normally
-  // fires a scroll event same as a user dragging the scrollbar) AND directly at the end of the
-  // scroll-correction effect further down - the latter is needed because a jump that happens to
-  // land on the *same* scrollTop it was already at (e.g. several successive "load earlier" pages
-  // each landing back at 0) is a no-op as far as the DOM is concerned and fires no scroll event,
-  // which left the URL stuck reporting a stale position in testing against a large file.
+  // Keeps the URL's offset/size in sync with whatever's actually visible (the anchor's byte).
+  // Debounced since scroll fires continuously - only the settled position is worth a URL write.
   const reportVisibleOffsetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleReportVisibleOffset = () => {
     if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
     reportVisibleOffsetTimeoutRef.current = setTimeout(() => {
-      const el = scrollerRef.current
-      if (!el || bufferStart === null || bufferEnd === null) return
-      const maxScrollable = el.scrollHeight - el.clientHeight
-      // Fraction (0..1) of the way down the buffer the viewport's top edge currently sits -
-      // content is plain text, not byte-indexed, so this is an approximation, not the exact byte
-      // at that pixel row. Good enough for "land back in roughly this spot" on a shared link.
-      const scrollRatio = maxScrollable > 0 ? el.scrollTop / maxScrollable : 0
-      const visibleOffset = bufferStart + Math.round(scrollRatio * (bufferEnd - bufferStart))
+      const anchor = anchorRef.current
+      if (!anchor) return
+      const visibleOffset = Math.max(0, Math.round(anchor.byte))
       replaceUrlSearchParams((params) => {
         params.set('offset', String(visibleOffset))
-        params.set('size', String(pageSizeBytes))
+        params.set('size', String(latestRef.current.pageSizeBytes))
       })
     }, 400)
   }
   useEffect(
     () => () => {
       if (reportVisibleOffsetTimeoutRef.current) clearTimeout(reportVisibleOffsetTimeoutRef.current)
+      if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current)
     },
     [],
   )
 
-  useEffect(() => {
+  const handleScroll = () => {
+    captureAnchor()
+    scheduleReportVisibleOffset()
+    evaluateLoads()
+  }
+
+  // Runs after every change to the window or its estimated geometry, before paint: puts the
+  // viewport back on the same line (or at the live end / an explicit jump target), then checks
+  // whether it now needs more data.
+  useLayoutEffect(() => {
     const el = scrollerRef.current
-    if (!el) return
-    const isFirstLoad = !hasScrolledOnceRef.current && !!cleanedContent
-    if (cleanedContent) hasScrolledOnceRef.current = true
-    if (isFirstLoad) {
-      el.scrollTop = el.scrollHeight
-      scheduleReportVisibleOffset()
-      return
+    if (!el || !ready || bufferEnd === null) return
+    if (!initializedRef.current && content) {
+      initializedRef.current = true
+      if (initialAnchor !== null) {
+        // Opened from a shared link: restore that position rather than following the live end.
+        anchorRef.current = { byte: initialAnchor, intra: 0 }
+        followRef.current = false
+      } else {
+        el.scrollTop = el.scrollHeight
+        captureAnchor()
+        scheduleReportVisibleOffset()
+        evaluateLoads()
+        return
+      }
     }
     if (pendingJumpRef.current) {
       el.scrollTop = pendingJumpRef.current === 'start' ? 0 : el.scrollHeight
       pendingJumpRef.current = null
-      scheduleReportVisibleOffset()
-      return
+    } else if (followRef.current && bufferEnd >= fileSize) {
+      el.scrollTop = el.scrollHeight
+    } else if (anchorRef.current) {
+      el.scrollTop = scrollTopForAnchor(layout, lineIndex, anchorRef.current)
     }
-    if (pendingRevealFromRef.current !== null) {
-      // If this load-later just reached the live end, land at the true bottom rather than the
-      // top of the newly-revealed page - otherwise the buttons correctly show "nothing more to
-      // load" while the pane still looks like there's unseen content below the fold.
-      el.scrollTop = atEnd ? el.scrollHeight : pendingRevealFromRef.current
-      pendingRevealFromRef.current = null
-      scheduleReportVisibleOffset()
-      return
-    }
-    // Otherwise this is an auto-refresh append while anchored at EOF - only follow it to the
-    // bottom if the user was already near the bottom (they may have paged away in the meantime).
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    if (nearBottom) el.scrollTop = el.scrollHeight
+    captureAnchor()
     scheduleReportVisibleOffset()
-  }, [cleanedContent, atEnd])
+    evaluateLoads()
+    // The geometry inputs are what matter here; the rest is read through refs on purpose.
+  }, [content, bufferStart, bufferEnd, fileSize, ready, layout])
 
   return (
-    <section className='flex-1 min-h-0 flex flex-col'>
+    <section className='flex-1 min-h-0 min-w-0 flex flex-col'>
       <div className={CONSOLE_TOOLBAR_ROW_CLASS}>
         <div className='flex items-center gap-2'>
           <button
@@ -776,12 +871,15 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
       </div>
       <div
         ref={scrollerRef}
-        onScroll={scheduleReportVisibleOffset}
+        onScroll={handleScroll}
+        // The pane restores scroll position itself (see the layout effect); the browser's own
+        // scroll anchoring would fight it whenever the spacers resize.
+        style={{ overflowAnchor: 'none' }}
         className='flex-1 min-h-0 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
       >
-        <pre className='px-3 py-2 whitespace-pre-wrap'>
-          {cleanedContent || '# No data available'}
-        </pre>
+        <div style={{ height: layout.topPx }} aria-hidden='true' />
+        <pre className='px-3 py-2 whitespace-pre'>{cleanedContent || '# No data available'}</pre>
+        <div style={{ height: layout.bottomPx }} aria-hidden='true' />
       </div>
     </section>
   )

@@ -26,6 +26,7 @@ const base = {
   repoUrl: getEnvVariable(env, 'REPO_URL', false),
   docUrl: getEnvVariable(env, 'DOC_URL', false),
   statusUrl: getEnvVariable(env, 'STATUS_URL', false),
+  jobLogDefaultMode: getEnvVariable(env, 'JOB_LOG_DEFAULT_MODE', false, 'tail'),
 }
 
 export default base

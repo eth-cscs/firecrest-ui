@@ -12,6 +12,7 @@ export const LogAction = {
   FS_RM: 'fs.rm',
   FS_SYMLINK: 'fs.symlink',
   FS_TAIL: 'fs.tail',
+  FS_VIEW: 'fs.view',
   FS_UPLOAD: 'fs.upload',
   FS_CHECKSUM: 'fs.checksum',
   FS_TRANSFER_CP: 'fs.transfer.cp',

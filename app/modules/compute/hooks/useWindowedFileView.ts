@@ -47,6 +47,10 @@ interface UseWindowedFileViewOptions {
   // Only loadEarlier/loadLater evict; jumpToStart/jumpToEnd always start over at a single page, so
   // they're never at risk of exceeding it on their own.
   maxBufferBytes?: number
+  // Files up to this size are loaded whole (one extra fetch right after the first window lands),
+  // so the pane has no unloaded regions or estimated heights for them. Defaults to maxBufferBytes -
+  // a bigger file wouldn't fit the buffer anyway.
+  fullLoadThresholdBytes?: number
   // Re-fetches the tail page on this interval while the loaded buffer reaches EOF. null/0 to
   // disable (e.g. for a completed job's static log).
   autoRefreshIntervalMs?: number | null
@@ -94,6 +98,13 @@ export interface UseWindowedFileViewResult {
   // than reading atStart/atEnd as false-because-unknown ("not confirmed at start" is not the
   // same claim as "confirmed not at start").
   ready: boolean
+  // Byte offset of the shared-link window this instance was opened at, once it has landed - lets
+  // the pane scroll to it instead of the live end. null for a normal open.
+  initialAnchor: number | null
+  // Discards the buffer and re-fetches a window starting at (roughly) this byte offset, snapped to
+  // the next line start so the first line isn't cut in half. Used when the user drags the
+  // scrollbar into a region that isn't loaded.
+  loadWindowAt: (offset: number) => void
   // True once the loaded buffer reaches the beginning of the file - i.e. "load earlier" has
   // nothing left to fetch.
   atStart: boolean
@@ -120,6 +131,7 @@ export const useWindowedFileView = ({
   enabled,
   pageSizeBytes = DEFAULT_PAGE_SIZE_BYTES,
   maxBufferBytes = DEFAULT_MAX_BUFFER_BYTES,
+  fullLoadThresholdBytes = maxBufferBytes,
   autoRefreshIntervalMs = null,
   initialOffset = null,
   initialSize = null,
@@ -132,6 +144,7 @@ export const useWindowedFileView = ({
   const [loadingEarlier, setLoadingEarlier] = useState(false)
   const [loadingLater, setLoadingLater] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  const [initialAnchor, setInitialAnchor] = useState<number | null>(null)
 
   // Separate per-direction sequence counters, so a backward loadEarlier fetch and a forward
   // loadLater fetch (e.g. the background auto-refresh) never invalidate each other just for
@@ -160,7 +173,18 @@ export const useWindowedFileView = ({
   // Shared by jumpToEnd (offset=-pageSize) and jumpToStart (offset=0): discards whatever's
   // buffered and replaces it with a single fresh window anchored at the given offset.
   const loadAndReplace = useCallback(
-    (offset: number, size: number = pageSizeBytes) => {
+    (
+      offset: number,
+      size: number = pageSizeBytes,
+      opts: {
+        // Drop the (likely partial) first line when starting mid-file.
+        alignToLine?: boolean
+        isInitial?: boolean
+        // Set on the follow-up whole-file fetch: no further upgrade, and a failure leaves the
+        // already-loaded window in place instead of surfacing an error.
+        isFullLoad?: boolean
+      } = {},
+    ) => {
       if (!filePath) return
       const gen = ++replaceGenerationRef.current
       // Bumping these too means an earlier/later fetch already in flight can no longer apply its
@@ -179,10 +203,30 @@ export const useWindowedFileView = ({
           if (gen !== replaceGenerationRef.current) return
           const view = response.output
           if (!view) return
-          setContent(view.content)
+          let text = view.content
+          let start = view.startOffset
+          if (opts.alignToLine && start > 0) {
+            const nl = text.indexOf('\n')
+            if (nl !== -1 && nl + 1 < text.length) {
+              text = text.slice(nl + 1)
+              start += nl + 1
+            }
+          }
+          setContent(text)
           setFileSize(view.fileSize)
-          setBufferStart(view.startOffset)
-          setBufferEnd(view.startOffset + view.content.length)
+          setBufferStart(start)
+          setBufferEnd(start + text.length)
+          if (opts.isInitial) setInitialAnchor(offset)
+          // Small enough to hold whole: fetch the rest right away so there are no unloaded regions.
+          const loadedWhole = start === 0 && start + text.length >= view.fileSize
+          if (
+            !opts.isFullLoad &&
+            !loadedWhole &&
+            view.fileSize > 0 &&
+            view.fileSize <= fullLoadThresholdBytes
+          ) {
+            loadAndReplace(0, view.fileSize, { isFullLoad: true })
+          }
           // Marked here (once a replace actually lands) rather than at dispatch time, so React's
           // dev-only StrictMode double-invoke of the mount effect below can't have its harmless
           // duplicate dispatch "claim" this ref before the real one's response arrives - see that
@@ -191,20 +235,25 @@ export const useWindowedFileView = ({
         })
         .catch((err) => {
           if (gen !== replaceGenerationRef.current) return
-          setError(err)
+          if (!opts.isFullLoad) setError(err)
         })
         .finally(() => {
           if (gen !== replaceGenerationRef.current) return
           setLoadingReplace(false)
         })
     },
-    [systemName, filePath, pageSizeBytes],
+    [systemName, filePath, pageSizeBytes, fullLoadThresholdBytes],
   )
   const jumpToEnd = useCallback(
     () => loadAndReplace(-pageSizeBytes),
     [loadAndReplace, pageSizeBytes],
   )
   const jumpToStart = useCallback(() => loadAndReplace(0), [loadAndReplace])
+  const loadWindowAt = useCallback(
+    (offset: number) =>
+      loadAndReplace(Math.max(0, Math.round(offset)), pageSizeBytes, { alignToLine: true }),
+    [loadAndReplace, pageSizeBytes],
+  )
 
   // (Re)anchor at EOF whenever this view becomes enabled or the target file changes - unless a
   // valid initial window was given and hasn't been applied yet, in which case that wins once.
@@ -221,6 +270,7 @@ export const useWindowedFileView = ({
     setFileSize(0)
     setBufferStart(null)
     setBufferEnd(null)
+    setInitialAnchor(null)
     const canUseInitialWindow =
       !hasAppliedInitialWindowRef.current &&
       initialOffset != null &&
@@ -230,7 +280,7 @@ export const useWindowedFileView = ({
       Number.isFinite(initialSize) &&
       initialSize > 0
     if (canUseInitialWindow) {
-      loadAndReplace(initialOffset as number, initialSize as number)
+      loadAndReplace(initialOffset as number, initialSize as number, { isInitial: true })
     } else {
       jumpToEnd()
     }
@@ -361,6 +411,8 @@ export const useWindowedFileView = ({
     ready,
     atStart,
     atEnd,
+    initialAnchor,
+    loadWindowAt,
     loadEarlier,
     loadLater,
     jumpToEnd,

@@ -190,7 +190,8 @@ export const useWindowedFileView = ({
 
   const ready = bufferStart !== null && bufferEnd !== null
   const atStart = bufferStart === 0
-  const atEnd = bufferEnd !== null && fileSize !== 0 && bufferEnd === fileSize
+  // An empty file counts too: a running job that hasn't printed anything yet is at its live end.
+  const atEnd = bufferEnd !== null && bufferEnd === fileSize
   // Derived from `error` rather than tracked separately, so it automatically clears the instant a
   // new fetch is dispatched (every loadX function calls setError(null) first) - no separate reset
   // logic needed for a manual retry to correctly leave this state.
@@ -209,6 +210,9 @@ export const useWindowedFileView = ({
         // Set on the follow-up whole-file fetch: no further upgrade, and a failure leaves the
         // already-loaded window in place instead of surfacing an error.
         isFullLoad?: boolean
+        // Background retry: leaves the loading flag and any error showing alone until it
+        // actually succeeds, so the toolbar doesn't flicker on every attempt.
+        silent?: boolean
       } = {},
     ) => {
       if (!filePath) return
@@ -222,13 +226,16 @@ export const useWindowedFileView = ({
       laterInFlightRef.current = false
       setLoadingEarlier(false)
       setLoadingLater(false)
-      setLoadingReplace(true)
-      setError(null)
+      if (!opts.silent) {
+        setLoadingReplace(true)
+        setError(null)
+      }
       getLocalOpsView(systemName, filePath, size, offset)
         .then((response) => {
           if (gen !== replaceGenerationRef.current) return
           const view = response.output
           if (!view) return
+          if (opts.silent) setError(null)
           let text = view.content
           let start = view.startOffset
           const end = viewEndByte(view)
@@ -431,14 +438,24 @@ export const useWindowedFileView = ({
   // Auto-refresh: only while anchored at EOF, and only ever extends the buffer forward (reuses
   // fetchLater rather than resetting), so it never disturbs content the user has scrolled up into.
   // Runs silently (see fetchLater) so the toolbar doesn't flicker on every tick.
-  // Stopped once a 404 is confirmed (notFound) - the file being gone isn't something the next tick
-  // will fix, so silently retrying every interval would just be repeated pointless requests. A
-  // manual Load later click can still retry, same as any other error.
+  // A missing file (notFound) is handled by the retry below instead.
   useEffect(() => {
     if (!enabled || !autoRefreshIntervalMs || !atEnd || notFound) return
     const intervalId = setInterval(() => fetchLater(true), autoRefreshIntervalMs)
     return () => clearInterval(intervalId)
   }, [enabled, autoRefreshIntervalMs, atEnd, notFound, fetchLater])
+
+  // While live (the caller only passes an interval for a job that's still active), a missing file
+  // usually just means the job hasn't started writing yet - e.g. it's still pending - so keep
+  // checking for it. For a finished job no interval is passed and a 404 is final: the file is gone.
+  useEffect(() => {
+    if (!enabled || !autoRefreshIntervalMs || !notFound) return
+    const intervalId = setInterval(
+      () => loadAndReplace(-pageSizeBytes, pageSizeBytes, { silent: true }),
+      autoRefreshIntervalMs,
+    )
+    return () => clearInterval(intervalId)
+  }, [enabled, autoRefreshIntervalMs, notFound, loadAndReplace, pageSizeBytes])
 
   return {
     content,

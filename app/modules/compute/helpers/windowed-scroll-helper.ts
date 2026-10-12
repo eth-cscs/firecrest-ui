@@ -23,26 +23,53 @@ export const DEFAULT_BYTES_PER_LINE = 80
 // previous estimate with.
 export const MIN_LINES_FOR_ESTIMATE = 50
 
-// Char index at which each line starts. Content is treated as bytes ~= chars, same as the data
-// hook does when it computes bufferEnd.
+// UTF-8 size of the code unit at `i` (a surrogate pair's 4 bytes are counted on its first half).
+// File offsets are bytes while a JS string is indexed in UTF-16 code units, and the two only agree
+// for pure-ASCII text - one box-drawing character is 3 bytes, for instance.
+const utf8UnitBytes = (text: string, i: number): number => {
+  const c = text.charCodeAt(i)
+  if (c < 0x80) return 1
+  if (c < 0x800) return 2
+  if (c >= 0xd800 && c <= 0xdbff) {
+    const next = text.charCodeAt(i + 1)
+    if (next >= 0xdc00 && next <= 0xdfff) return 4
+  }
+  if (c >= 0xdc00 && c <= 0xdfff) {
+    const prev = text.charCodeAt(i - 1)
+    if (prev >= 0xd800 && prev <= 0xdbff) return 0
+  }
+  return 3
+}
+
+// Number of bytes `text` takes up in the (UTF-8) file.
+export const utf8ByteLength = (text: string): number => {
+  let bytes = 0
+  for (let i = 0; i < text.length; i++) bytes += utf8UnitBytes(text, i)
+  return bytes
+}
+
+// Byte offset (relative to the start of `content`) at which each line starts, so it can be added
+// to bufferStart to get a file offset.
 export const buildLineIndex = (content: string): Int32Array => {
   let count = 1
   for (let i = content.indexOf('\n'); i !== -1; i = content.indexOf('\n', i + 1)) count++
   const starts = new Int32Array(count)
   let line = 1
-  for (let i = content.indexOf('\n'); i !== -1; i = content.indexOf('\n', i + 1)) {
-    starts[line++] = i + 1
+  let bytes = 0
+  for (let i = 0; i < content.length; i++) {
+    bytes += utf8UnitBytes(content, i)
+    if (content.charCodeAt(i) === 10) starts[line++] = bytes
   }
   return starts
 }
 
-// Index of the line containing `charIdx` (the last line whose start is <= charIdx).
-export const lineIndexAtChar = (lineIndex: Int32Array, charIdx: number): number => {
+// Index of the line containing byte `byteIdx` (the last line whose start is <= byteIdx).
+export const lineIndexAtByte = (lineIndex: Int32Array, byteIdx: number): number => {
   let lo = 0
   let hi = lineIndex.length - 1
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1
-    if (lineIndex[mid] <= charIdx) lo = mid
+    if (lineIndex[mid] <= byteIdx) lo = mid
     else hi = mid - 1
   }
   return lo
@@ -119,7 +146,7 @@ export const scrollTopForAnchor = (
   if (anchor.byte >= bufferEnd) {
     return topPx + windowPx + (anchor.byte - bufferEnd) * pxPerByte + anchor.intra
   }
-  const line = lineIndexAtChar(lineIndex, anchor.byte - bufferStart)
+  const line = lineIndexAtByte(lineIndex, anchor.byte - bufferStart)
   return topPx + PRE_PADDING_Y_PX + line * LINE_HEIGHT_PX + anchor.intra
 }
 

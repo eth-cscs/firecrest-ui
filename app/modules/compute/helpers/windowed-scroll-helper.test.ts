@@ -14,6 +14,7 @@ import {
   computeLayout,
   isViewportOutsideWindow,
   lineIndexAtByte,
+  measuredLineMetrics,
   scrollTopForAnchor,
   utf8ByteLength,
 } from './windowed-scroll-helper'
@@ -137,5 +138,38 @@ describe('anchor <-> scrollTop', () => {
     expect(isViewportOutsideWindow(layout, 0, 500)).toBe(true)
     expect(isViewportOutsideWindow(layout, layout.topPx, 500)).toBe(false)
     expect(isViewportOutsideWindow(layout, layout.topPx + layout.windowPx, 500)).toBe(true)
+  })
+})
+
+describe('wrapped lines (measured metrics)', () => {
+  // Three lines taking 1, 3 and 2 rows once wrapped.
+  const content = 'aaaa\nbbbb\ncccc'
+  const idx = buildLineIndex(content)
+  const tops = [PRE_PADDING_Y_PX, PRE_PADDING_Y_PX + 20, PRE_PADDING_Y_PX + 80]
+  const metrics = measuredLineMetrics(idx.length, (line) => tops[line])
+  const layout = computeLayout({
+    bufferStart: 100,
+    bufferEnd: 100 + content.length,
+    fileSize: 1000,
+    lines: idx.length,
+    bytesPerLine: 5,
+    windowPx: 6 * LINE_HEIGHT_PX + 2 * PRE_PADDING_Y_PX,
+  })
+
+  it('uses the measured window height', () => {
+    expect(layout.windowPx).toBe(6 * LINE_HEIGHT_PX + 2 * PRE_PADDING_Y_PX)
+  })
+
+  it('anchors to the line whose wrapped rows are at the viewport top', () => {
+    const scrollTop = layout.topPx + PRE_PADDING_Y_PX + 20 + 45
+    const anchor = anchorForScrollTop(layout, idx, scrollTop, metrics)
+    expect(anchor).toEqual({ byte: 105, intra: 45 })
+    expect(scrollTopForAnchor(layout, idx, anchor, metrics)).toBe(scrollTop)
+  })
+
+  it('puts the same line back after its position changes', () => {
+    const anchor = anchorForScrollTop(layout, idx, layout.topPx + tops[2] + 5, metrics)
+    const moved = measuredLineMetrics(idx.length, (line) => tops[line] + (line > 0 ? 40 : 0))
+    expect(scrollTopForAnchor(layout, idx, anchor, moved)).toBe(layout.topPx + tops[2] + 45)
   })
 })

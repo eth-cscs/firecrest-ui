@@ -9,6 +9,7 @@ import { Link, useSearchParams } from 'react-router'
 import React, { useEffect, useLayoutEffect, useRef, useMemo, useState } from 'react'
 import {
   ArrowDownCircleIcon,
+  Bars3BottomLeftIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ChevronDoubleUpIcon,
@@ -32,11 +33,15 @@ import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 import {
   ByteAnchor,
   DEFAULT_BYTES_PER_LINE,
+  LINE_HEIGHT_PX,
+  LineMetrics,
   MIN_LINES_FOR_ESTIMATE,
+  PRE_PADDING_Y_PX,
   anchorForScrollTop,
   buildLineIndex,
   computeLayout,
   isViewportOutsideWindow,
+  measuredLineMetrics,
   scrollTopForAnchor,
 } from '~/modules/compute/helpers/windowed-scroll-helper'
 // badges
@@ -438,6 +443,10 @@ const cleanConsoleContent = (content?: string): string | null => {
 // before the row would ever need to scroll, growing the row's height either way).
 const CONSOLE_TOOLBAR_ROW_CLASS =
   'flex items-center justify-between gap-2 border-b bg-white px-3 py-2 shrink-0 text-sm text-neutral-600 overflow-x-auto'
+// The paging buttons' text labels only fit next to the mode's other controls on a wide screen;
+// below that the buttons are icon-only (each keeps its label as tooltip and accessible name), so
+// the toolbar doesn't have to scroll sideways on a laptop.
+const CONSOLE_TOOLBAR_LABEL_CLASS = 'hidden min-[1700px]:inline'
 const CONSOLE_TOOLBAR_BUTTON_CLASS =
   'flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed shrink-0'
 
@@ -542,6 +551,17 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({
   )
 }
 
+// Index in `text` at which each line starts - the rendered text's counterpart to buildLineIndex's
+// byte offsets, used to find a line in the DOM.
+const charLineStarts = (text: string): Int32Array => {
+  let count = 1
+  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) count++
+  const starts = new Int32Array(count)
+  let line = 1
+  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) starts[line++] = i + 1
+  return starts
+}
+
 // Within this many px of the bottom counts as "following the live end".
 const FOLLOW_EPSILON_PX = 80
 // How long a scrollbar drag must rest in an unloaded region before a window is fetched there.
@@ -566,8 +586,9 @@ interface WindowedConsolePaneProps {
 // as the user pages. Scroll position is tracked as a byte anchor (the file offset of the line at
 // the viewport top), not a pixel value, so whenever the window changes - pages prepended/appended,
 // far end trimmed, estimate refined - the same line is put back under the viewport. See
-// helpers/windowed-scroll-helper.ts for the geometry. Lines don't wrap (fixed line height keeps
-// the in-window layout exact); long lines scroll horizontally.
+// helpers/windowed-scroll-helper.ts for the geometry. Long lines wrap by default; where each line
+// then sits is measured from the rendered text. With wrapping switched off every line is one
+// fixed-height row and long lines scroll horizontally.
 const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   view,
   tailPaused,
@@ -595,20 +616,32 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     jumpToStart,
   } = view
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const preRef = useRef<HTMLPreElement | null>(null)
+  const [wrap, setWrap] = useState(true)
+  // Rendered height of the window's text, tracked while wrapping (it can't be derived from the
+  // line count then, and changes with the pane's width).
+  const [measuredPx, setMeasuredPx] = useState<number | null>(null)
 
   const cleanedContent = useMemo(() => cleanConsoleContent(content), [content])
+  const cleanedLineStarts = useMemo(() => charLineStarts(cleanedContent ?? ''), [cleanedContent])
   const lineIndex = useMemo(() => buildLineIndex(content), [content])
   const lines = lineIndex.length
+  const windowPx = wrap && measuredPx !== null ? measuredPx : undefined
   // Kept across windows (only replaced once a window has enough lines to average over), so the
   // estimate - and with it the spacer sizes - doesn't wobble as small windows come and go.
   const bytesPerLineRef = useRef(DEFAULT_BYTES_PER_LINE)
   const bytesPerLine = useMemo(() => {
     if (lines >= MIN_LINES_FOR_ESTIMATE && bufferStart !== null && bufferEnd !== null) {
       const bytes = bufferEnd - bufferStart
-      if (bytes > 0) bytesPerLineRef.current = bytes / lines
+      // Wrapped rows, not lines, are what take up height when wrapping.
+      const rows =
+        windowPx !== undefined
+          ? Math.max(lines, (windowPx - 2 * PRE_PADDING_Y_PX) / LINE_HEIGHT_PX)
+          : lines
+      if (bytes > 0) bytesPerLineRef.current = bytes / rows
     }
     return bytesPerLineRef.current
-  }, [bufferStart, bufferEnd, lines])
+  }, [bufferStart, bufferEnd, lines, windowPx])
   const layout = useMemo(
     () =>
       computeLayout({
@@ -617,8 +650,9 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
         fileSize,
         lines,
         bytesPerLine,
+        windowPx,
       }),
-    [bufferStart, bufferEnd, fileSize, lines, bytesPerLine],
+    [bufferStart, bufferEnd, fileSize, lines, bytesPerLine, windowPx],
   )
 
   // Latest render's values for the event handlers, timers and layout effect below - they are
@@ -626,6 +660,8 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   const latestRef = useRef({
     layout,
     lineIndex,
+    cleanedLineStarts,
+    wrap,
     ready,
     bufferStart,
     bufferEnd,
@@ -638,6 +674,8 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   latestRef.current = {
     layout,
     lineIndex,
+    cleanedLineStarts,
+    wrap,
     ready,
     bufferStart,
     bufferEnd,
@@ -657,11 +695,55 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   const initializedRef = useRef(false)
   const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Where each line sits when wrapping, read from the rendered text: a line's top is the row its
+  // first character landed on. Undefined when not wrapping (the fixed-row default applies).
+  const getMetrics = (): LineMetrics | undefined => {
+    const pre = preRef.current
+    const node = pre?.firstChild
+    const s = latestRef.current
+    if (!s.wrap || !pre || !node || node.nodeType !== Node.TEXT_NODE) return undefined
+    const starts = s.cleanedLineStarts
+    const length = (node as Text).length
+    if (starts[starts.length - 1] > length) return undefined
+    const range = document.createRange()
+    const preTop = pre.getBoundingClientRect().top
+    const rowOfChar = (index: number): number => {
+      range.setStart(node, index)
+      range.setEnd(node, index + 1)
+      const rect = range.getClientRects()[0] ?? range.getBoundingClientRect()
+      const middle = (rect.top + rect.bottom) / 2 - preTop - PRE_PADDING_Y_PX
+      return Math.max(0, Math.floor(middle / LINE_HEIGHT_PX))
+    }
+    const isEmptyLine = (line: number) =>
+      starts[line] >= length || (line + 1 < starts.length && starts[line + 1] - starts[line] === 1)
+    const rows = new Map<number, number>()
+    const rowOfLine = (line: number): number => {
+      const known = rows.get(line)
+      if (known !== undefined) return known
+      let row: number
+      if (!isEmptyLine(line)) {
+        row = rowOfChar(starts[line])
+      } else {
+        // An empty line has no character to measure: count down from the end of the nearest
+        // line above it that has one.
+        let above = line - 1
+        while (above >= 0 && isEmptyLine(above)) above--
+        row = above < 0 ? line : rowOfChar(starts[above + 1] - 2) + (line - above)
+      }
+      rows.set(line, row)
+      return row
+    }
+    return measuredLineMetrics(
+      starts.length,
+      (line) => PRE_PADDING_Y_PX + rowOfLine(line) * LINE_HEIGHT_PX,
+    )
+  }
+
   const captureAnchor = () => {
     const el = scrollerRef.current
     const s = latestRef.current
     if (!el || !s.ready || s.bufferEnd === null) return
-    anchorRef.current = anchorForScrollTop(s.layout, s.lineIndex, el.scrollTop)
+    anchorRef.current = anchorForScrollTop(s.layout, s.lineIndex, el.scrollTop, getMetrics())
     followRef.current =
       s.bufferEnd >= s.fileSize &&
       el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_EPSILON_PX
@@ -689,6 +771,7 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
           s2.layout,
           s2.lineIndex,
           el2.scrollTop + el2.clientHeight / 2,
+          getMetrics(),
         ).byte
         s2.actions.loadWindowAt(Math.min(mid, s2.fileSize) - s2.pageSizeBytes / 2)
       }, JUMP_DEBOUNCE_MS)
@@ -773,6 +856,13 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   // whether it now needs more data.
   useLayoutEffect(() => {
     const el = scrollerRef.current
+    const pre = preRef.current
+    // The layout this render used predates the text now in the DOM: record its real height and let
+    // the re-render that follows do the positioning against a layout that matches.
+    if (wrap && pre && pre.offsetHeight !== measuredPx) {
+      setMeasuredPx(pre.offsetHeight)
+      return
+    }
     if (!el || !ready || bufferEnd === null) return
     if (!initializedRef.current && content) {
       initializedRef.current = true
@@ -794,13 +884,22 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
     } else if (followRef.current && bufferEnd >= fileSize) {
       el.scrollTop = el.scrollHeight
     } else if (anchorRef.current) {
-      el.scrollTop = scrollTopForAnchor(layout, lineIndex, anchorRef.current)
+      el.scrollTop = scrollTopForAnchor(layout, lineIndex, anchorRef.current, getMetrics())
     }
     captureAnchor()
     scheduleReportVisibleOffset()
     evaluateLoads()
     // The geometry inputs are what matter here; the rest is read through refs on purpose.
-  }, [content, bufferStart, bufferEnd, fileSize, ready, layout])
+  }, [content, bufferStart, bufferEnd, fileSize, ready, layout, wrap, measuredPx])
+
+  // The wrapped text's height also changes with the pane's width (window resize, side panel).
+  useEffect(() => {
+    const pre = preRef.current
+    if (!pre || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => setMeasuredPx(pre.offsetHeight))
+    observer.observe(pre)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section className='flex-1 min-h-0 min-w-0 flex flex-col'>
@@ -817,9 +916,10 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
             disabled={loadingReplace}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
             title='Load the beginning of the file'
+            aria-label='Load top'
           >
             <ChevronDoubleUpIcon className='h-4 w-4' />
-            Load top
+            <span className={CONSOLE_TOOLBAR_LABEL_CLASS}>Load top</span>
           </button>
           <button
             type='button'
@@ -828,9 +928,11 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
             // nothing earlier to fetch (or no position known yet).
             disabled={loadingReplace || loadingEarlier}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Scroll up one screen, loading earlier output as needed'
+            aria-label='Load earlier'
           >
             <ChevronUpIcon className='h-4 w-4' />
-            Load earlier
+            <span className={CONSOLE_TOOLBAR_LABEL_CLASS}>Load earlier</span>
           </button>
           <button
             type='button'
@@ -839,9 +941,11 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
             // the same live end) if there's nothing later to fetch yet.
             disabled={loadingReplace || loadingLater}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
+            title='Scroll down one screen, loading later output as needed'
+            aria-label='Load later'
           >
             <ChevronDownIcon className='h-4 w-4' />
-            Load later
+            <span className={CONSOLE_TOOLBAR_LABEL_CLASS}>Load later</span>
           </button>
           <button
             type='button'
@@ -850,16 +954,35 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
             disabled={loadingReplace}
             className={CONSOLE_TOOLBAR_BUTTON_CLASS}
             title='Load the end of the file'
+            aria-label='Load bottom'
           >
             <ChevronDoubleDownIcon className='h-4 w-4' />
-            Load bottom
+            <span className={CONSOLE_TOOLBAR_LABEL_CLASS}>Load bottom</span>
+          </button>
+          <button
+            type='button'
+            onClick={() => setWrap((on) => !on)}
+            aria-pressed={wrap}
+            data-active={wrap}
+            className={classNames(
+              CONSOLE_TOOLBAR_BUTTON_CLASS,
+              'data-[active=true]:bg-neutral-900 data-[active=true]:text-white data-[active=true]:hover:bg-neutral-800',
+            )}
+            title='Wrap long lines to the width of the pane instead of scrolling sideways'
+          >
+            <Bars3BottomLeftIcon className='h-4 w-4' />
+            Wrap
           </button>
         </div>
-        <div className='whitespace-nowrap'>
+        {/* A job that hasn't written anything yet has no output file either - that's expected, and
+            the view keeps checking for it, unlike a finished job whose file has gone. */}
+        <div className='min-w-0 flex-1 truncate text-center'>
           {notFound
-            ? 'This job output is no longer available on the cluster'
+            ? isJobActive
+              ? 'No output yet'
+              : 'Output no longer available'
             : error
-              ? 'Failed to load file window'
+              ? 'Failed to load'
               : loading
                 ? 'Loading…'
                 : null}
@@ -879,7 +1002,15 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
         className='flex-1 min-h-0 bg-black text-neutral-100 font-mono text-[12px] leading-5 overflow-auto'
       >
         <div style={{ height: layout.topPx }} aria-hidden='true' />
-        <pre className='px-3 py-2 whitespace-pre'>{cleanedContent || '# No data available'}</pre>
+        <pre
+          ref={preRef}
+          className={classNames(
+            'px-3 py-2',
+            wrap ? 'whitespace-pre-wrap [overflow-wrap:anywhere]' : 'whitespace-pre',
+          )}
+        >
+          {cleanedContent || '# No data available'}
+        </pre>
         <div style={{ height: layout.bottomPx }} aria-hidden='true' />
       </div>
     </section>

@@ -13,22 +13,41 @@ import {
   buildLineIndex,
   computeLayout,
   isViewportOutsideWindow,
-  lineIndexAtChar,
+  lineIndexAtByte,
   scrollTopForAnchor,
+  utf8ByteLength,
 } from './windowed-scroll-helper'
 
-describe('buildLineIndex / lineIndexAtChar', () => {
+describe('buildLineIndex / lineIndexAtByte', () => {
   it('indexes line starts, including a trailing empty line', () => {
     const idx = buildLineIndex('ab\ncde\n')
     expect(Array.from(idx)).toEqual([0, 3, 7])
-    expect(lineIndexAtChar(idx, 0)).toBe(0)
-    expect(lineIndexAtChar(idx, 2)).toBe(0)
-    expect(lineIndexAtChar(idx, 3)).toBe(1)
-    expect(lineIndexAtChar(idx, 7)).toBe(2)
+    expect(lineIndexAtByte(idx, 0)).toBe(0)
+    expect(lineIndexAtByte(idx, 2)).toBe(0)
+    expect(lineIndexAtByte(idx, 3)).toBe(1)
+    expect(lineIndexAtByte(idx, 7)).toBe(2)
   })
 
   it('treats empty content as a single line', () => {
     expect(Array.from(buildLineIndex(''))).toEqual([0])
+  })
+})
+
+describe('byte offsets of non-ASCII content', () => {
+  it('counts UTF-8 bytes, not characters', () => {
+    expect(utf8ByteLength('abc')).toBe(3)
+    expect(utf8ByteLength('é')).toBe(2)
+    expect(utf8ByteLength('██╗')).toBe(9)
+    expect(utf8ByteLength('😀')).toBe(4)
+    expect(utf8ByteLength('a😀\n')).toBe(new TextEncoder().encode('a😀\n').length)
+  })
+
+  it('indexes line starts in bytes', () => {
+    const idx = buildLineIndex('██\né\nx')
+    expect(Array.from(idx)).toEqual([0, 7, 10])
+    expect(lineIndexAtByte(idx, 6)).toBe(0)
+    expect(lineIndexAtByte(idx, 7)).toBe(1)
+    expect(lineIndexAtByte(idx, 10)).toBe(2)
   })
 })
 

@@ -9,6 +9,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { StatusCodes } from 'http-status-codes'
 // apis
 import { getLocalOpsView } from '~/apis/filesystem-api'
+// helpers
+import { utf8ByteLength } from '~/modules/compute/helpers/windowed-scroll-helper'
+// types
+import type { FileView } from '~/types/api-filesystem'
 
 // This app's local /api/* routes wrap every thrown HTTP error into a `{error: {statusCode, ...}}`
 // envelope before it reaches the client (see helpers/response-helper.ts) - a 404 here specifically
@@ -34,6 +38,20 @@ const DEFAULT_PAGE_SIZE_BYTES = 64 * 1024
 // for the measurements and the alternative (DOM virtualization) that was considered and deferred
 // in favor of this simpler cap.
 const DEFAULT_MAX_BUFFER_BYTES = 4 * 1024 * 1024
+
+// Absolute byte offset just past a returned window. Always taken from the backend's own offsets,
+// never from `startOffset + content.length`: content is decoded text, and one character can be
+// several bytes (accents, box-drawing, emoji), so the two only agree for pure-ASCII files.
+const viewEndByte = (view: FileView): number => view.fileSize + view.endOffset
+
+// Bytes taken up by the first (partial) line dropped from a window that starts mid-file. If the
+// window started in the middle of a multi-byte character, each of its stray bytes arrives as one
+// U+FFFD replacement character - 1 byte in the file, not the 3 a real U+FFFD would be.
+const droppedPrefixBytes = (prefix: string): number => {
+  let stray = 0
+  while (stray < 3 && prefix.charCodeAt(stray) === 0xfffd) stray++
+  return stray + utf8ByteLength(prefix.slice(stray))
+}
 
 interface UseWindowedFileViewOptions {
   systemName: string
@@ -122,7 +140,8 @@ export interface UseWindowedFileViewResult {
 // `Extends-view-for-top-and-bottom-offset` branch): pages are always fetched byte-exact adjacent
 // to what's already buffered (never overlapping, never gapped), so adjacent windows concatenate
 // back into clean text with no line-boundary handling needed on this side - see
-// project_windowed_log_preview_assessment memory for why. The one exception is `loadEarlier`
+// project_windowed_log_preview_assessment memory for why. bufferStart/bufferEnd/fileSize are all
+// byte offsets; `content` is text, whose length is only an upper-bounded stand-in for bytes. The one exception is `loadEarlier`
 // near BOF, where a plain `bufferStart - pageSize` would go negative and be reinterpreted as an
 // EOF-relative offset by the backend rather than "clamp to BOF" - guarded against below.
 export const useWindowedFileView = ({
@@ -136,7 +155,14 @@ export const useWindowedFileView = ({
   initialOffset = null,
   initialSize = null,
 }: UseWindowedFileViewOptions): UseWindowedFileViewResult => {
-  const [content, setContent] = useState('')
+  const [content, setContentState] = useState('')
+  // Mirrors `content` so the fetch callbacks below can merge and trim against the latest buffer
+  // synchronously, and derive the byte offsets that go with the result in the same step.
+  const contentRef = useRef('')
+  const setContent = useCallback((next: string) => {
+    contentRef.current = next
+    setContentState(next)
+  }, [])
   const [fileSize, setFileSize] = useState(0)
   const [bufferStart, setBufferStart] = useState<number | null>(null)
   const [bufferEnd, setBufferEnd] = useState<number | null>(null)
@@ -205,20 +231,21 @@ export const useWindowedFileView = ({
           if (!view) return
           let text = view.content
           let start = view.startOffset
+          const end = viewEndByte(view)
           if (opts.alignToLine && start > 0) {
             const nl = text.indexOf('\n')
             if (nl !== -1 && nl + 1 < text.length) {
+              start += droppedPrefixBytes(text.slice(0, nl + 1))
               text = text.slice(nl + 1)
-              start += nl + 1
             }
           }
           setContent(text)
           setFileSize(view.fileSize)
           setBufferStart(start)
-          setBufferEnd(start + text.length)
+          setBufferEnd(end)
           if (opts.isInitial) setInitialAnchor(offset)
           // Small enough to hold whole: fetch the rest right away so there are no unloaded regions.
-          const loadedWhole = start === 0 && start + text.length >= view.fileSize
+          const loadedWhole = start === 0 && end >= view.fileSize
           if (
             !opts.isFullLoad &&
             !loadedWhole &&
@@ -242,7 +269,7 @@ export const useWindowedFileView = ({
           setLoadingReplace(false)
         })
     },
-    [systemName, filePath, pageSizeBytes, fullLoadThresholdBytes],
+    [systemName, filePath, pageSizeBytes, fullLoadThresholdBytes, setContent],
   )
   const jumpToEnd = useCallback(
     () => loadAndReplace(-pageSizeBytes),
@@ -284,7 +311,16 @@ export const useWindowedFileView = ({
     } else {
       jumpToEnd()
     }
-  }, [enabled, systemName, filePath, jumpToEnd, loadAndReplace, initialOffset, initialSize])
+  }, [
+    enabled,
+    systemName,
+    filePath,
+    jumpToEnd,
+    loadAndReplace,
+    initialOffset,
+    initialSize,
+    setContent,
+  ])
 
   const loadEarlier = useCallback(() => {
     if (!filePath || loadingEarlier || bufferStart === null || bufferStart === 0) return
@@ -304,14 +340,19 @@ export const useWindowedFileView = ({
         // Prepending grows the buffer from the start - if that pushes the total over the cap,
         // trim the excess off the *far* (end) side, since that's the content furthest from where
         // the user is currently reading. bufferEnd moves back by however much got trimmed.
+        // The cut is moved back to a line start so it can't split a character, and what's dropped
+        // is measured in bytes since that's what bufferEnd counts.
+        const merged = view.content + contentRef.current
+        const overflow = merged.length - maxBufferBytes
         let trimmedFromEnd = 0
-        setContent((prev) => {
-          const merged = view.content + prev
-          const overflow = merged.length - maxBufferBytes
-          if (overflow <= 0) return merged
-          trimmedFromEnd = overflow
-          return merged.slice(0, merged.length - overflow)
-        })
+        if (overflow > 0) {
+          const limit = merged.length - overflow
+          const cut = merged.lastIndexOf('\n', limit - 1) + 1 || limit
+          trimmedFromEnd = utf8ByteLength(merged.slice(cut))
+          setContent(merged.slice(0, cut))
+        } else {
+          setContent(merged)
+        }
         setFileSize(view.fileSize)
         setBufferStart(view.startOffset)
         if (trimmedFromEnd > 0) {
@@ -326,7 +367,7 @@ export const useWindowedFileView = ({
         if (seq !== earlierSeqRef.current) return
         setLoadingEarlier(false)
       })
-  }, [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingEarlier, bufferStart])
+  }, [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingEarlier, bufferStart, setContent])
 
   // `silent` is for the background auto-refresh tick: it skips setLoadingLater, so a poll every
   // couple of seconds doesn't flash "Load later" disabled and "Loading…" on and off each time
@@ -354,16 +395,19 @@ export const useWindowedFileView = ({
           // overflow is trimmed off the *start* instead - this is also what keeps a long-running
           // live tail (autoRefreshIntervalMs, which just calls this repeatedly) bounded in memory
           // rather than growing forever.
+          // As in loadEarlier, the cut lands on a line start and is measured in bytes.
+          const merged = contentRef.current + view.content
+          const overflow = merged.length - maxBufferBytes
           let trimmedFromStart = 0
-          setContent((prev) => {
-            const merged = prev + view.content
-            const overflow = merged.length - maxBufferBytes
-            if (overflow <= 0) return merged
-            trimmedFromStart = overflow
-            return merged.slice(overflow)
-          })
+          if (overflow > 0) {
+            const cut = merged.indexOf('\n', overflow - 1) + 1 || overflow
+            trimmedFromStart = utf8ByteLength(merged.slice(0, cut))
+            setContent(merged.slice(cut))
+          } else {
+            setContent(merged)
+          }
           setFileSize(view.fileSize)
-          setBufferEnd(view.startOffset + view.content.length)
+          setBufferEnd(viewEndByte(view))
           if (trimmedFromStart > 0) {
             setBufferStart((prevStart) =>
               prevStart === null ? prevStart : prevStart + trimmedFromStart,
@@ -380,7 +424,7 @@ export const useWindowedFileView = ({
           setLoadingLater(false)
         })
     },
-    [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingLater, bufferEnd],
+    [systemName, filePath, pageSizeBytes, maxBufferBytes, loadingLater, bufferEnd, setContent],
   )
   const loadLater = useCallback(() => fetchLater(false), [fetchLater])
 

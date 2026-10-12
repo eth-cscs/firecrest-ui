@@ -603,11 +603,12 @@ const WindowedConsolePane: React.FC<WindowedConsolePaneProps> = ({
   // estimate - and with it the spacer sizes - doesn't wobble as small windows come and go.
   const bytesPerLineRef = useRef(DEFAULT_BYTES_PER_LINE)
   const bytesPerLine = useMemo(() => {
-    if (lines >= MIN_LINES_FOR_ESTIMATE && content.length > 0) {
-      bytesPerLineRef.current = content.length / lines
+    if (lines >= MIN_LINES_FOR_ESTIMATE && bufferStart !== null && bufferEnd !== null) {
+      const bytes = bufferEnd - bufferStart
+      if (bytes > 0) bytesPerLineRef.current = bytes / lines
     }
     return bytesPerLineRef.current
-  }, [content, lines])
+  }, [bufferStart, bufferEnd, lines])
   const layout = useMemo(
     () =>
       computeLayout({

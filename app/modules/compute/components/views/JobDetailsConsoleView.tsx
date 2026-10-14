@@ -109,7 +109,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
         <AttributesListItem label='Start time'>
           {formatDateTimeFromTimestamp({ timestamp: job?.time.start })}
         </AttributesListItem>
-        <AttributesListItem label='Start time'>
+        <AttributesListItem label='End time'>
           {formatDateTimeFromTimestamp({ timestamp: job?.time.end })}
         </AttributesListItem>
         <AttributesListItem label='Execution time'>

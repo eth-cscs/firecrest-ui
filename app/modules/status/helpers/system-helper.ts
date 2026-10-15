@@ -6,6 +6,8 @@
 *************************************************************************/
 
 import _ from 'lodash'
+// helpers
+import { isFileSystemHealthy } from '~/helpers/system-helper'
 // types
 import { FileSystemDataType, FileSystem, System } from '~/types/api-status'
 
@@ -90,13 +92,16 @@ export const getDefaultFileSystemFromSystem = (system: System | null) => {
   if (system.fileSystems.length == 0) {
     return null
   }
-  const fileSystem = system.fileSystems.find((fileSystem: FileSystem) => {
+  // Prefer a healthy filesystem so we don't default into one that's known to be
+  // unavailable; fall back to considering all of them if none are healthy.
+  const healthyFileSystems = system.fileSystems.filter((fileSystem: FileSystem) =>
+    isFileSystemHealthy(system, fileSystem),
+  )
+  const candidates = healthyFileSystems.length > 0 ? healthyFileSystems : system.fileSystems
+  const fileSystem = candidates.find((fileSystem: FileSystem) => {
     return fileSystem.defaultWorkDir == true
   })
-  if (fileSystem === null) {
-    return system.fileSystems[0]
-  }
-  return fileSystem
+  return fileSystem ?? candidates[0]
 }
 
 export const getDefaultFileSystemFromSystems = (systems: System[]) => {

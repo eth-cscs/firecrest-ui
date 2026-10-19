@@ -99,7 +99,7 @@ export const getDefaultFileSystemFromSystem = (system: System | null) => {
   )
   const candidates = healthyFileSystems.length > 0 ? healthyFileSystems : system.fileSystems
   const fileSystem = candidates.find((fileSystem: FileSystem) => {
-    return fileSystem.defaultWorkDir == true
+    return fileSystem.defaultWorkDir === true
   })
   return fileSystem ?? candidates[0]
 }

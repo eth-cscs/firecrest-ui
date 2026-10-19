@@ -66,22 +66,19 @@ const getHealthyFileSystemSystems = (systems: System[]) => {
 }
 
 
-const isFileSystemHealthy = (system: System, fileSystem: FileSystem) => {
+const isFileSystemHealthy = (system: System, fileSystem: FileSystem): boolean => {
 
   //TODO: replace string "filesystems" with enum ServiceType.filesystem after f7t 2.6.0 release
   if (!system.probing.services || !system.probing.services["filesystems"]) {
     return true
   }
-  const servicesHealth = filterServicesHealthByType(
+  const healthyFileSystems = filterServicesHealthByType(
     system.servicesHealth,
     ServiceType.filesystem,
     true,
   )
-  if (!servicesHealth || servicesHealth === null || servicesHealth.length <= 0) {
-      return false
-  }
-  return servicesHealth.find((servicesHealth: ServiceHealth) => {
-    return servicesHealth.path === fileSystem.path
+  return healthyFileSystems.some((serviceHealth: ServiceHealth) => {
+    return serviceHealth.path === fileSystem.path
   })
 }
 

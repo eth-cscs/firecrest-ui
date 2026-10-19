@@ -101,6 +101,29 @@ describe('getDefaultFileSystemFromSystem', () => {
     expect(fileSystem?.path).toBe('/mnt/fs-default/scratch')
   })
 
+  test('picks the first healthy filesystem when none is flagged as default', () => {
+    const system = buildSystem({
+      fileSystems: [
+        { path: '/mnt/fs-default/scratch', dataType: FileSystemDataType.scratch, defaultWorkDir: false },
+        { path: '/mnt/fs-secondary/scratch', dataType: FileSystemDataType.scratch, defaultWorkDir: false },
+      ],
+    })
+    const fileSystem = getDefaultFileSystemFromSystem(system)
+    expect(fileSystem?.path).toBe('/mnt/fs-secondary/scratch')
+  })
+
+  test('picks the first filesystem when none is flagged as default and probing is not configured', () => {
+    const system = buildSystem({
+      probing: { services: null, interval_check: 60 },
+      fileSystems: [
+        { path: '/mnt/fs-default/scratch', dataType: FileSystemDataType.scratch, defaultWorkDir: false },
+        { path: '/mnt/fs-secondary/scratch', dataType: FileSystemDataType.scratch, defaultWorkDir: false },
+      ],
+    })
+    const fileSystem = getDefaultFileSystemFromSystem(system)
+    expect(fileSystem?.path).toBe('/mnt/fs-default/scratch')
+  })
+
   test('returns null for a system with no filesystems', () => {
     const system = buildSystem({ fileSystems: [] })
     expect(getDefaultFileSystemFromSystem(system)).toBeNull()

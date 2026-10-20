@@ -22,9 +22,10 @@ import { useGroup } from '~/contexts/GroupContext'
 
 interface JobListViewProps {
   initialAllUsers: boolean
+  initialName: string
 }
 
-const JobListView: React.FC<JobListViewProps> = ({ initialAllUsers }) => {
+const JobListView: React.FC<JobListViewProps> = ({ initialAllUsers, initialName }) => {
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
 
@@ -47,7 +48,7 @@ const JobListView: React.FC<JobListViewProps> = ({ initialAllUsers }) => {
         className='mb-4'
         actionsButtons={actionsButtons}
       >
-        <JobList initialAllUsers={initialAllUsers} />
+        <JobList initialAllUsers={initialAllUsers} initialName={initialName} />
       </SimplePanel>
     </SimpleView>
   )

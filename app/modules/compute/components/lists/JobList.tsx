@@ -7,14 +7,24 @@
 
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useFetcher } from 'react-router'
-import { CalendarIcon, ClockIcon, XMarkIcon, CommandLineIcon } from '@heroicons/react/24/outline'
+import {
+  CalendarIcon,
+  ClockIcon,
+  XMarkIcon,
+  CommandLineIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 // helpers
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
-import { sortJobs } from '~/modules/compute/helpers/job-helper'
+import {
+  sortJobs,
+  normalizeJobNameFilter,
+  JOB_NAME_FILTER_MAX_LENGTH,
+} from '~/modules/compute/helpers/job-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -195,9 +205,9 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   )
 }
 
-const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
+const JobsTable: React.FC<any> = ({ jobs, systemName, emptyMessage }: any) => {
   if (jobs.length <= 0) {
-    return <AlertInfo message='Job/s not found' />
+    return <AlertInfo message={emptyMessage ?? 'Job/s not found'} />
   }
   return (
     <div className='overflow-x-auto'>
@@ -249,14 +259,34 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
 }
 
 const JOBS_POLL_INTERVAL_MS = 2000
+// Wait for a pause in typing before applying the name filter, so each keystroke doesn't fire a
+// backend request (the filter is exact-match, so partial names would just return nothing anyway).
+const NAME_FILTER_DEBOUNCE_MS = 500
 
 interface SystemJobListProps {
   // Resolved by the page loader: the URL's allUsers param if present, else the remembered cookie.
   initialAllUsers: boolean
+  // From the URL's name param, so a filtered list can be bookmarked/shared.
+  initialName: string
 }
 
-const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
+// Updates one query param for bookmarkability without a React Router navigation - setSearchParams
+// would re-run the page loader on every change.
+const replaceUrlSearchParam = (key: string, value: string | null) => {
+  const url = new URL(window.location.href)
+  if (value === null) {
+    url.searchParams.delete(key)
+  } else {
+    url.searchParams.set(key, value)
+  }
+  window.history.replaceState({}, '', url.toString())
+}
+
+const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialName }) => {
   const [allUsers, setAllUsers] = useState<boolean>(initialAllUsers)
+  // What's typed in the search box vs. the (debounced, normalized) value actually sent to the API.
+  const [nameInput, setNameInput] = useState<string>(initialName)
+  const [name, setName] = useState<string>(initialName)
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()
@@ -271,17 +301,41 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
   // Takes the system/group names as required parameters (not read from closure) so a caller
   // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
   // are already-validated strings, rather than trusting every call site to check first.
-  const buildUrl = (systemNameValue: string, groupNameValue: string, allUsersValue: boolean) =>
-    `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?allUsers=${allUsersValue}`
+  const buildUrl = (
+    systemNameValue: string,
+    groupNameValue: string,
+    allUsersValue: boolean,
+    nameValue: string,
+  ) => {
+    const query = new URLSearchParams({ allUsers: String(allUsersValue) })
+    if (nameValue) {
+      query.set('name', nameValue)
+    }
+    return `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?${query.toString()}`
+  }
 
   const onChangeHandler = (event: any) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run.
-    const url = new URL(window.location.href)
-    url.searchParams.set('allUsers', String(checked))
-    window.history.replaceState({}, '', url.toString())
+    replaceUrlSearchParam('allUsers', String(checked))
     // The effect below re-fetches on the `allUsers` change - no need to trigger it here too.
+  }
+
+  // Apply the typed name once typing pauses; the polling effect below re-fetches on `name` change.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const normalized = normalizeJobNameFilter(nameInput)
+      setName(normalized)
+      replaceUrlSearchParam('name', normalized || null)
+    }, NAME_FILTER_DEBOUNCE_MS)
+    return () => clearTimeout(timeoutId)
+  }, [nameInput])
+
+  const clearNameFilter = () => {
+    // Clearing is an explicit action - apply it right away rather than waiting for the debounce.
+    setNameInput('')
+    setName('')
+    replaceUrlSearchParam('name', null)
   }
 
   // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
@@ -294,14 +348,14 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
     const systemName = selectedSystem?.name
     const groupName = selectedGroup?.name
     if (!systemName || !groupName) return
-    fetcher.load(buildUrl(systemName, groupName, allUsers))
+    fetcher.load(buildUrl(systemName, groupName, allUsers, name))
     const intervalId = setInterval(() => {
       if (fetcher.state === 'idle') {
-        fetcher.load(buildUrl(systemName, groupName, allUsers))
+        fetcher.load(buildUrl(systemName, groupName, allUsers, name))
       }
     }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)
-  }, [selectedSystem?.name, selectedGroup?.name, allUsers])
+  }, [selectedSystem?.name, selectedGroup?.name, allUsers, name])
 
   useEffect(() => {
     setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
@@ -326,11 +380,46 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
   const jobsData = fetcher.data
   const currentJobs = sortJobs(jobsData?.jobs ?? [])
   const localError = jobsData?.error ?? null
+  const emptyMessage = jobsData?.name
+    ? `No jobs named "${jobsData.name}" found. The search matches the full job name exactly.`
+    : undefined
 
   return (
     <>
       <AlertError error={localError} />
-      <div className='pt-2 pb-4'>
+      <div className='pt-2 pb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='relative w-full sm:max-w-sm'>
+          <label htmlFor='job-name-filter' className='sr-only'>
+            Filter by job name
+          </label>
+          <MagnifyingGlassIcon
+            aria-hidden='true'
+            className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
+          />
+          <input
+            id='job-name-filter'
+            type='search'
+            value={nameInput}
+            maxLength={JOB_NAME_FILTER_MAX_LENGTH}
+            placeholder='Filter by exact job name'
+            title='Shows only jobs whose name matches exactly'
+            onChange={(event) => setNameInput(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') clearNameFilter()
+            }}
+            className='block w-full rounded-md border py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
+          />
+          {nameInput !== '' && (
+            <button
+              type='button'
+              onClick={clearNameFilter}
+              className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
+            >
+              <span className='sr-only'>Clear job name filter</span>
+              <XMarkIcon aria-hidden='true' className='h-4 w-4' />
+            </button>
+          )}
+        </div>
         <label className='inline-flex items-center cursor-pointer'>
           <input
             type='checkbox'
@@ -345,7 +434,11 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers }) => {
           </span>
         </label>
       </div>
-      <JobsTable jobs={currentJobs ?? []} systemName={selectedSystem?.name || ''} />
+      <JobsTable
+        jobs={currentJobs ?? []}
+        systemName={selectedSystem?.name || ''}
+        emptyMessage={emptyMessage}
+      />
     </>
   )
 }

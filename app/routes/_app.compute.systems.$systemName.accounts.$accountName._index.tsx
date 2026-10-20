@@ -10,6 +10,7 @@ import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
+import { normalizeJobNameFilter } from '~/modules/compute/helpers/job-helper'
 // utils
 import { requireAuth } from '~/utils/auth.server'
 import { jobsAllUsersCookie } from '~/utils/preferences.server'
@@ -35,17 +36,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const allUsers = searchParams.has('allUsers')
     ? searchParams.get('allUsers') === 'true'
     : (await jobsAllUsersCookie.parse(request.headers.get('Cookie'))) === true
+  const name = normalizeJobNameFilter(searchParams.get('name'))
   logInfoHttp({
     eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
     extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
-  return { allUsers }
+  return { allUsers, name }
 }
 
 export default function AppComputeIandexRoute() {
-  const { allUsers } = useLoaderData<typeof loader>()
-  return <JobListView initialAllUsers={allUsers} />
+  const { allUsers, name } = useLoaderData<typeof loader>()
+  return <JobListView initialAllUsers={allUsers} initialName={name} />
 }
 
 export function ErrorBoundary() {

@@ -38,8 +38,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
   const name = normalizeJobNameFilter(new URLSearchParams(searchParams).get('name'))
   // Remember the toggle choice for the next time the jobs page is loaded fresh (e.g. via a nav
-  // link, which doesn't carry the query param). Every request/poll carries the current value.
-  headers.append('Set-Cookie', await jobsAllUsersCookie.serialize(allUsers))
+  // link, which doesn't carry the query param). Only written when it differs from what the browser
+  // already sent, so the 2s poll doesn't re-send the same Set-Cookie on every request.
+  const rememberedAllUsers = await jobsAllUsersCookie.parse(request.headers.get('Cookie'))
+  if (rememberedAllUsers !== allUsers) {
+    headers.append('Set-Cookie', await jobsAllUsersCookie.serialize(allUsers))
+  }
   try {
     const response = await promiseWithTimeout(
       getJobs(accessToken, systemName, accountName, allUsers, name, request),

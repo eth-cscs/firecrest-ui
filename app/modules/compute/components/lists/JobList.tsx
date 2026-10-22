@@ -215,7 +215,13 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   )
 }
 
-const JobsTable: React.FC<any> = ({ jobs, systemName, emptyMessage }: any) => {
+interface JobsTableProps {
+  jobs: Job[]
+  systemName: string
+  emptyMessage?: string
+}
+
+const JobsTable: React.FC<JobsTableProps> = ({ jobs, systemName, emptyMessage }) => {
   if (jobs.length <= 0) {
     return <AlertInfo message={emptyMessage ?? 'Job/s not found'} />
   }

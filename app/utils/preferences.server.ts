@@ -9,11 +9,11 @@ import { createCookie } from 'react-router'
 // configs
 import base from '~/configs/base.config'
 
-// Non-sensitive UI preference, readable client-side (not httpOnly) so pages can
-// read/refresh it, but always written server-side via a Set-Cookie response header
-// so its (JSON-encoded) value stays in the format createCookie expects to parse.
+// Remembers the jobs page "All users" toggle. Only read and written server-side (the page loader
+// reads it, the jobs API route writes it), so there's no reason to expose it to page scripts.
 export const jobsAllUsersCookie = createCookie('__jobs-all-users', {
   path: '/',
+  httpOnly: true,
   sameSite: 'lax',
   maxAge: 60 * 60 * 24 * 365, // 1 year
   secure: base.cookieSecure,

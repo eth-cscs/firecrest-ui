@@ -11,8 +11,10 @@ import type { LoaderFunctionArgs } from 'react-router'
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
+import { normalizeJobNameFilter } from '~/modules/compute/helpers/job-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
+import { jobsAllUsersCookie } from '~/utils/preferences.server'
 // apis
 import { getJobs } from '~/apis/compute-api'
 import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from '~/apis/api'
@@ -34,9 +36,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const accountName = params.accountName!
   const [, searchParams] = request.url.split('?')
   const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
+  const name = normalizeJobNameFilter(new URLSearchParams(searchParams).get('name'))
+  // Remember the toggle choice for the next time the jobs page is loaded fresh (e.g. via a nav
+  // link, which doesn't carry the query param). Only written when it differs from what the browser
+  // already sent, so the 2s poll doesn't re-send the same Set-Cookie on every request.
+  const rememberedAllUsers = await jobsAllUsersCookie.parse(request.headers.get('Cookie'))
+  if (rememberedAllUsers !== allUsers) {
+    headers.append('Set-Cookie', await jobsAllUsersCookie.serialize(allUsers))
+  }
   try {
     const response = await promiseWithTimeout(
-      getJobs(accessToken, systemName, accountName, allUsers, request),
+      getJobs(accessToken, systemName, accountName, allUsers, name, request),
       DEFERRED_PROMISE_TIMEOUT_MS,
       `Loading jobs for ${systemName} timed out.`,
     )
@@ -58,6 +68,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         jobs: [],
         account: accountName,
         allUsers,
+        name,
         error: {
           message: error instanceof Error ? error.message : 'Unable to load jobs.',
         },

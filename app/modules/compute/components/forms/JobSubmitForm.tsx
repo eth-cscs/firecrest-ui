@@ -281,9 +281,14 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
               </label>
               <input
                 type='text'
+                id='name'
                 name='name'
+                aria-describedby='name-description'
                 className='border-gray-300 focus:border-blue-300 focus:ring-blue-300 mt-1 block w-full rounded-md border py-2 px-3 shadow-sm sm:text-sm focus:outline-none'
               />
+              <p id='name-description' className='mt-1 text-xs text-gray-500'>
+                If set, overrides the <code>--job-name</code> defined in the script.
+              </p>
               {showInputValidation({
                 fieldName: 'name',
                 formErrorFields: formErrorFields,

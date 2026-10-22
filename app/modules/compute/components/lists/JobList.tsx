@@ -35,6 +35,8 @@ import JobDetailsDialog from '~/modules/compute/components/dialogs/JobDetailsDia
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
+// buttons
+import CopyToClipboardButton from '~/components/buttons/CopyToClipboardButton'
 // apis
 import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // types
@@ -80,14 +82,22 @@ const JobNameAndId: React.FC<{ job: Job; onGoToDetails: () => void }> = ({
   onGoToDetails,
 }) => (
   <>
-    <button
-      type='button'
-      onClick={onGoToDetails}
-      className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
-    >
-      {job.name}
-    </button>
-    <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+    {/* min-w-0 + truncate on the text (not the row) so long names still get an ellipsis while
+        the copy icon next to them stays visible. */}
+    <div className='flex min-w-0 items-center gap-1 mb-3'>
+      <button
+        type='button'
+        onClick={onGoToDetails}
+        className='min-w-0 truncate font-medium text-gray-900 text-sm cursor-pointer hover:underline text-left'
+      >
+        {job.name}
+      </button>
+      <CopyToClipboardButton value={job.name} label='Copy job name' />
+    </div>
+    <div className='flex min-w-0 items-center gap-1 text-gray-500 text-xs mb-1'>
+      <span className='truncate'>Job Id: {job.jobId}</span>
+      <CopyToClipboardButton value={job.jobId} label='Copy job ID' />
+    </div>
   </>
 )
 

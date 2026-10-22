@@ -55,11 +55,11 @@ export const convertPostJobFormToApiPayload = async (
       script_path: isRemote ? payload.remoteScript : undefined,
       working_directory: payload.workingDirectory,
       account: payload.account,
-      name: payload.name
-        ? payload.name
-        : isRemote
-          ? payload.remoteScript?.split('/').pop()
-          : payload.file.name,
+      // Only send a name when the user typed one. Any name sent here becomes `sbatch --job-name`,
+      // which overrides the script's own `#SBATCH --job-name` - so no fallback to the script file
+      // name. Without a name, Slurm uses the script's directive, else the file name (remote
+      // scripts) or "sbatch" (uploaded scripts).
+      name: payload.name?.trim() || undefined,
       standard_input: payload.standardInput,
       standard_output: payload.standardOutput,
       standard_error: payload.standardError,

@@ -52,3 +52,10 @@ UI_HOSTNAME='localhost:3000'
 SUPPORT_URL='<support-url>'
 DOC_URL='<doc-url>'
 REPO_URL='<repo-url>'
+
+# AI Training (optional; these are the defaults)
+# Published RL run history: <url>/<recipe id>/index.json
+AI_TRAINING_RL_RUNS_URL='https://raw.githubusercontent.com/eth-cscs/alps-extended-images/rl-runs'
+# NeMo-RL blueprints: Alps-Images/apps/nemo-rl/blueprints/index.json of this repository, at a full commit id
+AI_TRAINING_NEMO_RL_BLUEPRINTS_REPOSITORY='eth-cscs/alps-extended-images'
+AI_TRAINING_NEMO_RL_BLUEPRINTS_COMMIT='b956397f30e3639754e359c2eebcffa7671303b7'

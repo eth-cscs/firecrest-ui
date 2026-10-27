@@ -2,3 +2,5 @@ dist
 build
 node_modules
 logs
+# Byte copies of files generated elsewhere
+app/modules/ai-training/recipes/__fixtures__/*.json

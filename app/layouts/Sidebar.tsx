@@ -24,6 +24,8 @@ import {
   ChatBubbleLeftEllipsisIcon,
   CubeTransparentIcon,
   ChevronRightIcon,
+  AcademicCapIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 // labels
 import { LABEL_COMPUTE_TITLE, LABEL_FILESYSTEM_TITLE } from '~/labels'
@@ -133,6 +135,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   })
 
+  const aiTrainingNavigation: NavItem[] = [
+    { name: 'SFT', path: '/ai-training/sft', icon: AcademicCapIcon },
+    { name: 'RL', path: '/ai-training/rl', icon: ArrowPathIcon },
+  ]
+
   const secondaryNavigation: SecondaryNavItem[] = []
 
   if (docUrl && docUrl !== '') {
@@ -168,6 +175,43 @@ const Sidebar: React.FC<SidebarProps> = ({
     const path: string = location.pathname
     return path.includes(currentRootPath)
   }
+
+  const renderAiTrainingSection = (textSizeClass: string) => (
+    <div className='mt-2 pt-2'>
+      <span className='text-gray-900 group flex items-center px-2 py-2 text-sm font-medium'>
+        AI Training
+      </span>
+      <ul className='space-y-1'>
+        {aiTrainingNavigation.map((item: NavItem) => (
+          <li key={`link-${item.path}`}>
+            <NavLink
+              to={item.path}
+              className={({ isActive }) =>
+                classNames(
+                  isActive
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                  'group flex items-center px-2 py-2 font-medium rounded-md',
+                  textSizeClass,
+                )
+              }
+            >
+              <item.icon
+                className={classNames(
+                  isCurrentPath({ currentPath: item.path })
+                    ? 'text-gray-500'
+                    : 'text-gray-400 group-hover:text-gray-500',
+                  'mr-3 flex-shrink-0 h-6 w-6',
+                )}
+                aria-hidden='true'
+              />
+              {item.name}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 
   return (
     <>
@@ -353,6 +397,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       })}
                     </ul>
                   </div>
+                  {renderAiTrainingSection('text-base')}
                   <div className='mt-6 pt-6'>
                     <ul className='space-y-1'>
                       {secondaryNavigation.map((item: SecondaryNavItem) => (
@@ -539,6 +584,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   })}
                 </ul>
               </div>
+              {renderAiTrainingSection('text-sm')}
               <div className='mt-6 pt-6'>
                 <ul className='space-y-1'>
                   {secondaryNavigation.map((item: SecondaryNavItem) => (

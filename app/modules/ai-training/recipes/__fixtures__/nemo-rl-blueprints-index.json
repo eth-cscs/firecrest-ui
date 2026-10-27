@@ -1,0 +1,637 @@
+{
+  "schemaVersion": 1,
+  "blueprints": [
+    {
+      "id": "apertus2-moe-gsm8k-megatron",
+      "name": "NeMo-RL GRPO · Megatron generation",
+      "description": "Asynchronous Group Relative Policy Optimization with NeMo-RL (Swiss AI blueprint), Megatron training and Megatron rollouts.",
+      "status": "validated",
+      "algorithm": "grpo",
+      "topology": {
+        "mode": "async",
+        "placement": "split"
+      },
+      "engines": {
+        "training": "megatron",
+        "generation": "megatron"
+      },
+      "launch": {
+        "recipe": "megatron/gsm8k",
+        "image": "jfrog.svc.cscs.ch/docker-group-csstaff/alps-images/nemo-rl-cuda:alps7-dev"
+      },
+      "models": [
+        {
+          "id": "apertus-2-chonk",
+          "name": "Apertus 2.0",
+          "family": "apertus",
+          "architecture": "moe",
+          "parameters": "MoE",
+          "path": "/capstor/store/cscs/swissai/infra01/apertus_checkpoints/v2/hf/chonk/pretraining/long_context/long-context-iter-0003576",
+          "description": "Long-context pretraining checkpoint (iteration 3576), read-only on the cluster."
+        }
+      ],
+      "datasets": [
+        {
+          "id": "gsm8k",
+          "name": "GSM8K",
+          "description": "Grade school math with a five-shot prompt. 7,473 training prompts; validates on all 1,319 test questions."
+        }
+      ],
+      "resources": {
+        "gpusPerNode": 4,
+        "nodes": [
+          "TRAIN_NODES",
+          "INFERENCE_NODES"
+        ],
+        "timeLimitVariable": "JOB_TIME",
+        "sbatch": [
+          "--cpus-per-task=288",
+          "--exclusive"
+        ]
+      },
+      "profiles": [
+        {
+          "id": "adamw",
+          "name": "AdamW",
+          "description": "AdamW with CPU-offloaded optimizer state.",
+          "timeLimit": "07:00:00",
+          "defaults": {
+            "BASE_LR": 1e-06,
+            "GENERATIONS_PER_PROMPT": 16,
+            "INFERENCE_NODES": 4,
+            "INFERENCE_REQUESTS": 128,
+            "LOGPROB_MB_TOKENS": 4096,
+            "MAX_NUM_STEPS": 58,
+            "MIN_LR": 5e-07,
+            "NUM_PROMPTS": 128,
+            "TRAIN_EXPERT_PARALLEL_SIZE": 32,
+            "TRAIN_MB_TOKENS": 4096,
+            "TRAIN_MICRO_BATCH": 1,
+            "TRAIN_NODES": 8,
+            "UPDATES_PER_ROLLOUT": 4
+          }
+        },
+        {
+          "id": "muon",
+          "name": "Muon",
+          "description": "Muon with MD decoupling.",
+          "timeLimit": "07:00:00",
+          "defaults": {
+            "BASE_LR": 2e-07,
+            "GAINS_LR": 2e-07,
+            "GENERATIONS_PER_PROMPT": 16,
+            "INFERENCE_NODES": 4,
+            "INFERENCE_REQUESTS": 128,
+            "LOGPROB_MB_TOKENS": 4096,
+            "MATRIX_LR": 5e-06,
+            "MAX_NUM_STEPS": 58,
+            "MIN_LR": 0.0,
+            "NUM_PROMPTS": 128,
+            "TRAIN_EXPERT_PARALLEL_SIZE": 64,
+            "TRAIN_MB_TOKENS": 2048,
+            "TRAIN_MICRO_BATCH": 1,
+            "TRAIN_NODES": 16,
+            "UPDATES_PER_ROLLOUT": 4
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "key": "TRAIN_NODES",
+          "label": "Training nodes",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 128
+        },
+        {
+          "key": "INFERENCE_NODES",
+          "label": "Generation nodes",
+          "description": "Nodes running Megatron generation.",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 64
+        },
+        {
+          "key": "TRAIN_EXPERT_PARALLEL_SIZE",
+          "label": "Training expert parallelism",
+          "description": "Must divide the training GPUs (4 per training node).",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 512
+        },
+        {
+          "key": "MAX_NUM_STEPS",
+          "label": "GRPO steps",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 100000
+        },
+        {
+          "key": "NUM_PROMPTS",
+          "label": "Prompts per step",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 8192
+        },
+        {
+          "key": "GENERATIONS_PER_PROMPT",
+          "label": "Generations per prompt",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 256
+        },
+        {
+          "key": "UPDATES_PER_ROLLOUT",
+          "label": "Optimizer updates per step",
+          "description": "The rollout batch is split into this many training batches.",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 256
+        },
+        {
+          "key": "INFERENCE_REQUESTS",
+          "label": "Generation batch size",
+          "description": "Concurrent generation requests.",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 4096
+        },
+        {
+          "key": "TRAIN_MICRO_BATCH",
+          "label": "Micro batch size",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1024
+        },
+        {
+          "key": "TRAIN_MB_TOKENS",
+          "label": "Training tokens per micro batch",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1048576
+        },
+        {
+          "key": "LOGPROB_MB_TOKENS",
+          "label": "Log-prob tokens per micro batch",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1048576
+        },
+        {
+          "key": "BASE_LR",
+          "label": "Learning rate",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "key": "MIN_LR",
+          "label": "Minimum learning rate",
+          "description": "Must not exceed the learning rate.",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "key": "MATRIX_LR",
+          "label": "Matrix learning rate",
+          "description": "Muon matrix parameters.",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1,
+          "profiles": [
+            "muon"
+          ]
+        },
+        {
+          "key": "GAINS_LR",
+          "label": "Gains learning rate",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1,
+          "profiles": [
+            "muon"
+          ]
+        }
+      ],
+      "rules": [
+        {
+          "kind": "atMost",
+          "value": "MIN_LR",
+          "limit": "BASE_LR",
+          "target": "MIN_LR",
+          "message": "Minimum learning rate must not exceed the learning rate"
+        },
+        {
+          "kind": "divisible",
+          "dividend": [
+            "NUM_PROMPTS",
+            "GENERATIONS_PER_PROMPT"
+          ],
+          "divisor": [
+            "UPDATES_PER_ROLLOUT"
+          ],
+          "target": "UPDATES_PER_ROLLOUT",
+          "message": "Prompts per step × generations per prompt must divide into this many updates"
+        },
+        {
+          "kind": "divisible",
+          "dividend": [
+            "TRAIN_NODES",
+            4
+          ],
+          "divisor": [
+            "TRAIN_EXPERT_PARALLEL_SIZE"
+          ],
+          "target": "TRAIN_EXPERT_PARALLEL_SIZE",
+          "message": "Must divide the training GPUs"
+        }
+      ],
+      "monitoring": [
+        {
+          "id": "tensorboard",
+          "name": "TensorBoard",
+          "description": "Event files are written to the run directory. No account or network access needed.",
+          "environment": {
+            "WANDB_ENABLED": "false"
+          },
+          "parameters": []
+        },
+        {
+          "id": "wandb",
+          "name": "Weights & Biases",
+          "description": "Streams metrics to a W&B project, in addition to TensorBoard.",
+          "environment": {
+            "WANDB_ENABLED": "true"
+          },
+          "parameters": [
+            {
+              "variable": "WANDB_PROJECT",
+              "label": "Project",
+              "required": true,
+              "default": "chonk-grpo"
+            },
+            {
+              "variable": "WANDB_ENTITY",
+              "label": "Entity",
+              "description": "User or team namespace.",
+              "required": false
+            },
+            {
+              "variable": "WANDB_NAME",
+              "label": "Run name",
+              "description": "Defaults to chonk-<Slurm job id>.",
+              "required": false
+            },
+            {
+              "variable": "WANDB_RUN_GROUP",
+              "label": "Run group",
+              "required": false
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "profile": "adamw",
+          "summary": "8 + 4 nodes, GSM8K 48.1% → 91.1% in 132 minutes (job 3686429)"
+        },
+        {
+          "profile": "muon",
+          "summary": "16 + 4 nodes, GSM8K 47.2% → 78.7% in 110 minutes (job 3689066)"
+        }
+      ]
+    },
+    {
+      "id": "apertus2-moe-gsm8k-vllm",
+      "name": "NeMo-RL GRPO · vLLM generation",
+      "description": "Asynchronous Group Relative Policy Optimization with NeMo-RL (Swiss AI blueprint), Megatron training and vLLM rollouts.",
+      "status": "validated",
+      "algorithm": "grpo",
+      "topology": {
+        "mode": "async",
+        "placement": "split"
+      },
+      "engines": {
+        "training": "megatron",
+        "generation": "vllm"
+      },
+      "launch": {
+        "recipe": "vllm/gsm8k",
+        "image": "jfrog.svc.cscs.ch/docker-group-csstaff/alps-images/nemo-rl-cuda:alps7-dev"
+      },
+      "models": [
+        {
+          "id": "apertus-2-chonk",
+          "name": "Apertus 2.0",
+          "family": "apertus",
+          "architecture": "moe",
+          "parameters": "MoE",
+          "path": "/capstor/store/cscs/swissai/infra01/apertus_checkpoints/v2/hf/chonk/pretraining/long_context/long-context-iter-0003576",
+          "description": "Long-context pretraining checkpoint (iteration 3576), read-only on the cluster."
+        }
+      ],
+      "datasets": [
+        {
+          "id": "gsm8k",
+          "name": "GSM8K",
+          "description": "Grade school math with a five-shot prompt. 7,473 training prompts; validates on all 1,319 test questions."
+        }
+      ],
+      "resources": {
+        "gpusPerNode": 4,
+        "nodes": [
+          "TRAIN_NODES",
+          "INFERENCE_NODES"
+        ],
+        "timeLimitVariable": "JOB_TIME",
+        "sbatch": [
+          "--cpus-per-task=288",
+          "--exclusive"
+        ]
+      },
+      "profiles": [
+        {
+          "id": "adamw",
+          "name": "AdamW",
+          "description": "AdamW with CPU-offloaded optimizer state.",
+          "timeLimit": "07:00:00",
+          "defaults": {
+            "BASE_LR": 1e-06,
+            "GENERATIONS_PER_PROMPT": 16,
+            "INFERENCE_NODES": 4,
+            "INFERENCE_REQUESTS": 32,
+            "LOGPROB_MB_TOKENS": 4096,
+            "MAX_NUM_STEPS": 58,
+            "MIN_LR": 5e-07,
+            "NUM_PROMPTS": 128,
+            "TRAIN_EXPERT_PARALLEL_SIZE": 32,
+            "TRAIN_MB_TOKENS": 4096,
+            "TRAIN_MICRO_BATCH": 1,
+            "TRAIN_NODES": 8,
+            "UPDATES_PER_ROLLOUT": 4
+          }
+        },
+        {
+          "id": "muon",
+          "name": "Muon",
+          "description": "Muon with MD decoupling.",
+          "timeLimit": "07:00:00",
+          "defaults": {
+            "BASE_LR": 2e-07,
+            "GAINS_LR": 2e-07,
+            "GENERATIONS_PER_PROMPT": 16,
+            "INFERENCE_NODES": 4,
+            "INFERENCE_REQUESTS": 32,
+            "LOGPROB_MB_TOKENS": 4096,
+            "MATRIX_LR": 5e-06,
+            "MAX_NUM_STEPS": 58,
+            "MIN_LR": 0.0,
+            "NUM_PROMPTS": 128,
+            "TRAIN_EXPERT_PARALLEL_SIZE": 64,
+            "TRAIN_MB_TOKENS": 2048,
+            "TRAIN_MICRO_BATCH": 1,
+            "TRAIN_NODES": 16,
+            "UPDATES_PER_ROLLOUT": 4
+          }
+        }
+      ],
+      "parameters": [
+        {
+          "key": "TRAIN_NODES",
+          "label": "Training nodes",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 128
+        },
+        {
+          "key": "INFERENCE_NODES",
+          "label": "Generation nodes",
+          "description": "Nodes running vLLM generation.",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 64
+        },
+        {
+          "key": "TRAIN_EXPERT_PARALLEL_SIZE",
+          "label": "Training expert parallelism",
+          "description": "Must divide the training GPUs (4 per training node).",
+          "group": "Resources",
+          "type": "int",
+          "min": 1,
+          "max": 512
+        },
+        {
+          "key": "MAX_NUM_STEPS",
+          "label": "GRPO steps",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 100000
+        },
+        {
+          "key": "NUM_PROMPTS",
+          "label": "Prompts per step",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 8192
+        },
+        {
+          "key": "GENERATIONS_PER_PROMPT",
+          "label": "Generations per prompt",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 256
+        },
+        {
+          "key": "UPDATES_PER_ROLLOUT",
+          "label": "Optimizer updates per step",
+          "description": "The rollout batch is split into this many training batches.",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 256
+        },
+        {
+          "key": "INFERENCE_REQUESTS",
+          "label": "Generation batch size",
+          "description": "Concurrent generation requests.",
+          "group": "Rollout",
+          "type": "int",
+          "min": 1,
+          "max": 4096
+        },
+        {
+          "key": "TRAIN_MICRO_BATCH",
+          "label": "Micro batch size",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1024
+        },
+        {
+          "key": "TRAIN_MB_TOKENS",
+          "label": "Training tokens per micro batch",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1048576
+        },
+        {
+          "key": "LOGPROB_MB_TOKENS",
+          "label": "Log-prob tokens per micro batch",
+          "group": "Batching",
+          "type": "int",
+          "min": 1,
+          "max": 1048576
+        },
+        {
+          "key": "BASE_LR",
+          "label": "Learning rate",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "key": "MIN_LR",
+          "label": "Minimum learning rate",
+          "description": "Must not exceed the learning rate.",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "key": "MATRIX_LR",
+          "label": "Matrix learning rate",
+          "description": "Muon matrix parameters.",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1,
+          "profiles": [
+            "muon"
+          ]
+        },
+        {
+          "key": "GAINS_LR",
+          "label": "Gains learning rate",
+          "group": "Optimization",
+          "type": "float",
+          "min": 0,
+          "max": 1,
+          "profiles": [
+            "muon"
+          ]
+        }
+      ],
+      "rules": [
+        {
+          "kind": "atMost",
+          "value": "MIN_LR",
+          "limit": "BASE_LR",
+          "target": "MIN_LR",
+          "message": "Minimum learning rate must not exceed the learning rate"
+        },
+        {
+          "kind": "divisible",
+          "dividend": [
+            "NUM_PROMPTS",
+            "GENERATIONS_PER_PROMPT"
+          ],
+          "divisor": [
+            "UPDATES_PER_ROLLOUT"
+          ],
+          "target": "UPDATES_PER_ROLLOUT",
+          "message": "Prompts per step × generations per prompt must divide into this many updates"
+        },
+        {
+          "kind": "divisible",
+          "dividend": [
+            "TRAIN_NODES",
+            4
+          ],
+          "divisor": [
+            "TRAIN_EXPERT_PARALLEL_SIZE"
+          ],
+          "target": "TRAIN_EXPERT_PARALLEL_SIZE",
+          "message": "Must divide the training GPUs"
+        }
+      ],
+      "monitoring": [
+        {
+          "id": "tensorboard",
+          "name": "TensorBoard",
+          "description": "Event files are written to the run directory. No account or network access needed.",
+          "environment": {
+            "WANDB_ENABLED": "false"
+          },
+          "parameters": []
+        },
+        {
+          "id": "wandb",
+          "name": "Weights & Biases",
+          "description": "Streams metrics to a W&B project, in addition to TensorBoard.",
+          "environment": {
+            "WANDB_ENABLED": "true"
+          },
+          "parameters": [
+            {
+              "variable": "WANDB_PROJECT",
+              "label": "Project",
+              "required": true,
+              "default": "chonk-grpo"
+            },
+            {
+              "variable": "WANDB_ENTITY",
+              "label": "Entity",
+              "description": "User or team namespace.",
+              "required": false
+            },
+            {
+              "variable": "WANDB_NAME",
+              "label": "Run name",
+              "description": "Defaults to chonk-<Slurm job id>.",
+              "required": false
+            },
+            {
+              "variable": "WANDB_RUN_GROUP",
+              "label": "Run group",
+              "required": false
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "profile": "adamw",
+          "summary": "8 + 4 nodes, GSM8K 49.1% → 90.7% in 78 minutes (job 3686420)"
+        },
+        {
+          "profile": "muon",
+          "summary": "16 + 4 nodes, GSM8K 48.2% → 78.5% in 74 minutes (job 3686113)"
+        }
+      ]
+    }
+  ]
+}

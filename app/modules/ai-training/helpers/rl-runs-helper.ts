@@ -31,7 +31,14 @@ const JOB_ID_PATTERN = /^\d{1,20}$/
 // <cluster>-<job id>
 export const RL_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}-\d{1,20}$/
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-const RUN_STATUSES: RlRunStatus[] = ['completed', 'failed', 'terminated', 'running', 'unknown']
+const RUN_STATUSES: RlRunStatus[] = [
+  'completed',
+  'failed',
+  'terminated',
+  'preempted',
+  'running',
+  'unknown',
+]
 
 type JsonObject = Record<string, unknown>
 

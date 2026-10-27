@@ -9,6 +9,7 @@ import React from 'react'
 import {
   CheckCircleIcon,
   ClockIcon,
+  PauseCircleIcon,
   QuestionMarkCircleIcon,
   StopCircleIcon,
   XCircleIcon,
@@ -34,6 +35,11 @@ const STYLES: Record<RlRunStatus, { label: string; className: string; icon: Reac
     label: 'Terminated',
     className: 'bg-amber-50 text-amber-700 ring-amber-600/20',
     icon: StopCircleIcon,
+  },
+  preempted: {
+    label: 'Preempted',
+    className: 'bg-orange-50 text-orange-700 ring-orange-600/20',
+    icon: PauseCircleIcon,
   },
   running: {
     label: 'Running',

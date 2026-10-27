@@ -143,6 +143,7 @@ const OutcomeCell: React.FC<{ run: RlRunSummary }> = ({ run }) => {
     completed: 'Completed, no metrics recorded',
     failed: 'Failed before producing metrics',
     terminated: 'Stopped before producing metrics',
+    preempted: 'Preempted by the scheduler before producing metrics',
     running: 'Still running',
     unknown: 'No result was recorded',
   }

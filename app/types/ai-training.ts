@@ -154,7 +154,13 @@ export interface TrainingJobOptions {
 
 // Published run history: one entry of a recipe's index.json on the rl-runs branch of the runs
 // repository, as written by the run collector
-export type RlRunStatus = 'completed' | 'failed' | 'terminated' | 'running' | 'unknown'
+export type RlRunStatus =
+  | 'completed'
+  | 'failed'
+  | 'terminated'
+  | 'preempted'
+  | 'running'
+  | 'unknown'
 
 export interface RlRunSummary {
   recipeId: string

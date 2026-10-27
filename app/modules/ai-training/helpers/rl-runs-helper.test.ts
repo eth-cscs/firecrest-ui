@@ -63,6 +63,11 @@ describe('parseRunIndex', () => {
     })
   })
 
+  it('reads every status the collector publishes', () => {
+    const statuses = ['completed', 'failed', 'terminated', 'preempted', 'running', 'unknown']
+    expect(statuses.map((status) => run({ status }).status)).toEqual(statuses)
+  })
+
   it('drops entries and fields that do not have the expected shape', () => {
     const runs = parseRunIndex(RECIPE, {
       runs: [

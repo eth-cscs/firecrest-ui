@@ -13,6 +13,8 @@ import {
   XMarkIcon,
   CommandLineIcon,
   MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
@@ -122,11 +124,7 @@ const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
   </>
 )
 
-const JobTableRow: React.FC<JobTableRowProps> = ({
-  system,
-  job,
-  account,
-}: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -261,12 +259,7 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, systemName, emptyMessage })
         </thead>
         <tbody>
           {jobs.map((job: Job) => (
-            <JobTableRow
-              system={systemName}
-              key={`${job.jobId}`}
-              job={job}
-              account={job.account}
-            />
+            <JobTableRow system={systemName} key={`${job.jobId}`} job={job} account={job.account} />
           ))}
         </tbody>
       </table>
@@ -303,6 +296,8 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   // What's typed in the search box vs. the (debounced, normalized) value actually sent to the API.
   const [nameInput, setNameInput] = useState<string>(initialName)
   const [name, setName] = useState<string>(initialName)
+  // Open on first render when the URL already carries a filter, so it's never applied unseen.
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(initialName !== '')
   const { selectedSystem } = useSystem()
   const { selectedGroup } = useGroup()
   const { setRefreshing } = useRefreshing()
@@ -399,43 +394,32 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   const emptyMessage = jobsData?.name
     ? `No jobs named "${jobsData.name}" found. The search matches the full job name exactly.`
     : undefined
+  // Counts applied filters (not what's still being typed), shown on the toggle when collapsed.
+  const activeFilterCount = name ? 1 : 0
 
   return (
     <>
       <AlertError error={localError} />
-      <div className='pt-2 pb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='relative w-full sm:max-w-sm'>
-          <label htmlFor='job-name-filter' className='sr-only'>
-            Filter by job name
-          </label>
-          <MagnifyingGlassIcon
-            aria-hidden='true'
-            className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
-          />
-          <input
-            id='job-name-filter'
-            type='search'
-            value={nameInput}
-            maxLength={JOB_NAME_FILTER_MAX_LENGTH}
-            placeholder='Filter by exact job name'
-            title='Shows only jobs whose name matches exactly'
-            onChange={(event) => setNameInput(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') clearNameFilter()
-            }}
-            className='block w-full rounded-md border py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
-          />
-          {nameInput !== '' && (
-            <button
-              type='button'
-              onClick={clearNameFilter}
-              className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
-            >
-              <span className='sr-only'>Clear job name filter</span>
-              <XMarkIcon aria-hidden='true' className='h-4 w-4' />
-            </button>
+      <div className='pt-2 pb-4 flex flex-row items-center justify-between gap-4'>
+        <button
+          type='button'
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls='job-filters'
+          className='inline-flex items-center gap-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900'
+        >
+          <FunnelIcon aria-hidden='true' className='h-5 w-5 text-gray-400' />
+          Advanced search
+          {activeFilterCount > 0 && (
+            <span className='rounded-full bg-blue-100 px-2 text-xs font-medium text-blue-700'>
+              {activeFilterCount}
+            </span>
           )}
-        </div>
+          <ChevronDownIcon
+            aria-hidden='true'
+            className={`h-4 w-4 text-gray-400 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
         <label className='inline-flex items-center cursor-pointer'>
           <input
             type='checkbox'
@@ -450,6 +434,50 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
           </span>
         </label>
       </div>
+      {filtersOpen && (
+        <div id='job-filters' className='mb-4 rounded-md border border-gray-200 bg-gray-50 p-4'>
+          {/* Server-side filters: changing them reloads the list from the scheduler. Future
+              local (in-browser) filters should be labelled differently so the two aren't confused.
+              One label + field row per filter (like the job details view), with a fixed-width
+              label column so the field sits close and future rows (e.g. a date range) line up. */}
+          <div className='divide-y divide-gray-200'>
+            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-center sm:gap-4'>
+              <label htmlFor='job-name-filter' className='block text-sm font-medium text-gray-900'>
+                Job name
+              </label>
+              <div className='relative mt-1 w-full sm:mt-0'>
+                <MagnifyingGlassIcon
+                  aria-hidden='true'
+                  className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
+                />
+                <input
+                  id='job-name-filter'
+                  type='search'
+                  value={nameInput}
+                  maxLength={JOB_NAME_FILTER_MAX_LENGTH}
+                  placeholder='Load jobs by exact name'
+                  title='Asks the scheduler only for jobs whose name matches exactly'
+                  onChange={(event) => setNameInput(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') clearNameFilter()
+                  }}
+                  className='block w-full rounded-md border bg-white py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
+                />
+                {nameInput !== '' && (
+                  <button
+                    type='button'
+                    onClick={clearNameFilter}
+                    className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
+                  >
+                    <span className='sr-only'>Clear job name filter</span>
+                    <XMarkIcon aria-hidden='true' className='h-4 w-4' />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <JobsTable
         jobs={currentJobs ?? []}
         systemName={selectedSystem?.name || ''}

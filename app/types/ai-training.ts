@@ -49,10 +49,12 @@ export interface HyperparameterPreset {
 // - env: an exported environment variable
 // - secretFile: a file on the cluster whose content is exported as an environment variable
 //   when the job starts, so secrets never go through the UI or into the script
+// - runHistory: not passed to the job; decides what the run record publishes
 export type MonitoringParameterTarget =
   | { kind: 'override' }
   | { kind: 'env'; name: string }
   | { kind: 'secretFile'; name: string }
+  | { kind: 'runHistory' }
 
 export interface MonitoringParameter extends HyperparameterDefinition {
   target: MonitoringParameterTarget
@@ -75,6 +77,7 @@ export interface ResolvedMonitoring {
   overrides: Record<string, string>
   environment: Record<string, string>
   secretFiles: Record<string, string>
+  runHistory: Record<string, string>
 }
 
 export interface TrainingModel {
@@ -180,6 +183,10 @@ export interface RlRunSummary {
   preset: string | null
   hyperparameters: Record<string, HyperparameterValue>
   monitoring: string | null
+  // Link to the run in the monitoring destination, published only when chosen at launch
+  monitoringUrl: string | null
+  // Monitoring values chosen at launch, by parameter key (no secrets, paths or run name)
+  monitoringSettings: Record<string, string>
   nodes: number | null
   gpusPerNode: number | null
   timeLimit: string | null
@@ -194,6 +201,8 @@ export interface RlLaunchPrefill {
   environmentId: string | null
   presetId: string | null
   monitoringDestinationId: string | null
+  // Raw form values of the destination's parameters, or null to start from its defaults
+  monitoringValues: Record<string, string> | null
   // Raw form values of the active hyperparameters, and those that differ from the defaults
   hyperparameterValues: Record<string, string>
   editedKeys: string[]

@@ -5,6 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
+import { WANDB_RUN_ID, getWandbRunUrl } from '~/modules/ai-training/recipes/monitoring-parameters'
 // types
 import type {
   HyperparameterDefinition,
@@ -182,6 +183,7 @@ export const resolveMonitoring = (
     overrides: { ...destination.overrides },
     environment: { ...destination.environment },
     secretFiles: {},
+    runHistory: {},
   }
   destination.parameters.forEach((parameter: MonitoringParameter) => {
     const value = values[parameter.key]
@@ -197,6 +199,9 @@ export const resolveMonitoring = (
       case 'secretFile':
         resolved.secretFiles[parameter.target.name] = formatScriptPath(formattedValue)
         break
+      case 'runHistory':
+        resolved.runHistory[parameter.key] = formattedValue
+        break
     }
   })
   return resolved
@@ -207,6 +212,7 @@ const buildMonitoringSetup = (monitoring: ResolvedMonitoring): string[] => {
   Object.entries(monitoring.environment).forEach(([name, value]) => {
     lines.push(`export ${name}="${value}"`)
   })
+  if (getWandbRunUrl(monitoring)) lines.push(`export WANDB_RUN_ID="${WANDB_RUN_ID}"`)
   Object.entries(monitoring.secretFiles).forEach(([name, path]) => {
     lines.push(
       `if [ ! -r "${path}" ]; then echo "${name} file ${path} is not readable" >&2; exit 1; fi`,
@@ -228,11 +234,42 @@ export const formatOverrides = (overrides: Record<string, HyperparameterValue>):
 // Inside an unquoted heredoc, only \, $ and ` are interpreted
 const escapeForHeredoc = (text: string) => text.replace(/[\\$`]/g, (c: string) => `\\${c}`)
 
+// Monitoring values recorded with a run, so that cloning it keeps them: all but secrets, paths
+// (which can point into a home directory) and the W&B run name, which names that one run
+const NOT_RECORDED_MONITORING_VARIABLES = ['WANDB_NAME']
+
+const getMonitoringValue = (monitoring: ResolvedMonitoring, parameter: MonitoringParameter) => {
+  switch (parameter.target.kind) {
+    case 'env':
+      return NOT_RECORDED_MONITORING_VARIABLES.includes(parameter.target.name)
+        ? undefined
+        : monitoring.environment[parameter.target.name]
+    case 'override':
+      return monitoring.overrides[parameter.key]
+    case 'runHistory':
+      return monitoring.runHistory[parameter.key]
+    case 'secretFile':
+      return undefined
+  }
+}
+
+export const getRecordedMonitoringValues = (monitoring: ResolvedMonitoring) => {
+  const values: Record<string, string> = {}
+  monitoring.destination.parameters
+    .filter((parameter: MonitoringParameter) => parameter.type !== 'path')
+    .forEach((parameter: MonitoringParameter) => {
+      const value = getMonitoringValue(monitoring, parameter)
+      if (value !== undefined) values[parameter.key] = value
+    })
+  return values
+}
+
 // Settings known when the script is generated, limited to what may be published: catalog ids,
-// numeric and short hyperparameter values, the monitoring destination and the job size. Nothing
-// that identifies a person (job name, paths, monitoring project or entity, reservation), and no
-// path hyperparameters, which can point into a home directory. The collector applies the same
-// allowlist again, since anyone can write files into the tracker directory.
+// numeric and short hyperparameter values, the monitoring destination and its settings (such as
+// the W&B project and entity) and the job size. Nothing else that identifies a person (job
+// name, paths, reservation), and no path hyperparameters, which can point into a home
+// directory. The collector applies the same allowlist again, since anyone can write files into
+// the tracker directory.
 const buildRunRecord = ({
   recipe,
   model,
@@ -250,13 +287,18 @@ const buildRunRecord = ({
         publishedHyperparameters[definition.key] = hyperparameters[definition.key]
       }
     })
+  const monitoringUrl = getWandbRunUrl(monitoring)
   return {
     recipe: { id: recipe.id, version: recipe.version ?? null },
     model: { id: model.id },
     environment: { id: environment.id },
     preset: preset ? { id: preset.id } : null,
     hyperparameters: publishedHyperparameters,
-    monitoring: { destination: monitoring.destination.id },
+    monitoring: {
+      destination: monitoring.destination.id,
+      settings: getRecordedMonitoringValues(monitoring),
+      ...(monitoringUrl ? { url: monitoringUrl } : {}),
+    },
     job: {
       nodes: jobOptions.nodes,
       gpusPerNode: recipe.gpusPerNode,
@@ -271,7 +313,10 @@ const buildRunRecord = ({
 // under a hidden temporary name and then renamed, so the collector, which deletes the files it
 // has processed, never reads a partly written one.
 const buildRunTracking = (params: BuildTrainingScriptParams): string[] => {
+  // The W&B run id in the link is the only shell syntax in the record and must expand; all
+  // other values are validated not to contain any
   const runRecord = escapeForHeredoc(JSON.stringify(buildRunRecord(params), null, 2))
+    .replace(escapeForHeredoc(WANDB_RUN_ID), WANDB_RUN_ID)
     .split('\n')
     .map((line: string, index: number) => (index === 0 ? line : `  ${line}`))
     .join('\n')

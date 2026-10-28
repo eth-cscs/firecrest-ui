@@ -7,6 +7,7 @@
 
 import React from 'react'
 import { CheckCircleIcon } from '@heroicons/react/20/solid'
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 // helpers
 import { classNames } from '~/helpers/class-helper'
 
@@ -18,12 +19,36 @@ export interface SelectableCardOption {
   footer?: React.ReactNode
 }
 
+export interface RequestCardProps {
+  title: string
+  description: string
+  href: string
+}
+
+// A link styled as a card, placed after the options, for asking for more of them
+export const RequestCard: React.FC<RequestCardProps> = ({ title, description, href }) => (
+  <a
+    href={href}
+    target='_blank'
+    rel='noopener noreferrer'
+    className='relative flex min-w-0 flex-col rounded-lg border border-dashed border-gray-300 bg-white p-4 hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500'
+  >
+    <span className='flex items-start justify-between gap-x-2'>
+      <span className='min-w-0 text-sm font-medium text-gray-900'>{title}</span>
+      <ArrowTopRightOnSquareIcon aria-hidden='true' className='h-5 w-5 shrink-0 text-gray-400' />
+    </span>
+    <span className='mt-2 text-sm text-gray-500'>{description}</span>
+    <span className='sr-only'>(opens in a new tab)</span>
+  </a>
+)
+
 interface SelectableCardGroupProps {
   name: string
   label: string
   options: SelectableCardOption[]
   selectedId: string | null
   onSelect: (id: string) => void
+  requestCard?: RequestCardProps
 }
 
 const SelectableCardGroup: React.FC<SelectableCardGroupProps> = ({
@@ -32,6 +57,7 @@ const SelectableCardGroup: React.FC<SelectableCardGroupProps> = ({
   options,
   selectedId,
   onSelect,
+  requestCard,
 }: SelectableCardGroupProps) => {
   return (
     // relative: keeps the visually hidden legend inside the scrolling content, otherwise it is
@@ -90,6 +116,7 @@ const SelectableCardGroup: React.FC<SelectableCardGroupProps> = ({
             </label>
           )
         })}
+        {requestCard && <RequestCard {...requestCard} />}
       </div>
     </fieldset>
   )

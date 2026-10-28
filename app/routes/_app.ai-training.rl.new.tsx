@@ -139,6 +139,7 @@ export default function AiTrainingRlRoute() {
       formData={formData}
       recipes={recipes}
       recipesError={nemoRl.error}
+      requestRepository={nemoRl.source.repository}
       prefill={clone?.prefill ?? undefined}
       cloneError={clone?.error ?? undefined}
       error={getErrorFromData(data)}

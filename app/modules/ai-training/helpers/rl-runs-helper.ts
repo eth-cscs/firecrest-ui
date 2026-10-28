@@ -9,6 +9,7 @@ import {
   TIME_LIMIT_PATTERN,
   formatHyperparameterValue,
   getActiveHyperparameters,
+  getDefaultMonitoringValues,
   getDefaultHyperparameters,
   getHyperparameterPreset,
   isNodeCountConfigurable,
@@ -18,6 +19,8 @@ import { getRlRecipe } from '~/modules/ai-training/recipes/rl-recipes'
 import type {
   HyperparameterDefinition,
   HyperparameterValue,
+  MonitoringDestination,
+  MonitoringParameter,
   RlLaunchPrefill,
   RlRunStatus,
   RlRunSummary,
@@ -31,6 +34,9 @@ const JOB_ID_PATTERN = /^\d{1,20}$/
 // <cluster>-<job id>
 export const RL_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}-\d{1,20}$/
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+// https://<host>[:<port>][/<path>]/<entity>/<project>/runs/<run id>, the same as the collector
+const MONITORING_URL_PATTERN =
+  /^https:\/\/[A-Za-z0-9.-]{1,253}(:\d{1,5})?(\/[A-Za-z0-9._-]{1,128}){2,6}\/runs\/([A-Za-z0-9._-]{1,128})$/
 const RUN_STATUSES: RlRunStatus[] = [
   'completed',
   'failed',
@@ -50,6 +56,19 @@ const safeId = (value: unknown) =>
 
 const day = (value: unknown) =>
   typeof value === 'string' && DAY_PATTERN.test(value) ? value : null
+
+// Only links to this run's id, so a record can't show another W&B run as its own
+const monitoringUrl = (value: unknown, runId: string) =>
+  typeof value === 'string' && MONITORING_URL_PATTERN.exec(value)?.[3] === runId ? value : null
+
+const toMonitoringSettings = (value: unknown) => {
+  const settings: Record<string, string> = {}
+  if (!isObject(value)) return settings
+  Object.entries(value).forEach(([key, setting]) => {
+    if (typeof setting === 'string') settings[key] = setting
+  })
+  return settings
+}
 
 const integer = (value: unknown) => (Number.isInteger(value) ? (value as number) : null)
 
@@ -109,6 +128,8 @@ export const parseRunIndex = (recipeId: string, data: unknown): RlRunSummary[] =
         preset: safeId(entry.preset),
         hyperparameters: toHyperparameters(entry.hyperparameters),
         monitoring: safeId(entry.monitoring),
+        monitoringUrl: monitoringUrl(entry.monitoringUrl, entry.runId),
+        monitoringSettings: toMonitoringSettings(entry.monitoringSettings),
         nodes: integer(entry.nodes),
         gpusPerNode: integer(entry.gpusPerNode),
         timeLimit:
@@ -262,9 +283,9 @@ export const getLaunchPrefill = (
     notes.push(`${unknownCount} recorded values no longer exist in the recipe and were ignored.`)
   }
   if (hasPathDefinitions) notes.push('Paths are not recorded with runs: check them in step 4.')
-  if (monitoringDestination && monitoringDestination.parameters.length > 0) {
-    notes.push('Monitoring settings are not recorded with runs: fill them in in step 5.')
-  }
+  const monitoringValues = monitoringDestination
+    ? getRecordedMonitoringPrefill(run, monitoringDestination, notes)
+    : null
 
   return {
     run,
@@ -273,12 +294,50 @@ export const getLaunchPrefill = (
     environmentId: environment?.id ?? null,
     presetId: preset?.id ?? null,
     monitoringDestinationId: monitoringDestination?.id ?? null,
+    monitoringValues,
     hyperparameterValues,
     editedKeys,
     nodes: isNodeCountConfigurable(recipe) && run.nodes !== null ? String(run.nodes) : null,
     timeLimit: run.timeLimit,
     notes,
   }
+}
+
+// The destination's defaults with the recorded values that are still valid. Secrets, paths and
+// the run name are never recorded, so they start from their defaults.
+const getRecordedMonitoringPrefill = (
+  run: RlRunSummary,
+  destination: MonitoringDestination,
+  notes: string[],
+) => {
+  const values = getDefaultMonitoringValues(destination)
+  if (destination.parameters.length === 0) return values
+  const recorded = Object.keys(run.monitoringSettings).length > 0
+  const invalidLabels: string[] = []
+  destination.parameters.forEach((parameter: MonitoringParameter) => {
+    const value = run.monitoringSettings[parameter.key]
+    if (value === undefined) return
+    if ('error' in parseHyperparameterValue(parameter, value)) {
+      invalidLabels.push(parameter.label)
+    } else {
+      values[parameter.key] = value
+    }
+  })
+  if (!recorded) {
+    notes.push(
+      `${destination.name} settings were not recorded with this run: fill them in in step 5.`,
+    )
+  } else if (invalidLabels.length > 0) {
+    notes.push(
+      `Recorded ${destination.name} settings that are no longer valid were replaced by defaults: ${invalidLabels.join(', ')}.`,
+    )
+  }
+  if (destination.parameters.some((parameter) => parameter.type === 'path')) {
+    notes.push(
+      `Paths such as the ${destination.name} API key file are not recorded: check them in step 5.`,
+    )
+  }
+  return values
 }
 
 // e.g. 2h 05m, 2m 16s

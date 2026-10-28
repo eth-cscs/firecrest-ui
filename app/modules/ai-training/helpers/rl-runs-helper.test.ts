@@ -116,6 +116,22 @@ describe('parseRunIndex', () => {
   })
 })
 
+describe('monitoring links', () => {
+  it('are only kept when they point to the run', () => {
+    const url = `https://wandb.example.org/wandb/my-team/my-project/runs/${RUN_ID}`
+    expect(run({ monitoringUrl: url }).monitoringUrl).toBe(url)
+    expect(run().monitoringUrl).toBeNull()
+    ;[
+      `https://wandb.ai/my-team/my-project/runs/clariden-1`,
+      `http://wandb.ai/my-team/my-project/runs/${RUN_ID}`,
+      `https://wandb.ai/my-project/runs/${RUN_ID}`,
+      `https://wandb.ai/my-team/my-project/runs/${RUN_ID}?x=1`,
+      `javascript:alert(1)//a/b/runs/${RUN_ID}`,
+      42,
+    ].forEach((monitoringUrl) => expect(run({ monitoringUrl }).monitoringUrl).toBeNull())
+  })
+})
+
 describe('getJobUrl', () => {
   it('links to the job through the route that finds its account', () => {
     expect(getJobUrl(run())).toBe('/compute/systems/clariden/jobs/3752975')
@@ -175,7 +191,32 @@ describe('cloning', () => {
     expect(prefill.notes.join('\n')).toMatch(/preset \(sgd\) is no longer offered/)
     expect(prefill.notes.join('\n')).toMatch(/no longer valid .*Steps|no longer valid/)
     expect(prefill.notes.join('\n')).toMatch(/1 recorded values no longer exist/)
-    expect(prefill.notes.join('\n')).toMatch(/Monitoring settings are not recorded/)
+    expect(prefill.notes.join('\n')).toMatch(/Weights & Biases settings were not recorded/)
+  })
+
+  it('takes over the recorded monitoring settings that are still valid', () => {
+    const prefill = getLaunchPrefill(
+      run({
+        monitoring: 'wandb',
+        monitoringSettings: {
+          WANDB_PROJECT: 'my-project',
+          WANDB_ENTITY: 'bad"entity',
+          'wandb.mode': 'offline',
+          'wandb.publishLink': 'false',
+        },
+      }),
+      RECIPES,
+    )!
+    expect(prefill.monitoringDestinationId).toBe('wandb')
+    expect(prefill.monitoringValues).toMatchObject({
+      WANDB_PROJECT: 'my-project',
+      WANDB_ENTITY: '',
+      'wandb.mode': 'offline',
+      'wandb.publishLink': 'false',
+      'wandb.apiKeyFile': '~/.wandb_api_key',
+    })
+    expect(prefill.notes.join('\n')).toMatch(/no longer valid were replaced by defaults: Entity/)
+    expect(prefill.notes.join('\n')).toMatch(/API key file are not recorded/)
   })
 
   it('ignores runs of unknown recipes', () => {

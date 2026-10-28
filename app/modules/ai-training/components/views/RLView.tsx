@@ -27,6 +27,8 @@ interface RLViewProps {
   recipes: TrainingRecipe[]
   // Why some recipes are not offered
   recipesError?: string | null
+  // GitHub owner/name of the blueprints, where requests and feedback go
+  requestRepository: string
   // Settings of a published run to start from
   prefill?: RlLaunchPrefill
   // Why the run to start from couldn't be used
@@ -38,6 +40,7 @@ const RLView: React.FC<RLViewProps> = ({
   formData,
   recipes,
   recipesError,
+  requestRepository,
   prefill,
   cloneError,
   error,
@@ -71,6 +74,7 @@ const RLView: React.FC<RLViewProps> = ({
         recipes={recipes}
         formError={error}
         prefill={prefill}
+        requestRepository={requestRepository}
       />
     </SimpleView>
   )

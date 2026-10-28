@@ -453,9 +453,7 @@ const toMonitoringDestination = (destination: BlueprintMonitoring): MonitoringDe
   if (destination.id === 'wandb') {
     const declared = new Set(destination.parameters.map((parameter) => parameter.variable))
     wandbEnvironmentParameters()
-      .filter(
-        (parameter) => parameter.target.kind === 'override' || !declared.has(parameter.target.name),
-      )
+      .filter((parameter) => !('name' in parameter.target) || !declared.has(parameter.target.name))
       .forEach((parameter) => parameters.push({ ...parameter, group }))
   }
   return {

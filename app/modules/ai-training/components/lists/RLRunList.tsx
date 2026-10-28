@@ -8,6 +8,7 @@
 import React from 'react'
 import { Link } from 'react-router'
 import {
+  ArrowTopRightOnSquareIcon,
   CalendarIcon,
   ClockIcon,
   DocumentDuplicateIcon,
@@ -163,6 +164,18 @@ const RunActions: React.FC<{ run: RlRunSummary }> = ({ run }) => (
       <EyeIcon aria-hidden='true' className='h-4 w-4 text-gray-400' />
       Job
     </Link>
+    {run.monitoringUrl && (
+      <a
+        href={run.monitoringUrl}
+        target='_blank'
+        rel='noopener noreferrer'
+        title={`Open the run in Weights & Biases on ${new URL(run.monitoringUrl).host}`}
+        className={ACTION_CLASS_NAME}
+      >
+        <ArrowTopRightOnSquareIcon aria-hidden='true' className='h-4 w-4 text-gray-400' />
+        W&amp;B
+      </a>
+    )}
     <Link
       to={getCloneUrl(run)}
       title='Start a new run with the settings of this one'

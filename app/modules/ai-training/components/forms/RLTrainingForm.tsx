@@ -41,6 +41,11 @@ import {
 // recipes
 import { getRlRecipe } from '~/modules/ai-training/recipes/rl-recipes'
 import { getRecipeName, shortVersion } from '~/modules/ai-training/helpers/rl-runs-helper'
+import {
+  getBlueprintRequestCard,
+  getBlueprintRequestUrl,
+} from '~/modules/ai-training/helpers/blueprint-request-helper'
+import type { BlueprintRequestStep } from '~/modules/ai-training/helpers/blueprint-request-helper'
 // apis
 import { isMaintenancePayload } from '~/apis/api'
 import type { MaintenancePayload } from '~/apis/api'
@@ -60,7 +65,9 @@ import {
   hasErrorForField,
   showInputValidation,
 } from '~/components/forms/validations/ValidationForm'
-import SelectableCardGroup from '~/modules/ai-training/components/forms/SelectableCardGroup'
+import SelectableCardGroup, {
+  RequestCard,
+} from '~/modules/ai-training/components/forms/SelectableCardGroup'
 // alerts
 import AlertInfo from '~/components/alerts/AlertInfo'
 // panels
@@ -85,6 +92,8 @@ interface RLTrainingFormProps {
   formError: any
   // Starts from the settings of a published run instead of an empty form
   prefill?: RlLaunchPrefill
+  // GitHub owner/name of the blueprints, where requests and feedback go
+  requestRepository: string
 }
 
 const inputClassName = (hasError: boolean) =>
@@ -129,6 +138,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
   recipes,
   formError,
   prefill,
+  requestRepository,
 }) => {
   const { systems, username } = formData
   const submit = useSubmit()
@@ -146,6 +156,11 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
   const [modelId, setModelId] = useState<string | null>(prefill?.modelId ?? null)
   const [environmentId, setEnvironmentId] = useState<string | null>(prefill?.environmentId ?? null)
   const recipe = recipeId ? getRlRecipe(recipes, recipeId) : undefined
+  // A card at the end of each step for requesting more options or sending feedback
+  const getRequestCard = (step: BlueprintRequestStep) => ({
+    ...getBlueprintRequestCard(step),
+    href: getBlueprintRequestUrl(requestRepository, step, recipe),
+  })
   const model = recipe?.models.find((m) => m.id === modelId)
   const environment = recipe?.environments.find((e) => e.id === environmentId)
 
@@ -169,7 +184,11 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
   )
   const [monitoringValuesByDestination, setMonitoringValuesByDestination] = useState<
     Record<string, Record<string, string>>
-  >({})
+  >(
+    prefill?.monitoringDestinationId && prefill.monitoringValues
+      ? { [prefill.monitoringDestinationId]: prefill.monitoringValues }
+      : {},
+  )
   const monitoringDestination = recipe?.monitoringDestinations.find(
     (d) => d.id === monitoringDestinationId,
   )
@@ -550,6 +569,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
           label='Training recipe'
           selectedId={recipe?.id ?? null}
           onSelect={handleRecipeSelect}
+          requestCard={getRequestCard('recipe')}
           options={recipes.map((r: TrainingRecipe) => ({
             id: r.id,
             title: r.name,
@@ -600,6 +620,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
               label='Model'
               selectedId={model?.id ?? null}
               onSelect={handleModelSelect}
+              requestCard={getRequestCard('model')}
               options={recipe.models.map((m) => ({
                 id: m.id,
                 title: m.name,
@@ -623,6 +644,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
               label='Environment or dataset'
               selectedId={environment?.id ?? null}
               onSelect={setEnvironmentId}
+              requestCard={getRequestCard('environment')}
               options={recipe.environments.map((e) => ({
                 id: e.id,
                 title: e.name,
@@ -663,6 +685,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
                   label='Preset'
                   selectedId={preset?.id ?? null}
                   onSelect={handlePresetSelect}
+                  requestCard={getRequestCard('preset')}
                   options={recipe.hyperparameterPresets.map((p: HyperparameterPreset) => ({
                     id: p.id,
                     title: p.name,
@@ -748,6 +771,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
               label='Monitoring destination'
               selectedId={monitoringDestination?.id ?? null}
               onSelect={setMonitoringDestinationId}
+              requestCard={getRequestCard('monitoring')}
               options={recipe.monitoringDestinations.map((d: MonitoringDestination) => ({
                 id: d.id,
                 title: d.name,
@@ -1117,6 +1141,9 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
                     </p>
                   ))}
               </div>
+            </div>
+            <div className='mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+              <RequestCard {...getRequestCard('launch')} />
             </div>
             <div className='flex items-center justify-end bg-gray-50 mt-6 -mx-4 -mb-5 sm:-mx-6 sm:-mb-6 px-4 py-3 sm:px-6 rounded-b-lg'>
               <LoadingButton isLoading={isSubmitting} className='sm:w-auto sm:text-sm'>

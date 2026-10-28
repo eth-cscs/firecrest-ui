@@ -352,8 +352,80 @@ describe('run tracking', () => {
     expect(runRecord).toContain('"id": "muon"')
     expect(runRecord).toContain('"MAX_NUM_STEPS": 3')
     expect(runRecord).toContain('"destination": "wandb"')
-    // No user, account, paths, job name, monitoring project or secret file
-    expect(runRecord).not.toMatch(/USER|ACCOUNT|SUBMIT_DIR|my-run|my-project|wandb_api_key|capstor/)
+    // No user, account, paths, job name or secret file
+    expect(runRecord).not.toMatch(/USER|ACCOUNT|SUBMIT_DIR|my-run|wandb_api_key|capstor/)
+  })
+
+  it('records the monitoring settings for cloning, but not secrets, paths or the run name', () => {
+    const wandbScript = buildApertusScript(muon, {}, 'wandb', {
+      WANDB_PROJECT: 'my-project',
+      WANDB_NAME: 'my-wandb-run',
+      WANDB_ENTITY: 'my-team',
+      'wandb.mode': 'offline',
+      'wandb.apiKeyFile': '~/.wandb_api_key',
+      'wandb.publishLink': 'false',
+    })
+    const record = wandbScript.slice(
+      wandbScript.indexOf('\n', wandbScript.indexOf('<<RUN_JSON')) + 1,
+      wandbScript.indexOf('\nRUN_JSON\n'),
+    )
+    expect(JSON.parse(record).launch.monitoring).toEqual({
+      destination: 'wandb',
+      settings: {
+        WANDB_PROJECT: 'my-project',
+        WANDB_ENTITY: 'my-team',
+        'wandb.mode': 'offline',
+        'wandb.publishLink': 'false',
+      },
+    })
+  })
+
+  describe('W&B link', () => {
+    const buildWandbScript = (values: Record<string, string | null>) => {
+      const wandbScript = buildApertusScript(muon, {}, 'wandb', {
+        WANDB_PROJECT: 'my-project',
+        WANDB_ENTITY: 'my-team',
+        'wandb.mode': 'online',
+        'wandb.apiKeyFile': '~/.wandb_api_key',
+        'wandb.publishLink': 'true',
+        ...values,
+      })
+      return {
+        script: wandbScript,
+        runRecord: wandbScript.slice(
+          wandbScript.indexOf('<<RUN_JSON'),
+          wandbScript.indexOf('\nRUN_JSON\n'),
+        ),
+      }
+    }
+
+    it('is recorded when chosen, with a run id fixed in advance', () => {
+      const { script, runRecord } = buildWandbScript({})
+      expect(script).toContain(
+        'export WANDB_RUN_ID="${SLURM_CLUSTER_NAME:-unknown}-${SLURM_JOB_ID}"',
+      )
+      // The run id expands in the heredoc
+      expect(runRecord).toContain(
+        '"url": "https://wandb.ai/my-team/my-project/runs/${SLURM_CLUSTER_NAME:-unknown}-${SLURM_JOB_ID}"',
+      )
+      expect(buildWandbScript({ 'wandb.host': 'https://wandb.example.org/' }).runRecord).toContain(
+        '"url": "https://wandb.example.org/my-team/my-project/runs/',
+      )
+    })
+
+    it('is left out when not chosen or not known', () => {
+      const cases: Record<string, string | null>[] = [
+        { 'wandb.publishLink': 'false' },
+        { WANDB_ENTITY: null },
+        { 'wandb.mode': 'offline' },
+        { 'wandb.host': 'http://wandb.example.org' },
+      ]
+      cases.forEach((values) => {
+        const { script, runRecord } = buildWandbScript(values)
+        expect(runRecord).not.toContain('"url"')
+        expect(script).not.toContain('WANDB_RUN_ID')
+      })
+    })
   })
 
   it('uses the directory the job starts in, not SLURM_SUBMIT_DIR, which is home via FirecREST', () => {

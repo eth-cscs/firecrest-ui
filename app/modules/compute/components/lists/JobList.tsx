@@ -287,7 +287,8 @@ const replaceUrlSearchParam = (key: string, value: string | null) => {
   } else {
     url.searchParams.set(key, value)
   }
-  window.history.replaceState({}, '', url.toString())
+  // Keep the existing history state: React Router stores its own entry key/index there.
+  window.history.replaceState(window.history.state, '', url.toString())
 }
 
 const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialName }) => {
@@ -330,7 +331,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     return `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?${query.toString()}`
   }
 
-  const onChangeHandler = (event: any) => {
+  const onChangeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
     replaceUrlSearchParam('allUsers', String(checked))

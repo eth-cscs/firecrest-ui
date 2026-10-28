@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useFetcher } from 'react-router'
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate, useFetcher, useLocation, useParams } from 'react-router'
 import {
   CalendarIcon,
   ClockIcon,
@@ -15,6 +15,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   ChevronDownIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
@@ -45,8 +46,6 @@ import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 import type { GetSystemJobsResponse } from '~/types/api-job'
 import type { MaintenancePayload } from '~/apis/api'
 // contexts
-import { useSystem } from '~/contexts/SystemContext'
-import { useGroup } from '~/contexts/GroupContext'
 import { useRefreshing } from '~/contexts/RefreshingContext'
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 // alerts
@@ -298,8 +297,10 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   const [name, setName] = useState<string>(initialName)
   // Open on first render when the URL already carries a filter, so it's never applied unseen.
   const [filtersOpen, setFiltersOpen] = useState<boolean>(initialName !== '')
-  const { selectedSystem } = useSystem()
-  const { selectedGroup } = useGroup()
+  // Taken from the route, not the System/Group contexts: on the first render those fall back to
+  // the first system/group until an effect applies the URL's, which made the list fetch (and
+  // sometimes display) jobs from the wrong system right after a page load.
+  const { systemName, accountName } = useParams()
   const { setRefreshing } = useRefreshing()
   const { setMaintenance } = useMaintenance()
   // useFetcher (rather than a hand-rolled fetch+setState poll) is what makes this safe under a
@@ -308,6 +309,10 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   // and clobber state set by a newer one. Also avoids the deferred/streamed loader response this
   // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
   const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
+  // The poll below runs in an interval created once per query; reading fetcher.state from that
+  // closure would give the value from when the interval was created, not the current one.
+  const fetcherStateRef = useRef(fetcher.state)
+  fetcherStateRef.current = fetcher.state
 
   // Takes the system/group names as required parameters (not read from closure) so a caller
   // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
@@ -332,6 +337,16 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     // The effect below re-fetches on the `allUsers` change - no need to trigger it here too.
   }
 
+  // Keep the URL in line with what the list shows, so a copied/shared link opens the same list
+  // instead of depending on the recipient's own remembered cookie. Needed on first load (the
+  // toggle may come from the cookie, not the URL) and after switching system/account, which
+  // navigates to a bare path without remounting this component.
+  const { pathname } = useLocation()
+  useEffect(() => {
+    replaceUrlSearchParam('allUsers', String(allUsers))
+    replaceUrlSearchParam('name', name || null)
+  }, [pathname])
+
   // Apply the typed name once typing pauses; the polling effect below re-fetches on `name` change.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -352,21 +367,17 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
   // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
   // finish a request rather than having it superseded (and effectively never completing) every
-  // time the interval fires. Guarded on both names being populated - system/group briefly
-  // resolve after mount (system context, GroupsFetcher), and firing early would poll a
-  // malformed URL (missing path segment) until they do.
+  // time the interval fires.
   useEffect(() => {
-    const systemName = selectedSystem?.name
-    const groupName = selectedGroup?.name
-    if (!systemName || !groupName) return
-    fetcher.load(buildUrl(systemName, groupName, allUsers, name))
+    if (!systemName || !accountName) return
+    fetcher.load(buildUrl(systemName, accountName, allUsers, name))
     const intervalId = setInterval(() => {
-      if (fetcher.state === 'idle') {
-        fetcher.load(buildUrl(systemName, groupName, allUsers, name))
+      if (fetcherStateRef.current === 'idle') {
+        fetcher.load(buildUrl(systemName, accountName, allUsers, name))
       }
     }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)
-  }, [selectedSystem?.name, selectedGroup?.name, allUsers, name])
+  }, [systemName, accountName, allUsers, name])
 
   useEffect(() => {
     setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
@@ -389,6 +400,15 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   }
 
   const jobsData = fetcher.data
+  // Never show a response for a different query than the one currently selected (e.g. one that
+  // was still in flight when the system, account, toggle or filter changed) - wait for the
+  // matching one instead of briefly, or permanently, showing the wrong list. The controls stay
+  // rendered meanwhile, so the search field keeps focus while a new filter loads.
+  const isCurrentQuery =
+    jobsData.system === systemName &&
+    jobsData.account === accountName &&
+    (jobsData.allUsers ?? false) === allUsers &&
+    (jobsData.name ?? '') === name
   const currentJobs = sortJobs(jobsData?.jobs ?? [])
   const localError = jobsData?.error ?? null
   const emptyMessage = jobsData?.name
@@ -399,7 +419,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
 
   return (
     <>
-      <AlertError error={localError} />
+      {isCurrentQuery && <AlertError error={localError} />}
       <div className='pt-2 pb-4 flex flex-row items-center justify-between gap-4'>
         <button
           type='button'
@@ -420,19 +440,36 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
             className={`h-4 w-4 text-gray-400 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
           />
         </button>
-        <label className='inline-flex items-center cursor-pointer'>
-          <input
-            type='checkbox'
-            checked={allUsers}
-            value=''
-            className='sr-only peer'
-            onChange={onChangeHandler}
-          />
-          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-          <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>
-            All users
-          </span>
-        </label>
+        <div className='inline-flex items-center gap-1'>
+          {/* Outside the label, so clicking the icon doesn't flip the toggle. */}
+          <SimpleTooltip
+            id='all-users-remembered-hint'
+            message='When on, shows the jobs submitted by all users within the selected project, not only yours. Your choice is remembered in this browser and used the next time you open the job list.'
+            className='right-0 top-7 w-64 whitespace-normal'
+          >
+            <button
+              type='button'
+              aria-describedby='all-users-remembered-hint'
+              className='rounded-full p-0.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300'
+            >
+              <span className='sr-only'>About the All users setting</span>
+              <InformationCircleIcon aria-hidden='true' className='h-5 w-5' />
+            </button>
+          </SimpleTooltip>
+          <label className='inline-flex items-center cursor-pointer'>
+            <input
+              type='checkbox'
+              checked={allUsers}
+              value=''
+              className='sr-only peer'
+              onChange={onChangeHandler}
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+            <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>
+              All users
+            </span>
+          </label>
+        </div>
       </div>
       {filtersOpen && (
         <div id='job-filters' className='mb-4 rounded-md border border-gray-200 bg-gray-50 p-4'>
@@ -478,11 +515,15 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
           </div>
         </div>
       )}
-      <JobsTable
-        jobs={currentJobs ?? []}
-        systemName={selectedSystem?.name || ''}
-        emptyMessage={emptyMessage}
-      />
+      {isCurrentQuery ? (
+        <JobsTable
+          jobs={currentJobs ?? []}
+          systemName={systemName ?? ''}
+          emptyMessage={emptyMessage}
+        />
+      ) : (
+        <LoadingSpinner title='Loading jobs...' className='py-10' />
+      )}
     </>
   )
 }

@@ -194,6 +194,19 @@ describe('cloning', () => {
     expect(prefill.notes.join('\n')).toMatch(/Weights & Biases settings were not recorded/)
   })
 
+  it('takes over the launch options, for the form to apply where still offered', () => {
+    const prefill = getLaunchPrefill(run({ partition: 'debug', account: 'a-csstaff' }), RECIPES)!
+    expect(prefill).toMatchObject({
+      system: 'clariden',
+      partition: 'debug',
+      account: 'a-csstaff',
+    })
+    expect(run({ partition: '--x y', account: 42 })).toMatchObject({
+      partition: null,
+      account: null,
+    })
+  })
+
   it('takes over the recorded monitoring settings that are still valid', () => {
     const prefill = getLaunchPrefill(
       run({

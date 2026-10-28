@@ -356,6 +356,38 @@ describe('run tracking', () => {
     expect(runRecord).not.toMatch(/USER|ACCOUNT|SUBMIT_DIR|my-run|wandb_api_key|capstor/)
   })
 
+  it('records the partition and account for cloning, but not the reservation', () => {
+    const tracked = buildTrainingScript({
+      recipe: apertus,
+      model: apertusModel,
+      environment: apertus.environments[0],
+      hyperparameters: getDefaultHyperparameters(apertus, apertusModel, adamw),
+      preset: adamw,
+      monitoring: resolveMonitoring(getDestination(apertus, 'tensorboard'), {}),
+      jobOptions: {
+        jobName: 'my-run',
+        timeLimit: '07:00:00',
+        nodes: 12,
+        partition: 'debug',
+        reservation: 'my-reservation',
+      },
+      account: 'a-csstaff',
+      runTracking: true,
+    })
+    const record = tracked.slice(
+      tracked.indexOf('\n', tracked.indexOf('<<RUN_JSON')) + 1,
+      tracked.indexOf('\nRUN_JSON\n'),
+    )
+    expect(JSON.parse(record).launch.job).toEqual({
+      nodes: 12,
+      gpusPerNode: 4,
+      timeLimit: '07:00:00',
+      partition: 'debug',
+      account: 'a-csstaff',
+    })
+    expect(record).not.toContain('my-reservation')
+  })
+
   it('records the monitoring settings for cloning, but not secrets, paths or the run name', () => {
     const wandbScript = buildApertusScript(muon, {}, 'wandb', {
       WANDB_PROJECT: 'my-project',

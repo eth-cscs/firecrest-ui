@@ -35,6 +35,7 @@ import {
 
 export const NEMO_RL_BLUEPRINTS_PATH = 'Alps-Images/apps/nemo-rl/blueprints/index.json'
 const EXAMPLE_PATH = 'Alps-Images/apps/nemo-rl/example'
+const BLUEPRINTS_DIR = 'Alps-Images/apps/nemo-rl/blueprints'
 const INDEX_SCHEMA_VERSION = 1
 
 export const REPOSITORY_PATTERN = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/
@@ -534,6 +535,12 @@ export const blueprintToRecipe = (
     description: blueprint.description,
     documentationUrl: `https://github.com/${source.repository}/tree/${source.commit}/${EXAMPLE_PATH}/${blueprint.launch.recipe}`,
     version: source.commit,
+    // The blueprint's folder at the commit; runs of older commits are assumed to come from the
+    // same repository
+    getVersionUrl: (version) =>
+      COMMIT_PATTERN.test(version)
+        ? `https://github.com/${source.repository}/tree/${version}/${BLUEPRINTS_DIR}/${blueprint.id}`
+        : undefined,
     nodes: {
       default: sum((key) => firstProfile.defaults[key] ?? parameterOf(key).min),
       min: sum((key) => parameterOf(key).min),

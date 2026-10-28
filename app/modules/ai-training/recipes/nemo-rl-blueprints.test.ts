@@ -118,6 +118,15 @@ describe('blueprintToRecipe', () => {
     expect(targets.filter((t) => t.kind === 'env' && t.name === 'WANDB_ENTITY')).toHaveLength(1)
   })
 
+  it('links a version to the blueprint at that commit', () => {
+    const r = recipe()
+    const older = 'a'.repeat(40)
+    expect(r.getVersionUrl?.(older)).toBe(
+      `https://github.com/${TEST_SOURCE.repository}/tree/${older}/Alps-Images/apps/nemo-rl/blueprints/apertus2-moe-gsm8k-vllm`,
+    )
+    expect(r.getVersionUrl?.('v0.0.1')).toBeUndefined()
+  })
+
   it('builds no recipes when the blueprints could not be loaded', () => {
     expect(getBlueprintRecipes(null)).toEqual([])
     expect(getBlueprintRecipes({ ...TEST_CATALOG, blueprints: [], error: 'x' })).toEqual([])

@@ -29,6 +29,7 @@ import {
   shortVersion,
 } from '~/modules/ai-training/helpers/rl-runs-helper'
 import { getRlRecipe } from '~/modules/ai-training/recipes/rl-recipes'
+import { classNames } from '~/helpers/class-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import RLRunStatusBadge from '~/modules/ai-training/components/badges/RLRunStatusBadge'
@@ -61,6 +62,31 @@ const RunSummaryCell: React.FC<{ run: RlRunSummary }> = ({ run }) => {
   )
 }
 
+// Links to the training code of the version when the recipe knows where it is
+const VersionBadge: React.FC<{ version: string; isCurrent: boolean; url?: string }> = ({
+  version,
+  isCurrent,
+  url,
+}) => {
+  const badge = (
+    <LabelBadge
+      color={isCurrent ? LabelColor.GRAY : LabelColor.YELLOW}
+      className={classNames('font-mono', url ? 'hover:underline' : '')}
+    >
+      {shortVersion(version)}
+      {!isCurrent && ' (older)'}
+    </LabelBadge>
+  )
+  const title = `Blueprint version ${version}${isCurrent ? '' : ', older than the one new runs use'}`
+  return url ? (
+    <a href={url} target='_blank' rel='noopener noreferrer' title={`${title} (opens on GitHub)`}>
+      {badge}
+    </a>
+  ) : (
+    <span title={title}>{badge}</span>
+  )
+}
+
 interface RunCellProps {
   run: RlRunSummary
   recipes: TrainingRecipe[]
@@ -68,7 +94,9 @@ interface RunCellProps {
 
 const RecipeCell: React.FC<RunCellProps> = ({ run, recipes }) => {
   const presetName = getPresetName(run, recipes)
-  const isCurrent = isCurrentRecipeVersion(run, getRlRecipe(recipes, run.recipeId))
+  const recipe = getRlRecipe(recipes, run.recipeId)
+  const isCurrent = isCurrentRecipeVersion(run, recipe)
+  const versionUrl = run.recipeVersion ? recipe?.getVersionUrl?.(run.recipeVersion) : undefined
   return (
     <>
       <div className='truncate font-medium text-gray-900'>
@@ -80,10 +108,7 @@ const RecipeCell: React.FC<RunCellProps> = ({ run, recipes }) => {
       <div className='mt-1 flex flex-wrap gap-1'>
         {presetName && <LabelBadge color={LabelColor.BLUE}>{presetName}</LabelBadge>}
         {run.recipeVersion && (
-          <LabelBadge color={isCurrent ? LabelColor.GRAY : LabelColor.YELLOW} className='font-mono'>
-            {shortVersion(run.recipeVersion)}
-            {!isCurrent && ' (older)'}
-          </LabelBadge>
+          <VersionBadge version={run.recipeVersion} isCurrent={isCurrent} url={versionUrl} />
         )}
       </div>
     </>

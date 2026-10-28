@@ -266,9 +266,9 @@ export const getRecordedMonitoringValues = (monitoring: ResolvedMonitoring) => {
 
 // Settings known when the script is generated, limited to what may be published: catalog ids,
 // numeric and short hyperparameter values, the monitoring destination and its settings (such as
-// the W&B project and entity) and the job size. Nothing else that identifies a person (job
-// name, paths, reservation), and no path hyperparameters, which can point into a home
-// directory. The collector applies the same allowlist again, since anyone can write files into
+// the W&B project and entity) and the job size, partition and account. Nothing else that
+// identifies a person (job name, paths, reservation), and no path hyperparameters, which can
+// point into a home directory. The collector applies the same allowlist again, since anyone can write files into
 // the tracker directory.
 const buildRunRecord = ({
   recipe,
@@ -278,6 +278,7 @@ const buildRunRecord = ({
   preset,
   monitoring,
   jobOptions,
+  account,
 }: BuildTrainingScriptParams) => {
   const publishedHyperparameters: Record<string, HyperparameterValue> = {}
   getActiveHyperparameters(recipe, preset)
@@ -303,6 +304,8 @@ const buildRunRecord = ({
       nodes: jobOptions.nodes,
       gpusPerNode: recipe.gpusPerNode,
       timeLimit: jobOptions.timeLimit,
+      partition: jobOptions.partition ?? null,
+      account: account ?? null,
     },
   }
 }
@@ -390,6 +393,8 @@ interface BuildTrainingScriptParams {
   jobOptions: TrainingJobOptions
   // Records the run's parameters and result for the shared run history
   runTracking: boolean
+  // Scheduler account the job is charged to, recorded so that cloning the run keeps it
+  account?: string
 }
 
 export const buildTrainingScript = (params: BuildTrainingScriptParams): string => {

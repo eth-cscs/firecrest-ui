@@ -122,6 +122,8 @@ export interface TrainingRecipe {
   documentationUrl?: string
   // Pinned version of the training code (release tag or commit), recorded with each run
   version?: string
+  // Where the training code of a version (the recipe's or a published run's) can be seen
+  getVersionUrl?: (version: string) => string | undefined
   // Node count range; when min < max, the count is chosen at launch
   nodes: { default: number; min: number; max: number }
   // Derives the node count from hyperparameters instead (e.g. training + generation nodes);
@@ -190,6 +192,9 @@ export interface RlRunSummary {
   nodes: number | null
   gpusPerNode: number | null
   timeLimit: string | null
+  partition: string | null
+  // Scheduler account the job was charged to
+  account: string | null
   metrics: Record<string, number> | null
 }
 
@@ -209,6 +214,10 @@ export interface RlLaunchPrefill {
   // Only for recipes whose node count is chosen at launch
   nodes: string | null
   timeLimit: string | null
+  // Launch options, applied in the form only where they are still offered to the user
+  system: string
+  account: string | null
+  partition: string | null
   // What could not be taken over as recorded
   notes: string[]
 }

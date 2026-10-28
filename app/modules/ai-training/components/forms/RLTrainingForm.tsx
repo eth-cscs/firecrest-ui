@@ -199,8 +199,22 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
   // Kept across recipe changes: it is a choice about sharing, not about the recipe
   const [runTracking, setRunTracking] = useState(true)
 
-  // Launch options
-  const [system, setSystem] = useState<string>(schedulerSystems[0]?.name ?? '')
+  // Launch options. A cloned run's system is selected when it is available; its account and
+  // partition once the system's lists are known, and only if the user still has them.
+  const isPrefillSystemAvailable =
+    !!prefill && schedulerSystems.some((s: System) => s.name === prefill.system)
+  const [system, setSystem] = useState<string>(
+    isPrefillSystemAvailable ? prefill!.system : (schedulerSystems[0]?.name ?? ''),
+  )
+  const pendingLaunchRef = useRef<{ account: string | null; partition: string | null } | null>(
+    isPrefillSystemAvailable ? { account: prefill!.account, partition: prefill!.partition } : null,
+  )
+  const [launchNotes, setLaunchNotes] = useState<string[]>(
+    prefill && !isPrefillSystemAvailable
+      ? [`The run's system (${prefill.system}) is not available: choose one in step 6.`]
+      : [],
+  )
+  const addLaunchNote = (note: string) => setLaunchNotes((notes) => [...notes, note])
   const systemInfo = schedulerSystems.find((s: System) => s.name === system) ?? null
   const [account, setAccount] = useState<string>('')
   const [workingDirectory, setWorkingDirectory] = useState<string>('')
@@ -226,6 +240,7 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
 
   useEffect(() => {
     if (!system) return
+    if (system !== prefill?.system) pendingLaunchRef.current = null
     userInfoFetcher.load(`/api/status/${system}/userinfo`)
     partitionsFetcher.load(`/api/status/${system}/partitions`)
     reservationsFetcher.load(`/api/status/${system}/reservations`)
@@ -248,8 +263,34 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
       userInfo.groups?.find((group: Group) => group.default) ??
       userInfo.group ??
       userInfo.groups?.[0]
+    const pendingAccount = pendingLaunchRef.current?.account
+    if (pendingLaunchRef.current) pendingLaunchRef.current.account = null
+    if (pendingAccount && userInfo.groups?.some((group: Group) => group.name === pendingAccount)) {
+      setAccount(pendingAccount)
+      return
+    }
+    if (pendingAccount) {
+      addLaunchNote(
+        `The run's account (${pendingAccount}) is not one of yours: your default account is selected.`,
+      )
+    }
     setAccount(defaultGroup?.name ?? '')
   }, [userInfoFetcher.state, userInfoFetcher.data])
+
+  useEffect(() => {
+    const pendingPartition = pendingLaunchRef.current?.partition
+    if (!pendingPartition || partitionsFetcher.state !== 'idle' || !partitionsFetcher.data) return
+    pendingLaunchRef.current!.partition = null
+    const partitions = partitionsFetcher.data.partitions ?? []
+    if (partitions.some((p) => p.name === pendingPartition)) {
+      setPartition(pendingPartition)
+      setShowAdvancedOptions(true)
+    } else {
+      addLaunchNote(
+        `The run's partition (${pendingPartition}) is not offered: the default partition is used.`,
+      )
+    }
+  }, [partitionsFetcher.state, partitionsFetcher.data])
 
   const updateJobName = (nextRecipe: TrainingRecipe, nextModelId: string) => {
     const nextModel = nextRecipe.models.find((m) => m.id === nextModelId) ?? nextRecipe.models[0]
@@ -406,7 +447,14 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
           hyperparameters: parsedHyperparameters,
           preset,
           monitoring: resolveMonitoring(monitoringDestination, parsedMonitoringValues),
-          jobOptions: { jobName, timeLimit, nodes: nodesResult.value },
+          jobOptions: {
+            jobName,
+            timeLimit,
+            nodes: nodesResult.value,
+            partition: partition || undefined,
+            reservation: reservation || undefined,
+          },
+          account: account || undefined,
           runTracking,
         })
       : null
@@ -550,9 +598,9 @@ const RLTrainingForm: React.FC<RLTrainingFormProps> = ({
               : ''}
             . Changed values are marked in step 4; review them before launching.
           </p>
-          {prefill.notes.length > 0 && (
+          {prefill.notes.length + launchNotes.length > 0 && (
             <ul className='mt-2 list-disc space-y-1 pl-5'>
-              {prefill.notes.map((note: string) => (
+              {[...prefill.notes, ...launchNotes].map((note: string) => (
                 <li key={note}>{note}</li>
               ))}
             </ul>

@@ -136,6 +136,8 @@ export const parseRunIndex = (recipeId: string, data: unknown): RlRunSummary[] =
           typeof entry.timeLimit === 'string' && TIME_LIMIT_PATTERN.test(entry.timeLimit)
             ? entry.timeLimit
             : null,
+        partition: safeId(entry.partition),
+        account: safeId(entry.account),
         metrics: toMetrics(entry.metrics),
       },
     ]
@@ -299,6 +301,9 @@ export const getLaunchPrefill = (
     editedKeys,
     nodes: isNodeCountConfigurable(recipe) && run.nodes !== null ? String(run.nodes) : null,
     timeLimit: run.timeLimit,
+    system: run.cluster,
+    account: run.account,
+    partition: run.partition,
     notes,
   }
 }

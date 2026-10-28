@@ -170,8 +170,17 @@ const OutcomeCell: React.FC<{ run: RlRunSummary }> = ({ run }) => {
             +{hidden.length} more
           </li>
         )}
-        {run.status === 'running' && <li className='text-xs text-gray-500'>So far</li>}
       </ul>
+    )
+  }
+  if (run.status === 'running' && run.metricsIntervalSeconds) {
+    return (
+      <div
+        className='text-xs text-gray-500'
+        title={`This run reports its metrics every ${Math.round(run.metricsIntervalSeconds / 60)} minutes, once its first steps are logged`}
+      >
+        Pending data
+      </div>
     )
   }
   const text: Record<RlRunSummary['status'], string> = {

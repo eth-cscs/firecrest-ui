@@ -387,6 +387,8 @@ describe('run tracking', () => {
       account: 'a-csstaff',
     })
     expect(record).not.toContain('my-reservation')
+    // So the UI knows to expect metrics from the run
+    expect(JSON.parse(record).launch.metrics).toEqual({ intervalSeconds: 600 })
   })
 
   it('records the monitoring settings for cloning, but not secrets, paths or the run name', () => {

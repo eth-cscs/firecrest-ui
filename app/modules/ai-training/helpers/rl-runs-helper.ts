@@ -138,6 +138,7 @@ export const parseRunIndex = (recipeId: string, data: unknown): RlRunSummary[] =
             : null,
         partition: safeId(entry.partition),
         account: safeId(entry.account),
+        metricsIntervalSeconds: integer(entry.metricsIntervalSeconds),
         metrics: toMetrics(entry.metrics),
       },
     ]
@@ -401,15 +402,24 @@ export const getRunMetricLines = (metrics: Record<string, number> | null): RunMe
   if (metrics.step_time_s !== undefined) {
     add('step_time_s', 'Step time', `${formatMetric(metrics.step_time_s)} s`, 'Median per step')
   }
-  if (metrics.tokens_per_s !== undefined) {
-    const perGpu = metrics.tokens_per_s_per_gpu
+  // Per GPU, which compares across job sizes; the total is in the title
+  const perGpu = metrics.tokens_per_s_per_gpu
+  const total = metrics.tokens_per_s
+  if (perGpu !== undefined) {
+    add(
+      'tokens_per_s_per_gpu',
+      'Throughput',
+      `${formatCount(perGpu)} t/s/GPU`,
+      `Median end-to-end tokens per second per GPU${total !== undefined ? `, ${formatCount(total)} tokens/s in total` : ''}`,
+    )
+    known.add('tokens_per_s')
+  } else if (total !== undefined) {
     add(
       'tokens_per_s',
       'Throughput',
-      `${formatCount(metrics.tokens_per_s)} tokens/s`,
-      `Median end-to-end tokens per second${perGpu !== undefined ? `, ${formatMetric(perGpu)} per GPU` : ''}`,
+      `${formatCount(total)} tokens/s`,
+      'Median end-to-end tokens per second',
     )
-    known.add('tokens_per_s_per_gpu')
   }
   Object.keys(metrics)
     .filter((key) => !known.has(key))

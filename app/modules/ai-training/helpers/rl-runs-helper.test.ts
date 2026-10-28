@@ -190,6 +190,12 @@ describe('cloning', () => {
     expect(prefill.notes.join('\n')).toMatch(/Weights & Biases settings were not recorded/)
   })
 
+  it('tells which runs report metrics while running', () => {
+    expect(run({ metricsIntervalSeconds: 600 }).metricsIntervalSeconds).toBe(600)
+    expect(run().metricsIntervalSeconds).toBeNull()
+    expect(run({ metricsIntervalSeconds: '600' }).metricsIntervalSeconds).toBeNull()
+  })
+
   it('takes over the launch options, for the form to apply where still offered', () => {
     const prefill = getLaunchPrefill(run({ partition: 'debug', account: 'a-csstaff' }), RECIPES)!
     expect(prefill).toMatchObject({
@@ -255,10 +261,12 @@ describe('run summaries', () => {
       ['Validation', '49.1% → 54.6%'],
       ['Steps', '21'],
       ['Step time', '60.1 s'],
-      ['Throughput', '23.2k tokens/s'],
+      ['Throughput', '290 t/s/GPU'],
       ['other:metric', '1.5'],
     ])
-    expect(lines[3].title).toContain('290 per GPU')
+    expect(lines[3].title).toContain('23.2k tokens/s in total')
+    // Older records without the per-GPU value
+    expect(getRunMetricLines({ tokens_per_s: 23202.41 })[0].value).toBe('23.2k tokens/s')
     expect(getRunMetricLines({ 'val:accuracy': 0.907 })[0].value).toBe('90.7%')
     expect(getRunMetricLines(null)).toEqual([])
   })

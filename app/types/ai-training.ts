@@ -198,6 +198,8 @@ export interface RlRunSummary {
   partition: string | null
   // Scheduler account the job was charged to
   account: string | null
+  // How often the run reports its metrics while running; null when it doesn't (older runs)
+  metricsIntervalSeconds: number | null
   metrics: Record<string, number> | null
 }
 

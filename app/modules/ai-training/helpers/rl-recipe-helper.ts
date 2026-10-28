@@ -270,6 +270,9 @@ export const getRecordedMonitoringValues = (monitoring: ResolvedMonitoring) => {
   return values
 }
 
+// How often a running job reports its metrics so far
+const RUN_METRICS_INTERVAL_SECONDS = 600
+
 // Settings known when the script is generated, limited to what may be published: catalog ids,
 // numeric and short hyperparameter values, the monitoring destination and its settings (such as
 // the W&B project and entity) and the job size, partition and account. Nothing else that
@@ -313,6 +316,10 @@ const buildRunRecord = ({
       partition: jobOptions.partition ?? null,
       account: account ?? null,
     },
+    // Tells that the run reports metrics while it runs, so the UI can expect them
+    ...(recipe.getMetricsDirectory
+      ? { metrics: { intervalSeconds: RUN_METRICS_INTERVAL_SECONDS } }
+      : {}),
   }
 }
 
@@ -321,9 +328,6 @@ const buildRunRecord = ({
 // training: if the directory can't be written, the job only logs a warning. Each file is written
 // under a hidden temporary name and then renamed, so the collector, which deletes the files it
 // has processed, never reads a partly written one.
-// How often a running job reports its metrics so far
-const RUN_METRICS_INTERVAL_SECONDS = 600
-
 // Defines read_run_metrics, which prints the run's metrics as a JSON object or nothing, and
 // starts reporting them every few minutes in <job id>-metrics.json. Neither ever fails the job:
 // without Python or event files there are simply no metrics.

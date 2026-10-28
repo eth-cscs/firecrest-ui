@@ -6,13 +6,13 @@
 *************************************************************************/
 
 import React, { useEffect, useState } from 'react'
-import { CheckIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline'
+import { CheckIcon, DocumentDuplicateIcon, XMarkIcon } from '@heroicons/react/24/outline'
 // helpers
 import { classNames } from '~/helpers/class-helper'
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 
-// How long the "copied" check mark stays before reverting to the copy icon.
+// How long the "copied" / "copy failed" feedback stays before reverting to the copy icon.
 const COPIED_FEEDBACK_MS = 1500
 
 interface CopyToClipboardButtonProps {
@@ -29,13 +29,13 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
   className = '',
   tooltipClassName = 'left-0 top-6',
 }) => {
-  const [copied, setCopied] = useState(false)
+  const [result, setResult] = useState<'copied' | 'failed' | null>(null)
 
   useEffect(() => {
-    if (!copied) return
-    const timeoutId = setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS)
+    if (!result) return
+    const timeoutId = setTimeout(() => setResult(null), COPIED_FEEDBACK_MS)
     return () => clearTimeout(timeoutId)
-  }, [copied])
+  }, [result])
 
   const onClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     // Don't trigger click handlers of whatever row/link this sits in.
@@ -43,16 +43,20 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
     try {
       // navigator.clipboard only exists in secure contexts (HTTPS or localhost).
       await navigator.clipboard.writeText(value)
-      setCopied(true)
+      setResult('copied')
     } catch {
-      // Nothing useful to show if the browser refuses - just don't claim success.
+      // E.g. clipboard permission denied, or not a secure context.
+      setResult('failed')
     }
   }
 
   // The outer span keeps the icon from shrinking away when it sits next to truncated text.
   return (
     <span className='inline-flex flex-shrink-0'>
-      <SimpleTooltip message={copied ? 'Copied!' : label} className={tooltipClassName}>
+      <SimpleTooltip
+        message={result === 'copied' ? 'Copied!' : result === 'failed' ? 'Copy failed' : label}
+        className={tooltipClassName}
+      >
         <button
           type='button'
           onClick={onClick}
@@ -61,9 +65,13 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
             className,
           )}
         >
-          <span className='sr-only'>{copied ? 'Copied' : label}</span>
-          {copied ? (
+          <span className='sr-only'>
+            {result === 'copied' ? 'Copied' : result === 'failed' ? 'Copy failed' : label}
+          </span>
+          {result === 'copied' ? (
             <CheckIcon aria-hidden='true' className='h-4 w-4 text-emerald-500' />
+          ) : result === 'failed' ? (
+            <XMarkIcon aria-hidden='true' className='h-4 w-4 text-red-500' />
           ) : (
             <DocumentDuplicateIcon aria-hidden='true' className='h-4 w-4' />
           )}

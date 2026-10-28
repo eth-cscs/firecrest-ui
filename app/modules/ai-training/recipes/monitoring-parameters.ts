@@ -69,7 +69,7 @@ export const wandbEnvironmentParameters = (): MonitoringParameter[] => [
     key: WANDB_PUBLISH_LINK_KEY,
     label: 'Link in run history',
     description:
-      'Shows a link to the W&B run in the public run history, which then includes the entity and project. Needs the entity and online mode.',
+      'Shows a link to the W&B run in the public run history, which then includes the entity and project. Without an entity, the job looks up the default entity of your API key. Needs online mode.',
     group: 'Weights & Biases',
     type: 'bool',
     default: true,
@@ -81,21 +81,42 @@ export const wandbEnvironmentParameters = (): MonitoringParameter[] => [
 // one otherwise). Shell syntax, expanded in the job.
 export const WANDB_RUN_ID = '${SLURM_CLUSTER_NAME:-unknown}-${SLURM_JOB_ID}'
 
-// Link to the run on the W&B server, with WANDB_RUN_ID in shell syntax, or null when it isn't
-// to be published or can't be known: without an entity W&B uses the API key's default entity,
-// and offline runs are never uploaded
+// Set by the job to the API key's default entity, which W&B uses when no entity is chosen
+// (see getWandbEntityLookup). Shell syntax, expanded in the job.
+export const WANDB_LINK_ENTITY = '${WANDB_LINK_ENTITY}'
+
+// Link to the run on the W&B server, in shell syntax for what only the job knows, or null when
+// it isn't to be published or can't be known: offline runs are never uploaded
 export const getWandbRunUrl = (monitoring: ResolvedMonitoring): string | null => {
   const environment = monitoring.environment
   if (
     monitoring.destination.id !== 'wandb' ||
     monitoring.runHistory[WANDB_PUBLISH_LINK_KEY] !== 'true' ||
     environment.WANDB_MODE === 'offline' ||
-    !environment.WANDB_ENTITY ||
     !environment.WANDB_PROJECT
   ) {
     return null
   }
   const host = (environment.WANDB_BASE_URL || 'https://wandb.ai').replace(/\/+$/, '')
   if (!host.startsWith('https://')) return null
-  return `${host}/${environment.WANDB_ENTITY}/${environment.WANDB_PROJECT}/runs/${WANDB_RUN_ID}`
+  const entity = environment.WANDB_ENTITY || WANDB_LINK_ENTITY
+  return `${host}/${entity}/${environment.WANDB_PROJECT}/runs/${WANDB_RUN_ID}`
+}
+
+// Script lines that set WANDB_LINK_ENTITY when the link needs it. The API key is read from its
+// file and given to curl on stdin, never as an argument, which other users could see; only an
+// entity made of safe characters is kept. If the lookup fails it stays empty, and the collector
+// drops the link, which is then malformed.
+export const getWandbEntityLookup = (monitoring: ResolvedMonitoring): string[] => {
+  const keyFile = monitoring.secretFiles.WANDB_API_KEY
+  if (!getWandbRunUrl(monitoring) || monitoring.environment.WANDB_ENTITY || !keyFile) return []
+  // The cloud API is on its own host; self-hosted servers serve it next to the web app
+  const apiUrl = (monitoring.environment.WANDB_BASE_URL || 'https://api.wandb.ai').replace(
+    /\/+$/,
+    '',
+  )
+  return [
+    "# W&B entity for the run's link: no entity was chosen, so W&B uses the API key's default one",
+    `WANDB_LINK_ENTITY="$(printf 'user = "api:%s"\\n' "$(cat "${keyFile}" 2>/dev/null)" | curl -sf --max-time 20 -K - -H 'Content-Type: application/json' -d '{"query":"query { viewer { entity } }"}' "${apiUrl}/graphql" | sed -n 's/.*"entity": *"\\([A-Za-z0-9._-]\\{1,128\\}\\)".*/\\1/p')" || WANDB_LINK_ENTITY=""`,
+  ]
 }

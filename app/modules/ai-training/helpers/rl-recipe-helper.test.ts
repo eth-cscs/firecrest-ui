@@ -25,6 +25,7 @@ import {
   TEST_RECIPES as RL_RECIPES,
   TEST_SOURCE,
 } from '~/modules/ai-training/recipes/__fixtures__/test-recipes'
+import { TENSORBOARD_METRICS_READER } from '~/modules/ai-training/helpers/rl-metrics-reader'
 import { validateRlTrainingLaunch } from '~/validations/aiTrainingValidation'
 import type {
   HyperparameterDefinition,
@@ -445,10 +446,27 @@ describe('run tracking', () => {
       )
     })
 
+    it('uses the default entity of the API key, looked up by the job, when none is chosen', () => {
+      const { script, runRecord } = buildWandbScript({ WANDB_ENTITY: null })
+      expect(runRecord).toContain(
+        '"url": "https://wandb.ai/${WANDB_LINK_ENTITY}/my-project/runs/${SLURM_CLUSTER_NAME:-unknown}-${SLURM_JOB_ID}"',
+      )
+      const lookup = script.split('\n').find((line) => line.startsWith('WANDB_LINK_ENTITY='))!
+      // Before the run file, which needs it
+      expect(script.indexOf(lookup)).toBeLessThan(script.indexOf('<<RUN_JSON'))
+      expect(lookup).toContain('https://api.wandb.ai/graphql')
+      // The key goes to curl on stdin, never as an argument
+      expect(lookup).toContain(
+        `printf 'user = "api:%s"\\n' "$(cat "\${HOME}/.wandb_api_key" 2>/dev/null)" | curl`,
+      )
+      expect(lookup).toContain('curl -sf --max-time 20 -K - ')
+      // Not needed when the entity is chosen
+      expect(buildWandbScript({}).script).not.toContain('WANDB_LINK_ENTITY')
+    })
+
     it('is left out when not chosen or not known', () => {
       const cases: Record<string, string | null>[] = [
         { 'wandb.publishLink': 'false' },
-        { WANDB_ENTITY: null },
         { 'wandb.mode': 'offline' },
         { 'wandb.host': 'http://wandb.example.org' },
       ]
@@ -458,6 +476,24 @@ describe('run tracking', () => {
         expect(script).not.toContain('WANDB_RUN_ID')
       })
     })
+  })
+
+  it('reports the metrics from the event files while the job runs and when it ends', () => {
+    expect(script).toContain(
+      'RUN_METRICS_DIR="${JOB_WORKING_DIR}/my-run-${SLURM_JOB_ID}/job-${SLURM_JOB_ID}/nemo-rl-logs"',
+    )
+    // The reader is embedded verbatim, in a quoted heredoc
+    expect(script).toContain(
+      `<<'RUN_METRICS_PY' || true\n${TENSORBOARD_METRICS_READER}\nRUN_METRICS_PY\n`,
+    )
+    expect(TENSORBOARD_METRICS_READER).not.toMatch(/^RUN_METRICS_PY$/m)
+    expect(script).toContain('(while sleep 600; do write_run_metrics; done) &')
+    expect(script).toContain('"${RUN_TRACKER_DIR}/${SLURM_JOB_ID}-metrics.json"')
+    expect(script).toContain('  "metrics": ${metrics:-null}')
+    // Stopped before the result is written, so it doesn't report after it
+    expect(script.indexOf('kill "${RUN_METRICS_PID}"')).toBeLessThan(
+      script.indexOf('<<RESULT_JSON'),
+    )
   })
 
   it('uses the directory the job starts in, not SLURM_SUBMIT_DIR, which is home via FirecREST', () => {

@@ -144,14 +144,16 @@ export const parseRunIndex = (recipeId: string, data: unknown): RlRunSummary[] =
   })
 }
 
-// Newest first across recipes; within a day (start times are only known to the day), in a
-// stable order
+// Job ids are digits only; a longer one is the larger number
+const compareJobIds = (a: string, b: string) => a.length - b.length || a.localeCompare(b)
+
+// By job id, highest (latest submitted) first across recipes, then by cluster
 export const sortRuns = (runs: RlRunSummary[]) =>
   [...runs].sort(
     (a, b) =>
-      (b.startedOn ?? '').localeCompare(a.startedOn ?? '') ||
-      a.recipeId.localeCompare(b.recipeId) ||
-      a.runId.localeCompare(b.runId),
+      compareJobIds(b.jobId, a.jobId) ||
+      a.cluster.localeCompare(b.cluster) ||
+      a.recipeId.localeCompare(b.recipeId),
   )
 
 // Through the route that looks up the job's account, which the job view's URL needs
@@ -357,3 +359,61 @@ export const formatDuration = (seconds: number | null) => {
 
 export const formatMetric = (value: number) =>
   Number.isInteger(value) ? String(value) : value.toPrecision(4).replace(/\.?0+$/, '')
+
+export interface RunMetricLine {
+  key: string
+  label: string
+  value: string
+  title?: string
+}
+
+const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`
+
+const formatCount = (value: number) =>
+  value >= 1000 ? `${formatMetric(value / 1000)}k` : formatMetric(value)
+
+// The metrics the job reports (see rl-metrics-reader.ts), in a fixed order and readable; others,
+// e.g. from older runs, follow by name
+export const getRunMetricLines = (metrics: Record<string, number> | null): RunMetricLine[] => {
+  if (!metrics) return []
+  const lines: RunMetricLine[] = []
+  const known = new Set<string>()
+  const add = (key: string, label: string, value: string, title?: string) => {
+    known.add(key)
+    lines.push({ key, label, value, title })
+  }
+  const accuracy = metrics['val:accuracy']
+  const start = metrics['val:accuracy_start']
+  if (accuracy !== undefined) {
+    add(
+      'val:accuracy',
+      'Validation',
+      start !== undefined
+        ? `${formatPercent(start)} → ${formatPercent(accuracy)}`
+        : formatPercent(accuracy),
+      start !== undefined
+        ? 'Validation accuracy at the first and the last validation'
+        : 'Validation accuracy at the last validation',
+    )
+    known.add('val:accuracy_start')
+  }
+  if (metrics.steps !== undefined) add('steps', 'Steps', formatMetric(metrics.steps))
+  if (metrics.step_time_s !== undefined) {
+    add('step_time_s', 'Step time', `${formatMetric(metrics.step_time_s)} s`, 'Median per step')
+  }
+  if (metrics.tokens_per_s !== undefined) {
+    const perGpu = metrics.tokens_per_s_per_gpu
+    add(
+      'tokens_per_s',
+      'Throughput',
+      `${formatCount(metrics.tokens_per_s)} tokens/s`,
+      `Median end-to-end tokens per second${perGpu !== undefined ? `, ${formatMetric(perGpu)} per GPU` : ''}`,
+    )
+    known.add('tokens_per_s_per_gpu')
+  }
+  Object.keys(metrics)
+    .filter((key) => !known.has(key))
+    .sort()
+    .forEach((key) => lines.push({ key, label: key, value: formatMetric(metrics[key]) }))
+  return lines
+}

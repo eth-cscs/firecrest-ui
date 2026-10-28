@@ -122,6 +122,9 @@ export interface TrainingRecipe {
   documentationUrl?: string
   // Pinned version of the training code (release tag or commit), recorded with each run
   version?: string
+  // Where the job's TensorBoard event files are, in shell syntax, for the metrics of the run
+  // history
+  getMetricsDirectory?: (jobName: string) => string
   // Where the training code of a version (the recipe's or a published run's) can be seen
   getVersionUrl?: (version: string) => string | undefined
   // Node count range; when min < max, the count is chosen at launch

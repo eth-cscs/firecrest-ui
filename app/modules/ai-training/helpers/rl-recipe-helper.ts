@@ -5,7 +5,13 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { WANDB_RUN_ID, getWandbRunUrl } from '~/modules/ai-training/recipes/monitoring-parameters'
+import { TENSORBOARD_METRICS_READER } from '~/modules/ai-training/helpers/rl-metrics-reader'
+import {
+  WANDB_LINK_ENTITY,
+  WANDB_RUN_ID,
+  getWandbEntityLookup,
+  getWandbRunUrl,
+} from '~/modules/ai-training/recipes/monitoring-parameters'
 // types
 import type {
   HyperparameterDefinition,
@@ -315,11 +321,54 @@ const buildRunRecord = ({
 // training: if the directory can't be written, the job only logs a warning. Each file is written
 // under a hidden temporary name and then renamed, so the collector, which deletes the files it
 // has processed, never reads a partly written one.
+// How often a running job reports its metrics so far
+const RUN_METRICS_INTERVAL_SECONDS = 600
+
+// Defines read_run_metrics, which prints the run's metrics as a JSON object or nothing, and
+// starts reporting them every few minutes in <job id>-metrics.json. Neither ever fails the job:
+// without Python or event files there are simply no metrics.
+const buildRunMetrics = (params: BuildTrainingScriptParams): string[] => {
+  const directory = params.recipe.getMetricsDirectory?.(params.jobOptions.jobName)
+  if (!directory) return ['read_run_metrics() { :; }']
+  return [
+    `RUN_METRICS_DIR="${directory}"`,
+    "read -r -d '' RUN_METRICS_READER <<'RUN_METRICS_PY' || true",
+    TENSORBOARD_METRICS_READER,
+    'RUN_METRICS_PY',
+    'read_run_metrics() {',
+    '  [ -d "${RUN_METRICS_DIR}" ] || return 0',
+    '  timeout 60 python3 -I -c "${RUN_METRICS_READER}" "${RUN_METRICS_DIR}" 2>/dev/null || true',
+    '}',
+    'write_run_metrics() {',
+    '  local metrics',
+    '  metrics="$(read_run_metrics)"',
+    '  [ -n "${metrics}" ] || return 0',
+    '  (umask 0022 && cat > "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-metrics.json.tmp" <<METRICS_JSON && mv -f "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-metrics.json.tmp" "${RUN_TRACKER_DIR}/${SLURM_JOB_ID}-metrics.json"',
+    '{',
+    `  "schemaVersion": ${RUN_RECORD_SCHEMA_VERSION},`,
+    '  "jobId": "${SLURM_JOB_ID}",',
+    '  "cluster": "${SLURM_CLUSTER_NAME:-unknown}",',
+    `  "recipeId": "${params.recipe.id}",`,
+    '  "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",',
+    '  "metrics": ${metrics}',
+    '}',
+    'METRICS_JSON',
+    '  ) || true',
+    '}',
+    'RUN_METRICS_PID=""',
+    'if [ -n "${RUN_TRACKER_DIR}" ]; then',
+    `  (while sleep ${RUN_METRICS_INTERVAL_SECONDS}; do write_run_metrics; done) &`,
+    '  RUN_METRICS_PID=$!',
+    'fi',
+  ]
+}
+
 const buildRunTracking = (params: BuildTrainingScriptParams): string[] => {
-  // The W&B run id in the link is the only shell syntax in the record and must expand; all
-  // other values are validated not to contain any
+  // The W&B run id and looked-up entity in the link are the only shell syntax in the record and
+  // must expand; all other values are validated not to contain any
   const runRecord = escapeForHeredoc(JSON.stringify(buildRunRecord(params), null, 2))
     .replace(escapeForHeredoc(WANDB_RUN_ID), WANDB_RUN_ID)
+    .replace(escapeForHeredoc(WANDB_LINK_ENTITY), WANDB_LINK_ENTITY)
     .split('\n')
     .map((line: string, index: number) => (index === 0 ? line : `  ${line}`))
     .join('\n')
@@ -328,6 +377,7 @@ const buildRunTracking = (params: BuildTrainingScriptParams): string[] => {
     `RUN_TRACKER_DIR="${RUN_TRACKER_DIR}"`,
     'RUN_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"',
     'RUN_SIGNAL=""',
+    ...getWandbEntityLookup(params.monitoring),
     'if ! (umask 0022 && cat > "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-run.json.tmp" <<RUN_JSON && mv -f "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-run.json.tmp" "${RUN_TRACKER_DIR}/${SLURM_JOB_ID}-run.json"',
     '{',
     `  "schemaVersion": ${RUN_RECORD_SCHEMA_VERSION},`,
@@ -341,9 +391,13 @@ const buildRunTracking = (params: BuildTrainingScriptParams): string[] => {
     '  echo "Run tracking disabled: cannot write ${RUN_TRACKER_DIR}" >&2',
     '  RUN_TRACKER_DIR=""',
     'fi',
+    ...buildRunMetrics(params),
     'write_run_result() {',
     '  local exit_code=$?',
     '  [ -n "${RUN_TRACKER_DIR}" ] || return 0',
+    '  [ -z "${RUN_METRICS_PID:-}" ] || kill "${RUN_METRICS_PID}" 2>/dev/null || true',
+    '  local metrics',
+    '  metrics="$(read_run_metrics)"',
     '  local status=failed',
     '  if [ -n "${RUN_SIGNAL}" ]; then status=terminated; elif [ "${exit_code}" -eq 0 ]; then status=completed; fi',
     '  (umask 0022 && cat > "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-result.json.tmp" <<RESULT_JSON && mv -f "${RUN_TRACKER_DIR}/.${SLURM_JOB_ID}-result.json.tmp" "${RUN_TRACKER_DIR}/${SLURM_JOB_ID}-result.json"',
@@ -358,7 +412,7 @@ const buildRunTracking = (params: BuildTrainingScriptParams): string[] => {
     '  "startedAt": "${RUN_STARTED_AT}",',
     '  "endedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",',
     '  "elapsedSeconds": ${SECONDS},',
-    '  "metrics": null',
+    '  "metrics": ${metrics:-null}',
     '}',
     'RESULT_JSON',
     '  ) || echo "Run tracking: cannot write ${RUN_TRACKER_DIR}/${SLURM_JOB_ID}-result.json" >&2',

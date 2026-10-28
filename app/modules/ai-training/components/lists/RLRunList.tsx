@@ -17,10 +17,10 @@ import {
 // helpers
 import {
   formatDuration,
-  formatMetric,
   getChangedHyperparameters,
   getCloneUrl,
   getEnvironmentName,
+  getRunMetricLines,
   getJobUrl,
   getModelName,
   getPresetName,
@@ -38,7 +38,7 @@ import type { RlRunSummary, TrainingRecipe } from '~/types/ai-training'
 
 // Changed values shown per run before the rest is summarised
 const MAX_CHANGED_VALUES = 4
-const MAX_METRICS = 3
+const MAX_METRICS = 4
 
 const RunSummaryCell: React.FC<{ run: RlRunSummary }> = ({ run }) => {
   const duration = formatDuration(run.elapsedSeconds)
@@ -150,18 +150,27 @@ const ParametersCell: React.FC<RunCellProps> = ({ run, recipes }) => {
 }
 
 const OutcomeCell: React.FC<{ run: RlRunSummary }> = ({ run }) => {
-  const metrics = Object.entries(run.metrics ?? {})
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(0, MAX_METRICS)
-  if (metrics.length > 0) {
+  const lines = getRunMetricLines(run.metrics)
+  const shown = lines.slice(0, MAX_METRICS)
+  const hidden = lines.slice(MAX_METRICS)
+  if (lines.length > 0) {
     return (
       <ul className='space-y-0.5'>
-        {metrics.map(([name, value]) => (
-          <li key={name} className='truncate text-xs'>
-            <span className='text-gray-500'>{name}</span>{' '}
-            <span className='font-mono font-medium text-gray-900'>{formatMetric(value)}</span>
+        {shown.map(({ key, label, value, title }) => (
+          <li key={key} className='truncate text-xs' title={title ?? `${label} = ${value}`}>
+            <span className='text-gray-500'>{label}</span>{' '}
+            <span className='font-mono font-medium text-gray-900'>{value}</span>
           </li>
         ))}
+        {hidden.length > 0 && (
+          <li
+            className='text-xs text-gray-500'
+            title={hidden.map(({ label, value }) => `${label} = ${value}`).join('\n')}
+          >
+            +{hidden.length} more
+          </li>
+        )}
+        {run.status === 'running' && <li className='text-xs text-gray-500'>So far</li>}
       </ul>
     )
   }

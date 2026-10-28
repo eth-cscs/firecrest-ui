@@ -11,6 +11,7 @@ import {
   getCloneUrl,
   getJobUrl,
   getLaunchPrefill,
+  getRunMetricLines,
   parseCloneSource,
   parseRunIndex,
   sortRuns,
@@ -98,21 +99,16 @@ describe('parseRunIndex', () => {
     expect(parseRunIndex(RECIPE, null)).toEqual([])
   })
 
-  it('sorts runs newest first across recipes', () => {
+  it('sorts runs by job id, highest first, across recipes', () => {
     const runs = sortRuns([
-      run({ startedOn: '2026-10-20' }),
+      run({ runId: 'clariden-999', jobId: '999', startedOn: '2026-10-26' }),
       {
-        ...run({ startedOn: '2026-10-26', runId: 'clariden-1', jobId: '1' }),
+        ...run({ runId: 'clariden-3781505', jobId: '3781505', startedOn: '2026-10-20' }),
         recipeId: 'nemo-rl-apertus2-moe-gsm8k-megatron',
       },
-      run({ startedOn: '2026-10-26' }),
+      run(),
     ])
-    // Within a day, by recipe id
-    expect(runs.map((r) => [r.recipeId, r.startedOn])).toEqual([
-      ['nemo-rl-apertus2-moe-gsm8k-megatron', '2026-10-26'],
-      [RECIPE, '2026-10-26'],
-      [RECIPE, '2026-10-20'],
-    ])
+    expect(runs.map((r) => r.jobId)).toEqual(['3781505', '3752975', '999'])
   })
 })
 
@@ -243,6 +239,28 @@ describe('run summaries', () => {
       ['MAX_NUM_STEPS', '3'],
     ])
     expect(getChangedHyperparameters(run({ hyperparameters: {} }), RECIPES)).toEqual([])
+  })
+
+  it('show the reported metrics readably, in a fixed order, then any others', () => {
+    const lines = getRunMetricLines({
+      tokens_per_s_per_gpu: 290.03,
+      tokens_per_s: 23202.41,
+      step_time_s: 60.099998,
+      steps: 21,
+      'val:accuracy_start': 0.4913,
+      'val:accuracy': 0.5459,
+      'other:metric': 1.5,
+    })
+    expect(lines.map(({ label, value }) => [label, value])).toEqual([
+      ['Validation', '49.1% → 54.6%'],
+      ['Steps', '21'],
+      ['Step time', '60.1 s'],
+      ['Throughput', '23.2k tokens/s'],
+      ['other:metric', '1.5'],
+    ])
+    expect(lines[3].title).toContain('290 per GPU')
+    expect(getRunMetricLines({ 'val:accuracy': 0.907 })[0].value).toBe('90.7%')
+    expect(getRunMetricLines(null)).toEqual([])
   })
 
   it('format durations compactly', () => {

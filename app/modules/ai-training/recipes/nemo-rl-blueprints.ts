@@ -537,6 +537,10 @@ export const blueprintToRecipe = (
     version: source.commit,
     // The blueprint's folder at the commit; runs of older commits are assumed to come from the
     // same repository
+    // NeMo-RL's logs in the run directory train.sh makes under CHONK_RUN_ROOT (see the script
+    // body below)
+    getMetricsDirectory: (jobName) =>
+      `\${JOB_WORKING_DIR}/${jobName}-\${SLURM_JOB_ID}/job-\${SLURM_JOB_ID}/nemo-rl-logs`,
     getVersionUrl: (version) =>
       COMMIT_PATTERN.test(version)
         ? `https://github.com/${source.repository}/tree/${version}/${BLUEPRINTS_DIR}/${blueprint.id}`

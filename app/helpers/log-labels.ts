@@ -20,6 +20,7 @@ export const LogAction = {
   FS_TRANSFER_UPLOAD: 'fs.transfer.upload',
   COMPUTE_JOB_SUBMIT_LOCAL: 'compute.job.submit.local',
   COMPUTE_JOB_SUBMIT_REMOTE: 'compute.job.submit.remote',
+  AI_TRAINING_RL_LAUNCH: 'ai-training.rl.launch',
 } as const
 
 export const LogActionMessage: Record<string, string> = {
@@ -37,6 +38,7 @@ export const LogActionMessage: Record<string, string> = {
   'fs.transfer.upload': 'File transfer: upload (async)',
   'compute.job.submit.local': 'Job submitted via local script upload',
   'compute.job.submit.remote': 'Job submitted via remote script',
+  'ai-training.rl.launch': 'RL training job launched from a recipe',
 }
 
 export const LogPage = {
@@ -45,6 +47,10 @@ export const LogPage = {
   FILESYSTEM_TRANSFER_INDEX: 'Filesystem transfer index page',
   COMPUTE_SUBMIT: 'Compute submit page',
   COMPUTE_JOB_DETAIL: 'Compute job detail page',
+  COMPUTE_JOB_LINK: 'Compute job link',
+  AI_TRAINING_SFT: 'AI training SFT page',
+  AI_TRAINING_RL: 'AI training RL runs page',
+  AI_TRAINING_RL_NEW: 'AI training RL new run page',
 } as const
 
 export const logPageLabel = {

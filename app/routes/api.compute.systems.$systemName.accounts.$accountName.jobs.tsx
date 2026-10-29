@@ -7,6 +7,9 @@
 
 import { data } from 'react-router'
 import type { LoaderFunctionArgs } from 'react-router'
+import { StatusCodes } from 'http-status-codes'
+// errors
+import { HttpError } from '~/errors/HttpError'
 // types
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
@@ -31,7 +34,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Authenticate the request and get the accessToken back, this will be the
   // already saved token or the refreshed one, in that case the headers above
   // will have the Set-Cookie header appended
-  const accessToken = await getAuthAccessToken(request, headers)
+  let accessToken: string
+  try {
+    accessToken = await getAuthAccessToken(request, headers)
+  } catch (error) {
+    // No (valid) session: answer with a real 401 instead of a generic 500, so the polling job list
+    // can tell "log in again" apart from a transient server problem and reload the page.
+    if (error instanceof HttpError && error.statusCode === StatusCodes.UNAUTHORIZED) {
+      throw data({ message: error.message }, { status: StatusCodes.UNAUTHORIZED, headers })
+    }
+    throw error
+  }
   const systemName = params.systemName!
   const accountName = params.accountName!
   const [, searchParams] = request.url.split('?')

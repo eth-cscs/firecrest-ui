@@ -21,11 +21,17 @@ export const getJobs = async (
   system: string = '',
   account: string = '',
   allUsers: boolean = false,
+  name: string = '',
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
+    const query = new URLSearchParams({ account: account, allusers: String(allUsers) })
+    // Backend-side filter: matches the full job name exactly (it's passed to the scheduler as-is).
+    if (name) {
+      query.set('name', name)
+    }
     const apiResponse = await api.get<GetJobsResponse>(
-      `/compute/${system}/jobs?account=${account}&allusers=${allUsers}`,
+      `/compute/${system}/jobs?${query.toString()}`,
       {
         headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request),
       },
@@ -35,6 +41,7 @@ export const getJobs = async (
       jobs: apiResponse.jobs ? apiResponse.jobs : [],
       account: account,
       allUsers: allUsers,
+      name: name,
       error: undefined,
     }
   } catch (api_error: unknown) {
@@ -50,6 +57,7 @@ export const getJobs = async (
       jobs: [],
       account: account,
       allUsers: allUsers,
+      name: name,
       error: { message },
     }
   }

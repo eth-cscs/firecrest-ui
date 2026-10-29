@@ -5,16 +5,29 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useFetcher } from 'react-router'
-import { CalendarIcon, ClockIcon, XMarkIcon, CommandLineIcon } from '@heroicons/react/24/outline'
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate, useFetcher, useLocation, useParams } from 'react-router'
+import {
+  CalendarIcon,
+  ClockIcon,
+  XMarkIcon,
+  CommandLineIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronDownIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline'
 // types
 import { Job, JobStateStatus, SystemJob } from '~/types/api-job'
 // helpers
 import { formatTime } from '~/helpers/time-helper'
 import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
-import { sortJobs } from '~/modules/compute/helpers/job-helper'
+import {
+  sortJobs,
+  normalizeJobNameFilter,
+  JOB_NAME_FILTER_MAX_LENGTH,
+} from '~/modules/compute/helpers/job-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -25,14 +38,14 @@ import JobDetailsDialog from '~/modules/compute/components/dialogs/JobDetailsDia
 import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialog'
 // tooltips
 import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
+// buttons
+import CopyToClipboardButton from '~/components/buttons/CopyToClipboardButton'
 // apis
 import { isMaintenancePayload, getMaintenancePayloadMessage } from '~/apis/api'
 // types
 import type { GetSystemJobsResponse } from '~/types/api-job'
 import type { MaintenancePayload } from '~/apis/api'
 // contexts
-import { useSystem } from '~/contexts/SystemContext'
-import { useGroup } from '~/contexts/GroupContext'
 import { useRefreshing } from '~/contexts/RefreshingContext'
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 // alerts
@@ -70,14 +83,22 @@ const JobNameAndId: React.FC<{ job: Job; onGoToDetails: () => void }> = ({
   onGoToDetails,
 }) => (
   <>
-    <button
-      type='button'
-      onClick={onGoToDetails}
-      className='block w-full truncate font-medium text-gray-900 mb-3 text-sm cursor-pointer hover:underline text-left'
-    >
-      {job.name}
-    </button>
-    <div className='truncate text-gray-500 text-xs mb-1'>Job Id: {job.jobId}</div>
+    {/* min-w-0 + truncate on the text (not the row) so long names still get an ellipsis while
+        the copy icon next to them stays visible. */}
+    <div className='flex min-w-0 items-center gap-1 mb-3'>
+      <button
+        type='button'
+        onClick={onGoToDetails}
+        className='min-w-0 truncate font-medium text-gray-900 text-sm cursor-pointer hover:underline text-left'
+      >
+        {job.name}
+      </button>
+      <CopyToClipboardButton value={job.name} label='Copy job name' />
+    </div>
+    <div className='flex min-w-0 items-center gap-1 text-gray-500 text-xs mb-1'>
+      <span className='truncate'>Job Id: {job.jobId}</span>
+      <CopyToClipboardButton value={job.jobId} label='Copy job ID' />
+    </div>
   </>
 )
 
@@ -102,11 +123,7 @@ const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
   </>
 )
 
-const JobTableRow: React.FC<JobTableRowProps> = ({
-  system,
-  job,
-  account,
-}: JobTableRowProps) => {
+const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
   const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -195,9 +212,15 @@ const JobTableRow: React.FC<JobTableRowProps> = ({
   )
 }
 
-const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
+interface JobsTableProps {
+  jobs: Job[]
+  systemName: string
+  emptyMessage?: string
+}
+
+const JobsTable: React.FC<JobsTableProps> = ({ jobs, systemName, emptyMessage }) => {
   if (jobs.length <= 0) {
-    return <AlertInfo message='Job/s not found' />
+    return <AlertInfo message={emptyMessage ?? 'Job/s not found'} />
   }
   return (
     <div className='overflow-x-auto'>
@@ -235,12 +258,7 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
         </thead>
         <tbody>
           {jobs.map((job: Job) => (
-            <JobTableRow
-              system={systemName}
-              key={`${job.jobId}`}
-              job={job}
-              account={job.account}
-            />
+            <JobTableRow system={systemName} key={`${job.jobId}`} job={job} account={job.account} />
           ))}
         </tbody>
       </table>
@@ -249,13 +267,41 @@ const JobsTable: React.FC<any> = ({ jobs, systemName }: any) => {
 }
 
 const JOBS_POLL_INTERVAL_MS = 2000
+// Wait for a pause in typing before applying the name filter, so each keystroke doesn't fire a
+// backend request (the filter is exact-match, so partial names would just return nothing anyway).
+const NAME_FILTER_DEBOUNCE_MS = 500
 
-const SystemJobList: React.FC = () => {
-  const [allUsers, setAllUsers] = useState<boolean>(
-    () => new URLSearchParams(window.location.search).get('allUsers') === 'true',
-  )
-  const { selectedSystem } = useSystem()
-  const { selectedGroup } = useGroup()
+interface SystemJobListProps {
+  // Resolved by the page loader: the URL's allUsers param if present, else the remembered cookie.
+  initialAllUsers: boolean
+  // From the URL's name param, so a filtered list can be bookmarked/shared.
+  initialName: string
+}
+
+// Updates one query param for bookmarkability without a React Router navigation - setSearchParams
+// would re-run the page loader on every change.
+const replaceUrlSearchParam = (key: string, value: string | null) => {
+  const url = new URL(window.location.href)
+  if (value === null) {
+    url.searchParams.delete(key)
+  } else {
+    url.searchParams.set(key, value)
+  }
+  // Keep the existing history state: React Router stores its own entry key/index there.
+  window.history.replaceState(window.history.state, '', url.toString())
+}
+
+const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialName }) => {
+  const [allUsers, setAllUsers] = useState<boolean>(initialAllUsers)
+  // What's typed in the search box vs. the (debounced, normalized) value actually sent to the API.
+  const [nameInput, setNameInput] = useState<string>(initialName)
+  const [name, setName] = useState<string>(initialName)
+  // Open on first render when the URL already carries a filter, so it's never applied unseen.
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(initialName !== '')
+  // Taken from the route, not the System/Group contexts: on the first render those fall back to
+  // the first system/group until an effect applies the URL's, which made the list fetch (and
+  // sometimes display) jobs from the wrong system right after a page load.
+  const { systemName, accountName } = useParams()
   const { setRefreshing } = useRefreshing()
   const { setMaintenance } = useMaintenance()
   // useFetcher (rather than a hand-rolled fetch+setState poll) is what makes this safe under a
@@ -264,41 +310,75 @@ const SystemJobList: React.FC = () => {
   // and clobber state set by a newer one. Also avoids the deferred/streamed loader response this
   // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
   const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
+  // The poll below runs in an interval created once per query; reading fetcher.state from that
+  // closure would give the value from when the interval was created, not the current one.
+  const fetcherStateRef = useRef(fetcher.state)
+  fetcherStateRef.current = fetcher.state
 
   // Takes the system/group names as required parameters (not read from closure) so a caller
   // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
   // are already-validated strings, rather than trusting every call site to check first.
-  const buildUrl = (systemNameValue: string, groupNameValue: string, allUsersValue: boolean) =>
-    `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?allUsers=${allUsersValue}`
+  const buildUrl = (
+    systemNameValue: string,
+    groupNameValue: string,
+    allUsersValue: boolean,
+    nameValue: string,
+  ) => {
+    const query = new URLSearchParams({ allUsers: String(allUsersValue) })
+    if (nameValue) {
+      query.set('name', nameValue)
+    }
+    return `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?${query.toString()}`
+  }
 
-  const onChangeHandler = (event: any) => {
+  const onChangeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.currentTarget.checked
     setAllUsers(checked)
-    // Update URL for bookmarkability without triggering a React Router navigation/loader re-run.
-    const url = new URL(window.location.href)
-    url.searchParams.set('allUsers', String(checked))
-    window.history.replaceState({}, '', url.toString())
+    replaceUrlSearchParam('allUsers', String(checked))
     // The effect below re-fetches on the `allUsers` change - no need to trigger it here too.
+  }
+
+  // Keep the URL in line with what the list shows, so a copied/shared link opens the same list
+  // instead of depending on the recipient's own remembered cookie. Needed on first load (the
+  // toggle may come from the cookie, not the URL) and after switching system/account, which
+  // navigates to a bare path without remounting this component.
+  const { pathname } = useLocation()
+  useEffect(() => {
+    replaceUrlSearchParam('allUsers', String(allUsers))
+    replaceUrlSearchParam('name', name || null)
+  }, [pathname])
+
+  // Apply the typed name once typing pauses; the polling effect below re-fetches on `name` change.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const normalized = normalizeJobNameFilter(nameInput)
+      setName(normalized)
+      replaceUrlSearchParam('name', normalized || null)
+    }, NAME_FILTER_DEBOUNCE_MS)
+    return () => clearTimeout(timeoutId)
+  }, [nameInput])
+
+  const clearNameFilter = () => {
+    // Clearing is an explicit action - apply it right away rather than waiting for the debounce.
+    setNameInput('')
+    setName('')
+    replaceUrlSearchParam('name', null)
   }
 
   // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
   // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
   // finish a request rather than having it superseded (and effectively never completing) every
-  // time the interval fires. Guarded on both names being populated - system/group briefly
-  // resolve after mount (system context, GroupsFetcher), and firing early would poll a
-  // malformed URL (missing path segment) until they do.
+  // time the interval fires.
   useEffect(() => {
-    const systemName = selectedSystem?.name
-    const groupName = selectedGroup?.name
-    if (!systemName || !groupName) return
-    fetcher.load(buildUrl(systemName, groupName, allUsers))
+    if (!systemName || !accountName) return
+    fetcher.load(buildUrl(systemName, accountName, allUsers, name))
     const intervalId = setInterval(() => {
-      if (fetcher.state === 'idle') {
-        fetcher.load(buildUrl(systemName, groupName, allUsers))
+      if (fetcherStateRef.current === 'idle') {
+        fetcher.load(buildUrl(systemName, accountName, allUsers, name))
       }
     }, JOBS_POLL_INTERVAL_MS)
     return () => clearInterval(intervalId)
-  }, [selectedSystem?.name, selectedGroup?.name, allUsers])
+  }, [systemName, accountName, allUsers, name])
 
   useEffect(() => {
     setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
@@ -321,28 +401,130 @@ const SystemJobList: React.FC = () => {
   }
 
   const jobsData = fetcher.data
+  // Never show a response for a different query than the one currently selected (e.g. one that
+  // was still in flight when the system, account, toggle or filter changed) - wait for the
+  // matching one instead of briefly, or permanently, showing the wrong list. The controls stay
+  // rendered meanwhile, so the search field keeps focus while a new filter loads.
+  const isCurrentQuery =
+    jobsData.system === systemName &&
+    jobsData.account === accountName &&
+    (jobsData.allUsers ?? false) === allUsers &&
+    (jobsData.name ?? '') === name
   const currentJobs = sortJobs(jobsData?.jobs ?? [])
   const localError = jobsData?.error ?? null
+  const emptyMessage = jobsData?.name
+    ? `No jobs named "${jobsData.name}" found. The search matches the full job name exactly.`
+    : undefined
+  // Counts applied filters (not what's still being typed), shown on the toggle when collapsed.
+  const activeFilterCount = name ? 1 : 0
 
   return (
     <>
-      <AlertError error={localError} />
-      <div className='pt-2 pb-4'>
-        <label className='inline-flex items-center cursor-pointer'>
-          <input
-            type='checkbox'
-            checked={allUsers}
-            value=''
-            className='sr-only peer'
-            onChange={onChangeHandler}
+      {isCurrentQuery && <AlertError error={localError} />}
+      <div className='pt-2 pb-4 flex flex-row items-center justify-between gap-4'>
+        <button
+          type='button'
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls='job-filters'
+          className='inline-flex items-center gap-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900'
+        >
+          <FunnelIcon aria-hidden='true' className='h-5 w-5 text-gray-400' />
+          Advanced search
+          {activeFilterCount > 0 && (
+            <span className='rounded-full bg-blue-100 px-2 text-xs font-medium text-blue-700'>
+              {activeFilterCount}
+            </span>
+          )}
+          <ChevronDownIcon
+            aria-hidden='true'
+            className={`h-4 w-4 text-gray-400 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
           />
-          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-          <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>
-            All users
-          </span>
-        </label>
+        </button>
+        <div className='inline-flex items-center gap-1'>
+          {/* Outside the label, so clicking the icon doesn't flip the toggle. */}
+          <SimpleTooltip
+            id='all-users-remembered-hint'
+            message='When on, shows the jobs submitted by all users within the selected project, not only yours. Your choice is remembered in this browser and used the next time you open the job list.'
+            className='right-0 top-7 w-64 whitespace-normal'
+          >
+            <button
+              type='button'
+              aria-describedby='all-users-remembered-hint'
+              className='rounded-full p-0.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300'
+            >
+              <span className='sr-only'>About the All users setting</span>
+              <InformationCircleIcon aria-hidden='true' className='h-5 w-5' />
+            </button>
+          </SimpleTooltip>
+          <label className='inline-flex items-center cursor-pointer'>
+            <input
+              type='checkbox'
+              checked={allUsers}
+              value=''
+              className='sr-only peer'
+              onChange={onChangeHandler}
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+            <span className='ms-3 text-sm font-medium text-gray-900 dark:text-gray-300'>
+              All users
+            </span>
+          </label>
+        </div>
       </div>
-      <JobsTable jobs={currentJobs ?? []} systemName={selectedSystem?.name || ''} />
+      {filtersOpen && (
+        <div id='job-filters' className='mb-4 rounded-md border border-gray-200 bg-gray-50 p-4'>
+          {/* Server-side filters: changing them reloads the list from the scheduler. Future
+              local (in-browser) filters should be labelled differently so the two aren't confused.
+              One label + field row per filter (like the job details view), with a fixed-width
+              label column so the field sits close and future rows (e.g. a date range) line up. */}
+          <div className='divide-y divide-gray-200'>
+            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-center sm:gap-4'>
+              <label htmlFor='job-name-filter' className='block text-sm font-medium text-gray-900'>
+                Job name
+              </label>
+              <div className='relative mt-1 w-full sm:mt-0'>
+                <MagnifyingGlassIcon
+                  aria-hidden='true'
+                  className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
+                />
+                <input
+                  id='job-name-filter'
+                  type='search'
+                  value={nameInput}
+                  maxLength={JOB_NAME_FILTER_MAX_LENGTH}
+                  placeholder='Load jobs by exact name'
+                  title='Asks the scheduler only for jobs whose name matches exactly'
+                  onChange={(event) => setNameInput(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') clearNameFilter()
+                  }}
+                  className='block w-full rounded-md border bg-white py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
+                />
+                {nameInput !== '' && (
+                  <button
+                    type='button'
+                    onClick={clearNameFilter}
+                    className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
+                  >
+                    <span className='sr-only'>Clear job name filter</span>
+                    <XMarkIcon aria-hidden='true' className='h-4 w-4' />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCurrentQuery ? (
+        <JobsTable
+          jobs={currentJobs ?? []}
+          systemName={systemName ?? ''}
+          emptyMessage={emptyMessage}
+        />
+      ) : (
+        <LoadingSpinner title='Loading jobs...' className='py-10' />
+      )}
     </>
   )
 }

@@ -22,12 +22,14 @@ import { jobsAllUsersCookie } from '~/utils/preferences.server'
 import { getJobs } from '~/apis/compute-api'
 import { isMaintenanceResponse, getMaintenanceMessage, MAINTENANCE_REASON } from '~/apis/api'
 
-// Consumed via useFetcher (see JobList.tsx), which needs a normal 200 response either way - a
-// thrown/non-2xx Response wouldn't cleanly populate fetcher.data (see api.ts's isMaintenancePayload
-// comment). getJobs() itself never throws except for a maintenance-classified Response (it swallows
-// every other error into a normal { ...error } return), so the only thing this catch has to turn
-// into a flagged payload is that one case - plus a timeout, guarding against a backend that just
-// never responds.
+// Polled by JobList.tsx with a plain fetch. Backend problems are returned as a normal 200 JSON
+// payload (jobs + error, or a maintenance payload) so the list can show them inline; getJobs()
+// itself never throws except for a maintenance-classified Response (it swallows every other error
+// into a normal { ...error } return), so the catch below only has to turn that case - plus a
+// timeout, guarding against a backend that never responds - into a payload. The one non-200
+// answer is a 401 for a missing/expired session (getAuthAccessToken only signals that case as an
+// HttpError; a failed token refresh is a redirect), which makes the list reload the page into the
+// login flow.
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Create a headers object
   const headers = new Headers()

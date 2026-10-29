@@ -268,6 +268,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, systemName, emptyMessage })
 }
 
 const JOBS_POLL_INTERVAL_MS = 2000
+
+const isJobsResponse = (value: unknown): value is GetSystemJobsResponse =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as GetSystemJobsResponse).system === 'string' &&
+  Array.isArray((value as GetSystemJobsResponse).jobs)
 // Wait for a pause in typing before applying the name filter, so each keystroke doesn't fire a
 // backend request (the filter is exact-match, so partial names would just return nothing anyway).
 const NAME_FILTER_DEBOUNCE_MS = 500
@@ -384,6 +390,8 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
         const response = await fetch(url, {
           signal: currentController.signal,
           headers: { Accept: 'application/json' },
+          // The session cookie is what authenticates this request.
+          credentials: 'same-origin',
           // Don't follow redirects (e.g. to the IdP when the session can't be refreshed): a
           // cross-origin redirect can't be read here anyway.
           redirect: 'manual',
@@ -397,7 +405,12 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
         if (!response.ok) {
           throw new Error(`the server responded with ${response.status}`)
         }
-        const result = (await response.json()) as GetSystemJobsResponse | MaintenancePayload
+        const result: unknown = await response.json()
+        // Cheap shape check, so an unexpected body shows the inline error instead of breaking
+        // the render further down.
+        if (!isMaintenancePayload(result) && !isJobsResponse(result)) {
+          throw new Error('unexpected response from the server')
+        }
         if (cancelled) return
         setJobsData(result)
         setPollError(null)

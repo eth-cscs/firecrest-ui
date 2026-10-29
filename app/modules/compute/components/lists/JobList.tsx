@@ -5,8 +5,9 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useFetcher, useLocation, useParams } from 'react-router'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation, useParams } from 'react-router'
+import { StatusCodes } from 'http-status-codes'
 import {
   CalendarIcon,
   ClockIcon,
@@ -267,6 +268,12 @@ const JobsTable: React.FC<JobsTableProps> = ({ jobs, systemName, emptyMessage })
 }
 
 const JOBS_POLL_INTERVAL_MS = 2000
+
+const isJobsResponse = (value: unknown): value is GetSystemJobsResponse =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as GetSystemJobsResponse).system === 'string' &&
+  Array.isArray((value as GetSystemJobsResponse).jobs)
 // Wait for a pause in typing before applying the name filter, so each keystroke doesn't fire a
 // backend request (the filter is exact-match, so partial names would just return nothing anyway).
 const NAME_FILTER_DEBOUNCE_MS = 500
@@ -304,16 +311,14 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   const { systemName, accountName } = useParams()
   const { setRefreshing } = useRefreshing()
   const { setMaintenance } = useMaintenance()
-  // useFetcher (rather than a hand-rolled fetch+setState poll) is what makes this safe under a
-  // slow/hanging backend: calling .load() again while a previous one for this fetcher is still
-  // in flight aborts the stale request, so an old, slow-to-resolve response can never land after
-  // and clobber state set by a newer one. Also avoids the deferred/streamed loader response this
-  // route used to rely on, which doesn't survive a buffering reverse proxy (e.g. Traefik) well.
-  const fetcher = useFetcher<GetSystemJobsResponse | MaintenancePayload>()
-  // The poll below runs in an interval created once per query; reading fetcher.state from that
-  // closure would give the value from when the interval was created, not the current one.
-  const fetcherStateRef = useRef(fetcher.state)
-  fetcherStateRef.current = fetcher.state
+  // Last response received, plus whether a request is in flight and the last poll's failure.
+  // A plain fetch (not useFetcher) on purpose: a failed fetcher load is handed to the route's
+  // ErrorBoundary, which replaced the whole page with "Failed to fetch" after a single network
+  // blip (laptop sleep, VPN/network change, pod restart) and stopped polling for good. Here a
+  // failure keeps the last list on screen, shows an inline error and the next poll retries.
+  const [jobsData, setJobsData] = useState<GetSystemJobsResponse | MaintenancePayload | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [pollError, setPollError] = useState<string | null>(null)
 
   // Takes the system/group names as required parameters (not read from closure) so a caller
   // can't accidentally build a URL with a missing path segment - TypeScript enforces that both
@@ -365,42 +370,99 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     replaceUrlSearchParam('name', null)
   }
 
-  // Initial load, plus a self-pacing poll: skips a tick while the previous load is still in
+  // Initial load, plus a self-pacing poll: skips a tick while the previous request is still in
   // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
-  // finish a request rather than having it superseded (and effectively never completing) every
-  // time the interval fires.
+  // finish a request rather than having it superseded every time the interval fires. When the
+  // query changes (or the list unmounts) the in-flight request is aborted and its result ignored,
+  // so an old response can never land after, and clobber, a newer one.
   useEffect(() => {
     if (!systemName || !accountName) return
-    fetcher.load(buildUrl(systemName, accountName, allUsers, name))
-    const intervalId = setInterval(() => {
-      if (fetcherStateRef.current === 'idle') {
-        fetcher.load(buildUrl(systemName, accountName, allUsers, name))
+    const url = buildUrl(systemName, accountName, allUsers, name)
+    let controller: AbortController | null = null
+    let cancelled = false
+
+    const load = async () => {
+      if (controller) return
+      const currentController = new AbortController()
+      controller = currentController
+      setLoading(true)
+      try {
+        const response = await fetch(url, {
+          signal: currentController.signal,
+          headers: { Accept: 'application/json' },
+          // The session cookie is what authenticates this request.
+          credentials: 'same-origin',
+          // Don't follow redirects (e.g. to the IdP when the session can't be refreshed): a
+          // cross-origin redirect can't be read here anyway.
+          redirect: 'manual',
+        })
+        if (cancelled) return
+        if (response.type === 'opaqueredirect' || response.status === StatusCodes.UNAUTHORIZED) {
+          // Session expired: reload so the page loader runs the normal login flow.
+          window.location.reload()
+          return
+        }
+        if (!response.ok) {
+          throw new Error(`the server responded with ${response.status}`)
+        }
+        const result: unknown = await response.json()
+        // Cheap shape check, so an unexpected body shows the inline error instead of breaking
+        // the render further down.
+        if (!isMaintenancePayload(result) && !isJobsResponse(result)) {
+          throw new Error('unexpected response from the server')
+        }
+        if (cancelled) return
+        setJobsData(result)
+        setPollError(null)
+      } catch (error) {
+        if (cancelled) return
+        setPollError(
+          `Unable to refresh the job list (${
+            error instanceof Error ? error.message : 'unknown error'
+          }). Retrying automatically...`,
+        )
+      } finally {
+        controller = null
+        if (!cancelled) setLoading(false)
       }
-    }, JOBS_POLL_INTERVAL_MS)
-    return () => clearInterval(intervalId)
+    }
+
+    load()
+    const intervalId = setInterval(load, JOBS_POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+      controller?.abort()
+    }
   }, [systemName, accountName, allUsers, name])
 
   useEffect(() => {
-    setRefreshing(fetcher.state !== 'idle', 'Refreshing jobs...')
-  }, [fetcher.state])
+    setRefreshing(loading, 'Refreshing jobs...')
+  }, [loading])
+
+  // Don't leave the footer stuck on "Refreshing jobs..." if the list goes away mid-request.
+  useEffect(() => () => setRefreshing(false), [])
 
   useEffect(() => {
-    if (isMaintenancePayload(fetcher.data)) {
-      setMaintenance(true, getMaintenancePayloadMessage(fetcher.data))
+    if (isMaintenancePayload(jobsData)) {
+      setMaintenance(true, getMaintenancePayloadMessage(jobsData))
     }
-  }, [fetcher.data])
+  }, [jobsData])
 
-  if (!fetcher.data) {
-    return <LoadingSpinner title='Loading jobs...' className='py-10' />
+  if (!jobsData) {
+    return pollError ? (
+      <AlertError error={{ message: pollError }} />
+    ) : (
+      <LoadingSpinner title='Loading jobs...' className='py-10' />
+    )
   }
 
-  if (isMaintenancePayload(fetcher.data)) {
+  if (isMaintenancePayload(jobsData)) {
     // AppLayout swaps to the maintenance page on the next render once setMaintenance() above
     // takes effect - nothing meaningful to render here in the meantime.
     return null
   }
 
-  const jobsData = fetcher.data
   // Never show a response for a different query than the one currently selected (e.g. one that
   // was still in flight when the system, account, toggle or filter changed) - wait for the
   // matching one instead of briefly, or permanently, showing the wrong list. The controls stay
@@ -420,7 +482,8 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
 
   return (
     <>
-      {isCurrentQuery && <AlertError error={localError} />}
+      {pollError && <AlertError error={{ message: pollError }} />}
+      {isCurrentQuery && !pollError && <AlertError error={localError} />}
       <div className='pt-2 pb-4 flex flex-row items-center justify-between gap-4'>
         <button
           type='button'

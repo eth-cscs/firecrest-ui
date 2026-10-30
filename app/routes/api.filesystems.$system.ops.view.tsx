@@ -6,6 +6,9 @@
 *************************************************************************/
 
 import type { LoaderFunctionArgs } from 'react-router'
+import { StatusCodes } from 'http-status-codes'
+// errors
+import { HttpError } from '~/errors/HttpError'
 // types
 import { GetOpsViewResponse } from '~/types/api-filesystem'
 // helpers
@@ -32,7 +35,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const url = new URL(request.url)
     const targetPath = url.searchParams.get('targetPath') || ''
     const size = Number(url.searchParams.get('size'))
-    const offset = Number(url.searchParams.get('offset'))
+    // A negative offset is valid: it counts back from the end of the file
+    const offset = Number(url.searchParams.get('offset') ?? '0')
+    if (!system || !targetPath) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'system and targetPath are required')
+    }
+    if (!Number.isInteger(size) || size <= 0) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'size must be a positive integer')
+    }
+    if (!Number.isInteger(offset)) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'offset must be an integer')
+    }
     // Get data
     const requestId = crypto.randomUUID()
     const response: GetOpsViewResponse = await getOpsView(

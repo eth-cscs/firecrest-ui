@@ -10,6 +10,19 @@ import env from './env'
 // helpers
 import { getEnvVariable } from '~/helpers/env-helper'
 
+const JOB_LOG_MODES = ['tail', 'view'] as const
+
+// Fails at startup on a typo instead of silently falling back to 'tail'.
+const getJobLogDefaultMode = (): (typeof JOB_LOG_MODES)[number] => {
+  const mode = getEnvVariable(env, 'JOB_LOG_DEFAULT_MODE', false, 'tail')
+  if (!JOB_LOG_MODES.includes(mode)) {
+    throw new Error(
+      `JOB_LOG_DEFAULT_MODE must be one of: ${JOB_LOG_MODES.join(', ')} (got "${mode}")`,
+    )
+  }
+  return mode
+}
+
 const base = {
   nodeEnv: getEnvVariable(env, 'NODE_ENV'),
   cookieSecure: getEnvVariable(env, 'COOKIE_SECURE', false, 'true') !== 'false',
@@ -31,7 +44,7 @@ const base = {
   jobLogViewModeEnabled:
     getEnvVariable(env, 'JOB_LOG_VIEW_MODE_ENABLED', false, 'false') === 'true',
   // Mode the job log opens in when View mode is enabled: 'tail' or 'view'.
-  jobLogDefaultMode: getEnvVariable(env, 'JOB_LOG_DEFAULT_MODE', false, 'tail'),
+  jobLogDefaultMode: getJobLogDefaultMode(),
 }
 
 export default base

@@ -1193,7 +1193,7 @@ type OutputTabId = (typeof OUTPUT_TABS)[number]['id']
 // 'tail' mirrors today's behaviour (last N lines, polled while the job runs). 'view' pages
 // through the file with GET /ops/view, anchored at EOF by default - see
 // project_windowed_log_preview_assessment memory for the design discussion behind this.
-type LogMode = 'tail' | 'view'
+export type LogMode = 'tail' | 'view'
 
 interface JobDetailsLayoutProps {
   job?: Job
@@ -1274,7 +1274,7 @@ interface JobDetailsConsoleViewProps {
   error: any
   dashboard: any
   logViewModeEnabled?: boolean
-  defaultLogMode?: string
+  defaultLogMode?: LogMode
 }
 
 const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
@@ -1313,7 +1313,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     if (!logViewModeEnabled) return 'tail'
     const mode = searchParams.get('mode')
     if (mode === 'view' || mode === 'tail') return mode
-    return defaultLogMode === 'view' ? 'view' : 'tail'
+    return defaultLogMode ?? 'tail'
   })
   // Parsed once from the URL this component mounted with - only ever consumed by the matching
   // view's very first fetch (see initialOffset/initialSize on useWindowedFileView), never updated
@@ -1383,7 +1383,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   }
 
   const fetchJob = async (
-    jobId: number,
+    jobId: string,
     setter: React.Dispatch<React.SetStateAction<Job | null>>,
   ) => {
     try {

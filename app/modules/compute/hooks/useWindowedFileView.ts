@@ -37,6 +37,9 @@ const DEFAULT_PAGE_SIZE_BYTES = 64 * 1024
 // comfortably fast, hence the default here - see project_windowed_log_preview_assessment memory
 // for the measurements and the alternative (DOM virtualization) that was considered and deferred
 // in favor of this simpler cap.
+// Note: the overflow checks below compare this against the buffer's length in characters, not
+// bytes. That is deliberate - the cost measured above is the size of the DOM text, i.e.
+// characters - and for pure-ASCII logs the two are identical anyway.
 const DEFAULT_MAX_BUFFER_BYTES = 4 * 1024 * 1024
 
 // Absolute byte offset just past a returned window. Always taken from the backend's own offsets,

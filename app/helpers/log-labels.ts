@@ -30,6 +30,7 @@ export const LogActionMessage: Record<string, string> = {
   'fs.rm': 'File removed',
   'fs.symlink': 'Symbolic link created',
   'fs.tail': 'File tail retrieved',
+  'fs.view': 'File view retrieved',
   'fs.upload': 'File uploaded',
   'fs.checksum': 'File checksum computed',
   'fs.transfer.cp': 'File transfer: copy',

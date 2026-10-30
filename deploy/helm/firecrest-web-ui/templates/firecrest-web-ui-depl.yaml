@@ -87,6 +87,10 @@ spec:
               value: "{{ .Values.repoUrl }}"
             - name: STATUS_URL
               value: "{{ .Values.statusUrl }}"
+            - name: JOB_LOG_VIEW_MODE_ENABLED
+              value: "{{ .Values.jobLogViewModeEnabled }}"
+            - name: JOB_LOG_DEFAULT_MODE
+              value: "{{ .Values.jobLogDefaultMode }}"
             {{- if .Values.uiObservabilityDashboard }}
             - name: UI_OBSERVABILITY_DASHBOARD
               value: "{{ .Values.uiObservabilityDashboard }}"

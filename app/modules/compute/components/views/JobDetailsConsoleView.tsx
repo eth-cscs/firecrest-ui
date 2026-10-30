@@ -240,6 +240,7 @@ interface JobDetailCenterProps {
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
   logMode: LogMode
+  logViewModeEnabled: boolean
   onChangeLogMode: (mode: LogMode) => void
   tailPaused: boolean
   onToggleTailPaused: () => void
@@ -261,6 +262,7 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
   dashboards,
   onChangeTab,
   logMode,
+  logViewModeEnabled,
   onChangeLogMode,
   tailPaused,
   onToggleTailPaused,
@@ -294,32 +296,35 @@ const JobDetailCenter: React.FC<JobDetailCenterProps> = ({
           <option value='script'>Job Script</option>
           {dashboards && dashboards.length > 0 && <option value='resources'>Dashboards</option>}
         </select>
-        <div className='flex items-center gap-3'>
-          <div className='flex items-center rounded-lg border overflow-hidden'>
-            <button
-              type='button'
-              onClick={() => onChangeLogMode('tail')}
-              disabled={!isLogTab}
-              data-active={logMode === 'tail'}
-              title='Show the last lines of the file and keep following new output as it arrives'
-              className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
-            >
-              <SignalIcon className='h-4 w-4' />
-              Tail
-            </button>
-            <button
-              type='button'
-              onClick={() => onChangeLogMode('view')}
-              disabled={!isLogTab}
-              data-active={logMode === 'view'}
-              title='Page through the file in windows instead of downloading it whole - better suited to large files'
-              className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-l disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
-            >
-              <QueueListIcon className='h-4 w-4' />
-              View
-            </button>
+        {/* Only offered when the backend supports /ops/view (JOB_LOG_VIEW_MODE_ENABLED) */}
+        {logViewModeEnabled && (
+          <div className='flex items-center gap-3'>
+            <div className='flex items-center rounded-lg border overflow-hidden'>
+              <button
+                type='button'
+                onClick={() => onChangeLogMode('tail')}
+                disabled={!isLogTab}
+                data-active={logMode === 'tail'}
+                title='Show the last lines of the file and keep following new output as it arrives'
+                className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
+              >
+                <SignalIcon className='h-4 w-4' />
+                Tail
+              </button>
+              <button
+                type='button'
+                onClick={() => onChangeLogMode('view')}
+                disabled={!isLogTab}
+                data-active={logMode === 'view'}
+                title='Page through the file in windows instead of downloading it whole - better suited to large files'
+                className='flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-l disabled:opacity-40 disabled:cursor-not-allowed data-[active=true]:bg-neutral-900 data-[active=true]:text-white'
+              >
+                <QueueListIcon className='h-4 w-4' />
+                View
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className='min-w-0 min-h-[50vh] pt-4 flex flex-col lg:h-full lg:min-h-0'>
         {activeTab === 'stdout' &&
@@ -1204,6 +1209,7 @@ interface JobDetailsLayoutProps {
   dashboards?: GrafanaDashboard[]
   onChangeTab: (id: OutputTabId) => void
   logMode: LogMode
+  logViewModeEnabled: boolean
   onChangeLogMode: (mode: LogMode) => void
   tailPaused: boolean
   onToggleTailPaused: () => void
@@ -1225,6 +1231,7 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
   dashboards,
   onChangeTab,
   logMode,
+  logViewModeEnabled,
   onChangeLogMode,
   tailPaused,
   onToggleTailPaused,
@@ -1248,6 +1255,7 @@ const JobDetailsLayout: React.FC<JobDetailsLayoutProps> = ({
           dashboards={dashboards}
           onChangeTab={onChangeTab}
           logMode={logMode}
+          logViewModeEnabled={logViewModeEnabled}
           onChangeLogMode={onChangeLogMode}
           tailPaused={tailPaused}
           onToggleTailPaused={onToggleTailPaused}
@@ -1265,6 +1273,7 @@ interface JobDetailsConsoleViewProps {
   system: any
   error: any
   dashboard: any
+  logViewModeEnabled?: boolean
   defaultLogMode?: string
 }
 
@@ -1274,6 +1283,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   system,
   error,
   dashboard,
+  logViewModeEnabled = false,
   defaultLogMode,
 }: JobDetailsConsoleViewProps) => {
   const job = useMemo<Job | null>(() => (jobs && jobs.length > 0 ? jobs[0] : null), [jobs])
@@ -1299,6 +1309,8 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
     return tab === 'stdout' || tab === 'stderr' ? tab : 'stdout'
   })
   const [logMode, setLogMode] = useState<LogMode>(() => {
+    // Without View mode support only 'tail' exists, whatever the URL or default asks for.
+    if (!logViewModeEnabled) return 'tail'
     const mode = searchParams.get('mode')
     if (mode === 'view' || mode === 'tail') return mode
     return defaultLogMode === 'view' ? 'view' : 'tail'
@@ -1352,11 +1364,15 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
   useEffect(() => {
     replaceUrlSearchParams((params) => {
       params.set('tab', activeTab)
-      params.set('mode', logMode)
+      if (logViewModeEnabled) {
+        params.set('mode', logMode)
+      } else {
+        params.delete('mode')
+      }
       params.delete('offset')
       params.delete('size')
     })
-  }, [activeTab, logMode])
+  }, [activeTab, logMode, logViewModeEnabled])
 
   const handlePollingError = async (error: any) => {
     if (isMaintenanceResponse(error)) {
@@ -1485,6 +1501,7 @@ const JobDetailsConsoleView: React.FC<JobDetailsConsoleViewProps> = ({
       dashboards={dashboards}
       onChangeTab={setActiveTab}
       logMode={logMode}
+      logViewModeEnabled={logViewModeEnabled}
       onChangeLogMode={setLogMode}
       tailPaused={tailPaused}
       onToggleTailPaused={() => setTailPaused((paused) => !paused)}

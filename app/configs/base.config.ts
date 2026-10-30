@@ -26,6 +26,11 @@ const base = {
   repoUrl: getEnvVariable(env, 'REPO_URL', false),
   docUrl: getEnvVariable(env, 'DOC_URL', false),
   statusUrl: getEnvVariable(env, 'STATUS_URL', false),
+  // The job log "View" mode pages through files with the backend's /ops/view, which needs
+  // FirecREST >= 2.7.0. Off by default, so deployments on older backends only offer "Tail".
+  jobLogViewModeEnabled:
+    getEnvVariable(env, 'JOB_LOG_VIEW_MODE_ENABLED', false, 'false') === 'true',
+  // Mode the job log opens in when View mode is enabled: 'tail' or 'view'.
   jobLogDefaultMode: getEnvVariable(env, 'JOB_LOG_DEFAULT_MODE', false, 'tail'),
 }
 

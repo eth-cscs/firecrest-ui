@@ -82,6 +82,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     system: system,
     dashboard: observability.dashboard || null,
     layoutMode: layoutMode,
+    logViewModeEnabled: base.jobLogViewModeEnabled,
     defaultLogMode: base.jobLogDefaultMode,
   }
 }
@@ -130,8 +131,15 @@ export const handle = { layoutMode: 'fixed-right' as const }
 
 export default function ComputeJobDetailsRoute() {
   const data = useActionData()
-  const { jobs, jobsMetadata, system, dashboard, layoutMode, defaultLogMode }: any =
-    useLoaderData()
+  const {
+    jobs,
+    jobsMetadata,
+    system,
+    dashboard,
+    layoutMode,
+    logViewModeEnabled,
+    defaultLogMode,
+  }: any = useLoaderData()
   if (layoutMode === 'fixed-right') {
     return (
       <JobDetailsConsoleView
@@ -140,6 +148,7 @@ export default function ComputeJobDetailsRoute() {
         system={system}
         error={getErrorFromData(data)}
         dashboard={dashboard}
+        logViewModeEnabled={logViewModeEnabled}
         defaultLogMode={defaultLogMode}
       />
     )

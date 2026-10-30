@@ -60,6 +60,23 @@ export interface GetOpsTailResponse {
   output?: FileContent
 }
 
+// Matches the `firecrest-v2` `Extends-view-for-top-and-bottom-offset` branch (unreleased,
+// targets backend 2.7.0). Byte positions of the returned `content` window: `startOffset` is the
+// distance from BOF to the window start (>= 0, 0 = reaches BOF); `endOffset` is the distance from
+// EOF to the window end, as a non-positive number (0 = reaches EOF, -100 = 100 bytes remain after
+// the window), so the window ends at absolute byte `fileSize + endOffset`. Used to page a file
+// window-by-window without downloading it whole.
+export interface FileView {
+  content: string
+  fileSize: number
+  startOffset: number
+  endOffset: number
+}
+
+export interface GetOpsViewResponse {
+  output?: FileView
+}
+
 export interface GetOpsChecksumResponse {
   output?: Checksum
 }

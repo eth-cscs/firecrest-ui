@@ -6,13 +6,14 @@
 *************************************************************************/
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation, useParams } from 'react-router'
+import { Link, useHref, useLocation, useParams } from 'react-router'
 import { StatusCodes } from 'http-status-codes'
 import {
   CalendarIcon,
   ClockIcon,
   XMarkIcon,
   CommandLineIcon,
+  LinkIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ChevronDownIcon,
@@ -79,29 +80,36 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
 // Shared between the desktop Job column and the mobile-only stacked summary folded into the
 // Status cell, so the two don't drift out of sync (and there's one place to fix, e.g. the
 // PENDING check below using the enum instead of a stray string literal).
-const JobNameAndId: React.FC<{ job: Job; onGoToDetails: () => void }> = ({
-  job,
-  onGoToDetails,
-}) => (
-  <>
-    {/* min-w-0 + truncate on the text (not the row) so long names still get an ellipsis while
+const JobNameAndId: React.FC<{ job: Job; detailsUrl: string }> = ({ job, detailsUrl }) => {
+  // useHref adds the router basename, if any; the origin is added at click time (no window on SSR).
+  const detailsHref = useHref(detailsUrl)
+  return (
+    <>
+      {/* min-w-0 + truncate on the text (not the row) so long names still get an ellipsis while
         the copy icon next to them stays visible. */}
-    <div className='flex min-w-0 items-center gap-1 mb-3'>
-      <button
-        type='button'
-        onClick={onGoToDetails}
-        className='min-w-0 truncate font-medium text-gray-900 text-sm cursor-pointer hover:underline text-left'
-      >
-        {job.name}
-      </button>
-      <CopyToClipboardButton value={job.name} label='Copy job name' />
-    </div>
-    <div className='flex min-w-0 items-center gap-1 text-gray-500 text-xs mb-1'>
-      <span className='truncate'>Job Id: {job.jobId}</span>
-      <CopyToClipboardButton value={job.jobId} label='Copy job ID' />
-    </div>
-  </>
-)
+      <div className='flex min-w-0 items-center gap-1 mb-3'>
+        {/* A real link (not a button + navigate) so the browser's own open-in-new-tab, middle-click
+          and copy-link-address work on it. */}
+        <Link
+          to={detailsUrl}
+          className='min-w-0 truncate font-medium text-gray-900 text-sm hover:underline'
+        >
+          {job.name}
+        </Link>
+        <CopyToClipboardButton value={job.name} label='Copy job name' />
+        <CopyToClipboardButton
+          value={() => new URL(detailsHref, window.location.origin).href}
+          label='Copy job details link'
+          icon={LinkIcon}
+        />
+      </div>
+      <div className='flex min-w-0 items-center gap-1 text-gray-500 text-xs mb-1'>
+        <span className='truncate'>Job Id: {job.jobId}</span>
+        <CopyToClipboardButton value={job.jobId} label='Copy job ID' />
+      </div>
+    </>
+  )
+}
 
 const JobUserBadge: React.FC<{ job: Job }> = ({ job }) =>
   job.user !== '' ? (
@@ -125,13 +133,10 @@ const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
 )
 
 const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
-  const navigate = useNavigate()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
-  const goToDetails = (jobId: string) => {
-    navigate(`/compute/systems/${system}/accounts/${account}/jobs/${jobId}`)
-  }
+  const detailsUrl = `/compute/systems/${system}/accounts/${account}/jobs/${job.jobId}`
 
   return (
     <tr className='border-b border-gray-100'>
@@ -155,7 +160,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
             eating ~256px right when a narrower breakpoint would otherwise try to fit 5 columns
             into whatever's left. */}
         <div className='lg:hidden mt-3'>
-          <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
+          <JobNameAndId job={job} detailsUrl={detailsUrl} />
           <div className='mb-1'>
             <JobUserBadge job={job} />
           </div>
@@ -163,7 +168,7 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
         </div>
       </td>
       <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
-        <JobNameAndId job={job} onGoToDetails={() => goToDetails(job.jobId)} />
+        <JobNameAndId job={job} detailsUrl={detailsUrl} />
       </td>
       <td className='hidden lg:table-cell py-3 align-top tabular-nums text-gray-700'>
         <JobUserBadge job={job} />
@@ -198,14 +203,13 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
             </SimpleTooltip>
           )}
           <SimpleTooltip message={`Go to details`} className='right-0 top-9'>
-            <button
-              onClick={() => goToDetails(job.jobId)}
-              type='button'
+            <Link
+              to={detailsUrl}
               className='relative -ml-px inline-flex items-center rounded-r-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
             >
               <span className='sr-only'>Go to details</span>
               <CommandLineIcon aria-hidden='true' className='h-5 w-5' />
-            </button>
+            </Link>
           </SimpleTooltip>
         </span>
       </td>

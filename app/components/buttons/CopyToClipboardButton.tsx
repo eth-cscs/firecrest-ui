@@ -16,11 +16,14 @@ import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 const COPIED_FEEDBACK_MS = 1500
 
 interface CopyToClipboardButtonProps {
-  value: string
+  // A function is read at click time, e.g. for values that need `window` (not available on SSR).
+  value: string | (() => string)
   // Tooltip and screen-reader text, e.g. "Copy job ID".
   label: string
   className?: string
   tooltipClassName?: string
+  // Icon shown in the idle state, e.g. a link icon for "Copy link".
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
 const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
@@ -28,6 +31,7 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
   label,
   className = '',
   tooltipClassName = 'left-0 top-6',
+  icon: Icon = DocumentDuplicateIcon,
 }) => {
   const [result, setResult] = useState<'copied' | 'failed' | null>(null)
 
@@ -42,7 +46,7 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
     event.stopPropagation()
     try {
       // navigator.clipboard only exists in secure contexts (HTTPS or localhost).
-      await navigator.clipboard.writeText(value)
+      await navigator.clipboard.writeText(typeof value === 'function' ? value() : value)
       setResult('copied')
     } catch {
       // E.g. clipboard permission denied, or not a secure context.
@@ -73,7 +77,7 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
           ) : result === 'failed' ? (
             <XMarkIcon aria-hidden='true' className='h-4 w-4 text-red-500' />
           ) : (
-            <DocumentDuplicateIcon aria-hidden='true' className='h-4 w-4' />
+            <Icon aria-hidden='true' className='h-4 w-4' />
           )}
         </button>
       </SimpleTooltip>

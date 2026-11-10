@@ -6,7 +6,7 @@
 *************************************************************************/
 
 import React, { useEffect, useState, useRef, useMemo } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { ArrowPathIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 // types
 import { System } from '~/types/api-status'
@@ -30,9 +30,6 @@ import JobCancelDialog from '~/modules/compute/components/dialogs/JobCancelDialo
 import LeftTitleCard from '~/components/cards/LeftTitleCard'
 // lists
 import { AttributesList, AttributesListItem } from '~/components/lists/AttributesList'
-// contexts
-import { useSystem } from '~/contexts/SystemContext'
-import { useGroup } from '~/contexts/GroupContext'
 
 interface JobDetailsViewProps {
   jobs: Job[]
@@ -83,8 +80,9 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   const [localError, setLocalError] = useState<any>(error)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const navigate = useNavigate()
-  const { selectedSystem } = useSystem()
-  const { selectedGroup } = useGroup()
+  // From the URL, not the System/Group contexts: on a fresh load (e.g. a job opened in a new
+  // tab) the contexts briefly fall back to the first system/group.
+  const { systemName, accountName } = useParams()
 
   useEffect(() => {
     setLocalError(error ?? null)
@@ -95,7 +93,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   }
 
   const handleNavigateBack = () => {
-    navigate(`/compute/systems/${selectedSystem?.name}/accounts/${selectedGroup?.name}/`)
+    navigate(`/compute/systems/${systemName}/accounts/${accountName}/`)
   }
 
   const getActionButtons = () => {
@@ -144,7 +142,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
           <JobCancelDialog
             job={currentJob}
             system={system}
-            account={selectedGroup?.name!}
+            account={accountName!}
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
           />

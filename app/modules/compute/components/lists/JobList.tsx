@@ -27,8 +27,14 @@ import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 import {
   sortJobs,
   normalizeJobNameFilter,
+  normalizeJobTimeWindow,
+  getJobTimeWindowStart,
   JOB_NAME_FILTER_MAX_LENGTH,
+  JOB_TIME_WINDOWS,
+  JOB_TIME_WINDOW_LABELS,
+  DEFAULT_JOB_TIME_WINDOW,
 } from '~/modules/compute/helpers/job-helper'
+import type { JobTimeWindow } from '~/modules/compute/helpers/job-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -283,6 +289,8 @@ interface SystemJobListProps {
   initialAllUsers: boolean
   // From the URL's name param, so a filtered list can be bookmarked/shared.
   initialName: string
+  // From the URL's timeWindow param (the default when missing or invalid).
+  initialTimeWindow: JobTimeWindow
 }
 
 // Updates one query param for bookmarkability without a React Router navigation - setSearchParams
@@ -298,13 +306,20 @@ const replaceUrlSearchParam = (key: string, value: string | null) => {
   window.history.replaceState(window.history.state, '', url.toString())
 }
 
-const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialName }) => {
+const SystemJobList: React.FC<SystemJobListProps> = ({
+  initialAllUsers,
+  initialName,
+  initialTimeWindow,
+}) => {
   const [allUsers, setAllUsers] = useState<boolean>(initialAllUsers)
   // What's typed in the search box vs. the (debounced, normalized) value actually sent to the API.
   const [nameInput, setNameInput] = useState<string>(initialName)
   const [name, setName] = useState<string>(initialName)
+  const [timeWindow, setTimeWindow] = useState<JobTimeWindow>(initialTimeWindow)
   // Open on first render when the URL already carries a filter, so it's never applied unseen.
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(initialName !== '')
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(
+    initialName !== '' || initialTimeWindow !== DEFAULT_JOB_TIME_WINDOW,
+  )
   // Taken from the route, not the System/Group contexts: on the first render those fall back to
   // the first system/group until an effect applies the URL's, which made the list fetch (and
   // sometimes display) jobs from the wrong system right after a page load.
@@ -328,8 +343,12 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     groupNameValue: string,
     allUsersValue: boolean,
     nameValue: string,
+    timeWindowValue: JobTimeWindow,
   ) => {
-    const query = new URLSearchParams({ allUsers: String(allUsersValue) })
+    const query = new URLSearchParams({
+      allUsers: String(allUsersValue),
+      timeWindow: timeWindowValue,
+    })
     if (nameValue) {
       query.set('name', nameValue)
     }
@@ -351,6 +370,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   useEffect(() => {
     replaceUrlSearchParam('allUsers', String(allUsers))
     replaceUrlSearchParam('name', name || null)
+    replaceUrlSearchParam('timeWindow', timeWindow)
   }, [pathname])
 
   // Apply the typed name once typing pauses; the polling effect below re-fetches on `name` change.
@@ -370,6 +390,14 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     replaceUrlSearchParam('name', null)
   }
 
+  const changeTimeWindow = (value: JobTimeWindow) => {
+    setTimeWindow(value)
+    // Always in the URL (not only when it differs from the default), like allUsers, so a shared
+    // link keeps showing the same range.
+    replaceUrlSearchParam('timeWindow', value)
+    // The polling effect below re-fetches on the `timeWindow` change.
+  }
+
   // Initial load, plus a self-pacing poll: skips a tick while the previous request is still in
   // flight instead of firing every JOBS_POLL_INTERVAL_MS regardless, so a slow backend gets to
   // finish a request rather than having it superseded every time the interval fires. When the
@@ -377,7 +405,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
   // so an old response can never land after, and clobber, a newer one.
   useEffect(() => {
     if (!systemName || !accountName) return
-    const url = buildUrl(systemName, accountName, allUsers, name)
+    const url = buildUrl(systemName, accountName, allUsers, name, timeWindow)
     let controller: AbortController | null = null
     let cancelled = false
 
@@ -434,7 +462,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
       clearInterval(intervalId)
       controller?.abort()
     }
-  }, [systemName, accountName, allUsers, name])
+  }, [systemName, accountName, allUsers, name, timeWindow])
 
   useEffect(() => {
     setRefreshing(loading, 'Refreshing jobs...')
@@ -471,14 +499,18 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
     jobsData.system === systemName &&
     jobsData.account === accountName &&
     (jobsData.allUsers ?? false) === allUsers &&
-    (jobsData.name ?? '') === name
+    (jobsData.name ?? '') === name &&
+    normalizeJobTimeWindow(jobsData.timeWindow) === timeWindow
   const currentJobs = sortJobs(jobsData?.jobs ?? [])
   const localError = jobsData?.error ?? null
+  const shownTimeWindowLabel =
+    JOB_TIME_WINDOW_LABELS[normalizeJobTimeWindow(jobsData?.timeWindow)].toLowerCase()
   const emptyMessage = jobsData?.name
-    ? `No jobs named "${jobsData.name}" found. The search matches the full job name exactly.`
-    : undefined
+    ? `No jobs named "${jobsData.name}" found in the ${shownTimeWindowLabel}. The search matches the full job name exactly.`
+    : `No jobs found in the ${shownTimeWindowLabel}.`
   // Counts applied filters (not what's still being typed), shown on the toggle when collapsed.
-  const activeFilterCount = name ? 1 : 0
+  // The default time range doesn't count: it's what the list shows without any filter.
+  const activeFilterCount = (name ? 1 : 0) + (timeWindow !== DEFAULT_JOB_TIME_WINDOW ? 1 : 0)
 
   return (
     <>
@@ -574,6 +606,53 @@ const SystemJobList: React.FC<SystemJobListProps> = ({ initialAllUsers, initialN
                     <XMarkIcon aria-hidden='true' className='h-4 w-4' />
                   </button>
                 )}
+              </div>
+            </div>
+            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-start sm:gap-4'>
+              <span
+                id='job-time-window-label'
+                className='block text-sm font-medium text-gray-900 sm:pt-2'
+              >
+                Time range
+              </span>
+              <div className='mt-1 sm:mt-0'>
+                <div
+                  role='group'
+                  aria-labelledby='job-time-window-label'
+                  aria-describedby='job-time-window-hint'
+                  className='isolate inline-flex rounded-md shadow-sm'
+                >
+                  {JOB_TIME_WINDOWS.map((value) => {
+                    const selected = value === timeWindow
+                    return (
+                      <button
+                        key={value}
+                        type='button'
+                        aria-pressed={selected}
+                        title={JOB_TIME_WINDOW_LABELS[value]}
+                        onClick={() => changeTimeWindow(value)}
+                        className={`relative -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md px-3 py-2 text-sm font-medium ring-1 ring-inset focus:z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+                          selected
+                            ? 'z-10 bg-blue-600 text-white ring-blue-600'
+                            : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className='sr-only'>{JOB_TIME_WINDOW_LABELS[value]}</span>
+                        <span aria-hidden='true'>{value}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {/* Recomputed on every render, and the list re-renders on every poll, so the
+                    start time moves forward along with the backend's own window. */}
+                <p id='job-time-window-hint' className='mt-2 text-xs text-gray-500'>
+                  Finished jobs from the {JOB_TIME_WINDOW_LABELS[timeWindow].toLowerCase()}, from{' '}
+                  {formatDateTimeFromTimestamp({
+                    timestamp: getJobTimeWindowStart(timeWindow),
+                    format: 'DD-MM-YYYY HH:mm',
+                  })}{' '}
+                  until now. Pending and running jobs are always shown.
+                </p>
               </div>
             </div>
           </div>

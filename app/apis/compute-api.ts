@@ -12,6 +12,9 @@ import type {
   GetJobResponse,
   GetJobMetadataResponse,
 } from '~/types/api-job'
+// helpers
+import { DEFAULT_JOB_TIME_WINDOW } from '~/modules/compute/helpers/job-helper'
+import type { JobTimeWindow } from '~/modules/compute/helpers/job-helper'
 
 // apis
 import api, { ApiTarget, isMaintenanceResponse, withTracingHeaders } from './api'
@@ -22,6 +25,7 @@ export const getJobs = async (
   account: string = '',
   allUsers: boolean = false,
   name: string = '',
+  timeWindow: JobTimeWindow = DEFAULT_JOB_TIME_WINDOW,
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
@@ -30,6 +34,8 @@ export const getJobs = async (
     if (name) {
       query.set('name', name)
     }
+    // Always sent, so the list doesn't depend on the backend's default staying the same.
+    query.set('time_window', timeWindow)
     const apiResponse = await api.get<GetJobsResponse>(
       `/compute/${system}/jobs?${query.toString()}`,
       {
@@ -42,6 +48,7 @@ export const getJobs = async (
       account: account,
       allUsers: allUsers,
       name: name,
+      timeWindow: timeWindow,
       error: undefined,
     }
   } catch (api_error: unknown) {
@@ -58,6 +65,7 @@ export const getJobs = async (
       account: account,
       allUsers: allUsers,
       name: name,
+      timeWindow: timeWindow,
       error: { message },
     }
   }

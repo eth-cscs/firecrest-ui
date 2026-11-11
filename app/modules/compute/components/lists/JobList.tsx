@@ -81,8 +81,6 @@ const mustHideField = (field: DisplayField, hideFields: [DisplayField] | []) => 
 // Status cell, so the two don't drift out of sync (and there's one place to fix, e.g. the
 // PENDING check below using the enum instead of a stray string literal).
 const JobNameAndId: React.FC<{ job: Job; detailsUrl: string }> = ({ job, detailsUrl }) => {
-  // useHref adds the router basename, if any; the origin is added at click time (no window on SSR).
-  const detailsHref = useHref(detailsUrl)
   return (
     <>
       {/* min-w-0 + truncate on the text (not the row) so long names still get an ellipsis while
@@ -97,11 +95,6 @@ const JobNameAndId: React.FC<{ job: Job; detailsUrl: string }> = ({ job, details
           {job.name}
         </Link>
         <CopyToClipboardButton value={job.name} label='Copy job name' />
-        <CopyToClipboardButton
-          value={() => new URL(detailsHref, window.location.origin).href}
-          label='Copy job details link'
-          icon={LinkIcon}
-        />
       </div>
       <div className='flex min-w-0 items-center gap-1 text-gray-500 text-xs mb-1'>
         <span className='truncate'>Job Id: {job.jobId}</span>
@@ -132,11 +125,19 @@ const JobPartitionOrPendingReason: React.FC<{ job: Job }> = ({ job }) => (
   </>
 )
 
+// Shared look of the bordered icon buttons in each row's action group (Cancel, Copy link,
+// Go to details). Callers add the rounded corners for the first/last button.
+const ACTION_BUTTON_CLASSES =
+  'relative -ml-px inline-flex items-center bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
+
 const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTableRowProps) => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
   const detailsUrl = `/compute/systems/${system}/accounts/${account}/jobs/${job.jobId}`
+  // useHref adds the router basename, if any; the origin is added at click time (no window on SSR).
+  const detailsHref = useHref(detailsUrl)
+  const canCancel = jobCanBeCanceled(job)
 
   return (
     <tr className='border-b border-gray-100'>
@@ -190,23 +191,28 @@ const JobTableRow: React.FC<JobTableRowProps> = ({ system, job, account }: JobTa
           onClose={() => setCancelDialogOpen(false)}
         />
         <span className='isolate inline-flex rounded-md shadow-sm'>
-          {jobCanBeCanceled(job) && (
+          {canCancel && (
             <SimpleTooltip message={`Cancel`} className='right-0 top-9'>
               <button
                 onClick={() => setCancelDialogOpen(true)}
                 type='button'
-                className='relative -ml-px inline-flex items-center bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
+                className={`${ACTION_BUTTON_CLASSES} rounded-l-md`}
               >
                 <span className='sr-only'>Cancel</span>
                 <XMarkIcon aria-hidden='true' className='h-5 w-5' />
               </button>
             </SimpleTooltip>
           )}
+          <CopyToClipboardButton
+            value={() => new URL(detailsHref, window.location.origin).href}
+            label='Copy job details link'
+            icon={LinkIcon}
+            buttonClassName={`${ACTION_BUTTON_CLASSES} ${canCancel ? '' : 'rounded-l-md'}`}
+            iconClassName='h-5 w-5'
+            tooltipClassName='right-0 top-9'
+          />
           <SimpleTooltip message={`Go to details`} className='right-0 top-9'>
-            <Link
-              to={detailsUrl}
-              className='relative -ml-px inline-flex items-center rounded-r-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10'
-            >
+            <Link to={detailsUrl} className={`${ACTION_BUTTON_CLASSES} rounded-r-md`}>
               <span className='sr-only'>Go to details</span>
               <CommandLineIcon aria-hidden='true' className='h-5 w-5' />
             </Link>

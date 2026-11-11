@@ -16,11 +16,15 @@ import SimpleTooltip from '~/components/tooltips/SimpleTooltip'
 const COPIED_FEEDBACK_MS = 1500
 
 interface CopyToClipboardButtonProps {
-  // A function is read at click time, e.g. for values that need `window` (not available on SSR).
+  // A function is called at click time, e.g. for values that need `window` (not available on SSR).
   value: string | (() => string)
   // Tooltip and screen-reader text, e.g. "Copy job ID".
   label: string
   className?: string
+  // Replaces the default (bare icon) button styles, e.g. to fit into a bordered button group.
+  buttonClassName?: string
+  // Size of the icons.
+  iconClassName?: string
   tooltipClassName?: string
   // Icon shown in the idle state, e.g. a link icon for "Copy link".
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
@@ -30,6 +34,8 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
   value,
   label,
   className = '',
+  buttonClassName = 'inline-flex flex-shrink-0 items-center rounded p-0.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
+  iconClassName = 'h-4 w-4',
   tooltipClassName = 'left-0 top-6',
   icon: Icon = DocumentDuplicateIcon,
 }) => {
@@ -61,23 +67,19 @@ const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
         message={result === 'copied' ? 'Copied!' : result === 'failed' ? 'Copy failed' : label}
         className={tooltipClassName}
       >
-        <button
-          type='button'
-          onClick={onClick}
-          className={classNames(
-            'inline-flex flex-shrink-0 items-center rounded p-0.5 text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
-            className,
-          )}
-        >
+        <button type='button' onClick={onClick} className={classNames(buttonClassName, className)}>
           <span className='sr-only'>
             {result === 'copied' ? 'Copied' : result === 'failed' ? 'Copy failed' : label}
           </span>
           {result === 'copied' ? (
-            <CheckIcon aria-hidden='true' className='h-4 w-4 text-emerald-500' />
+            <CheckIcon
+              aria-hidden='true'
+              className={classNames(iconClassName, 'text-emerald-500')}
+            />
           ) : result === 'failed' ? (
-            <XMarkIcon aria-hidden='true' className='h-4 w-4 text-red-500' />
+            <XMarkIcon aria-hidden='true' className={classNames(iconClassName, 'text-red-500')} />
           ) : (
-            <Icon aria-hidden='true' className='h-4 w-4' />
+            <Icon aria-hidden='true' className={iconClassName} />
           )}
         </button>
       </SimpleTooltip>

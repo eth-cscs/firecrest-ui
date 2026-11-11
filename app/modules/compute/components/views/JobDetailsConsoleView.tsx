@@ -70,7 +70,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
       <JobCancelDialog
         job={job!}
         system={system?.name!}
-        account={accountName!}
+        account={accountName ?? ''}
         open={cancelDialogOpen}
         onClose={() => setCancelDialogOpen(false)}
       />

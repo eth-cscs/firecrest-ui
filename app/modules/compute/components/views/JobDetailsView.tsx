@@ -93,7 +93,11 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
   }
 
   const handleNavigateBack = () => {
-    navigate(`/compute/systems/${systemName}/accounts/${accountName}/`)
+    // Params always exist on this route; fall back to the home page rather than building an
+    // ".../undefined/..." URL if that ever changes.
+    navigate(
+      systemName && accountName ? `/compute/systems/${systemName}/accounts/${accountName}/` : '/',
+    )
   }
 
   const getActionButtons = () => {
@@ -142,7 +146,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
           <JobCancelDialog
             job={currentJob}
             system={system}
-            account={accountName!}
+            account={accountName ?? ''}
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
           />

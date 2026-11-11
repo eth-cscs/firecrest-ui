@@ -646,12 +646,13 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
                 {/* Recomputed on every render, and the list re-renders on every poll, so the
                     start time moves forward along with the backend's own window. */}
                 <p id='job-time-window-hint' className='mt-2 text-xs text-gray-500'>
-                  Finished jobs from the {JOB_TIME_WINDOW_LABELS[timeWindow].toLowerCase()}, from{' '}
+                  Finished jobs since{' '}
                   {formatDateTimeFromTimestamp({
                     timestamp: getJobTimeWindowStart(timeWindow),
                     format: 'DD-MM-YYYY HH:mm',
                   })}{' '}
-                  until now. Pending and running jobs are always shown.
+                  ({JOB_TIME_WINDOW_LABELS[timeWindow].toLowerCase()}). Pending and running jobs are
+                  always shown.
                 </p>
               </div>
             </div>
@@ -659,11 +660,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
         </div>
       )}
       {isCurrentQuery ? (
-        <JobsTable
-          jobs={currentJobs ?? []}
-          systemName={systemName ?? ''}
-          emptyMessage={emptyMessage}
-        />
+        <JobsTable jobs={currentJobs} systemName={systemName ?? ''} emptyMessage={emptyMessage} />
       ) : (
         <LoadingSpinner title='Loading jobs...' className='py-10' />
       )}

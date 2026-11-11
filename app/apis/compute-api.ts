@@ -13,8 +13,7 @@ import type {
   GetJobMetadataResponse,
 } from '~/types/api-job'
 // helpers
-import { DEFAULT_JOB_TIME_WINDOW } from '~/modules/compute/helpers/job-helper'
-import type { JobTimeWindow } from '~/modules/compute/helpers/job-helper'
+import { DEFAULT_JOB_TIME_WINDOW, type JobTimeWindow } from '~/modules/compute/helpers/job-helper'
 
 // apis
 import api, { ApiTarget, isMaintenanceResponse, withTracingHeaders } from './api'
@@ -146,7 +145,10 @@ export const postJob = async (
 
 // Local apis
 
-export const getLocalJob = async (systemName: string, jobId: string | number): Promise<GetJobResponse> => {
+export const getLocalJob = async (
+  systemName: string,
+  jobId: string | number,
+): Promise<GetJobResponse> => {
   const apiResponse = await api.get<GetJobResponse>(
     `/api/compute/systems/${systemName}/jobs/${jobId}`,
     {},

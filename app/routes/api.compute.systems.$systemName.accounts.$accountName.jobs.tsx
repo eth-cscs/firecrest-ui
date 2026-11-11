@@ -52,10 +52,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
   const systemName = params.systemName!
   const accountName = params.accountName!
-  const [, searchParams] = request.url.split('?')
-  const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
-  const name = normalizeJobNameFilter(new URLSearchParams(searchParams).get('name'))
-  const timeWindow = normalizeJobTimeWindow(new URLSearchParams(searchParams).get('timeWindow'))
+  const { searchParams } = new URL(request.url)
+  const allUsers = searchParams.get('allUsers') === 'true'
+  const name = normalizeJobNameFilter(searchParams.get('name'))
+  const timeWindow = normalizeJobTimeWindow(searchParams.get('timeWindow'))
   // Remember the toggle choice for the next time the jobs page is loaded fresh (e.g. via a nav
   // link, which doesn't carry the query param). Only written when it differs from what the browser
   // already sent, so the 2s poll doesn't re-send the same Set-Cookie on every request.

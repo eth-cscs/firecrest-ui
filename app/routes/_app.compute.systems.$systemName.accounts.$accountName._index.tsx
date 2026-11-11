@@ -10,7 +10,10 @@ import type { LoaderFunctionArgs } from 'react-router'
 // helpers
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
-import { normalizeJobNameFilter } from '~/modules/compute/helpers/job-helper'
+import {
+  normalizeJobNameFilter,
+  normalizeJobTimeWindow,
+} from '~/modules/compute/helpers/job-helper'
 // utils
 import { requireAuth } from '~/utils/auth.server'
 import { jobsAllUsersCookie } from '~/utils/preferences.server'
@@ -37,17 +40,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     ? searchParams.get('allUsers') === 'true'
     : (await jobsAllUsersCookie.parse(request.headers.get('Cookie'))) === true
   const name = normalizeJobNameFilter(searchParams.get('name'))
+  const timeWindow = normalizeJobTimeWindow(searchParams.get('timeWindow'))
   logInfoHttp({
     eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
     extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
-  return { allUsers, name }
+  return { allUsers, name, timeWindow }
 }
 
 export default function AppComputeIandexRoute() {
-  const { allUsers, name } = useLoaderData<typeof loader>()
-  return <JobListView initialAllUsers={allUsers} initialName={name} />
+  const { allUsers, name, timeWindow } = useLoaderData<typeof loader>()
+  return (
+    <JobListView initialAllUsers={allUsers} initialName={name} initialTimeWindow={timeWindow} />
+  )
 }
 
 export function ErrorBoundary() {

@@ -16,6 +16,7 @@ import {
   ExclamationCircleIcon,
   EyeIcon,
   ChevronRightIcon,
+  QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
 // types
 import {
@@ -65,6 +66,17 @@ const SystemHealtyStatusBadge: React.FC<SystemHealtyStatusBadgeProps> = ({
           aria-hidden='true'
         />
         Healthy
+      </p>
+    )
+  }
+  if (systemHealthyStatus === SystemHealtyStatus.unknown) {
+    return (
+      <p className='ml-2 flex items-baseline text-sm text-gray-500 font-semibold'>
+        <QuestionMarkCircleIcon
+          className='h-5 mr-1 w-5 flex-shrink-0 self-center text-gray-400'
+          aria-hidden='true'
+        />
+        Unknown
       </p>
     )
   }
@@ -289,7 +301,7 @@ const SystemStatusStat: React.FC<SystemStatusStatProps> = ({
           )}
         </div>
       </div>
-      {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth} />}
+      {viewAll && <SystemHealthDetailTable system={system} servicesHealth={servicesHealth ?? []} />}
       <div className='absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6'>
         <div className='flex items-center justify-between text-sm'>
           <button

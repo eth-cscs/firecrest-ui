@@ -77,17 +77,20 @@ async function handleReponse(
         reason === MAINTENANCE_REASON ? MAINTENANCE_REASON : ReasonPhrases.SERVICE_UNAVAILABLE,
     })
   }
-  switch (jsonResponse) {
-    case ResponseBodyType.JSON:
-      httpResponse = await response.json()
-      break
-    case ResponseBodyType.BLOB:
-      httpResponse = await response.blob()
-      break
-  }
   if (response.ok) {
+    switch (jsonResponse) {
+      case ResponseBodyType.JSON:
+        return await response.json()
+      case ResponseBodyType.BLOB:
+        return await response.blob()
+    }
     return httpResponse
   }
+  // Error bodies aren't guaranteed to be JSON: a reverse proxy answers 502/504 with a plain-text
+  // "Bad Gateway", and some backend auth failures come back as text/plain. Parsing them with
+  // response.json() would replace the real status with a SyntaxError (rendered as a generic 500),
+  // so read the text and only use it as JSON when it actually is.
+  httpResponse = await parseErrorBody(response)
   if (target === ApiTarget.API_LOCAL) {
     throw httpResponse
   }
@@ -95,10 +98,23 @@ async function handleReponse(
   if (Object.values(StatusCodes).includes(response.status)) {
     statusText = getReasonPhrase(response.status).toString()
   }
-  throw new Response(httpResponse.message, {
+  throw new Response(httpResponse?.message || statusText, {
     status: response.status,
     statusText: statusText,
   })
+}
+
+async function parseErrorBody(response: Response): Promise<any> {
+  const text = await response.text()
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed && typeof parsed === 'object') {
+      return parsed
+    }
+  } catch {
+    // not JSON, fall back to raw text
+  }
+  return { message: text.trim() || null }
 }
 
 // A thrown Response with status 503 and the maintenance statusText is the app-wide signal for

@@ -15,11 +15,11 @@ import {
 } from '~/types/api-status'
 
 const filterServicesHealthByType = (
-  servicesHealth: ServiceHealth[],
+  servicesHealth: ServiceHealth[] | null,
   serviceType: ServiceType,
   checkIsHealthy: boolean = false,
 ) => {
-  return servicesHealth.filter((serviceHealth: ServiceHealth) => {
+  return (servicesHealth ?? []).filter((serviceHealth: ServiceHealth) => {
     if (checkIsHealthy) {
       return serviceHealth.serviceType === serviceType && serviceHealth.healthy
     }
@@ -28,6 +28,10 @@ const filterServicesHealthByType = (
 }
 
 const isSystemHealthy = (system: System): SystemHealtyStatus => {
+  // The backend reports null until its first health check has run (e.g. right after a restart)
+  if (!system.servicesHealth) {
+    return SystemHealtyStatus.unknown
+  }
   const totalNumberOfServicesHealth = system.servicesHealth.length
   const healthyServicesHealth = system.servicesHealth.filter(
     (serviceHealth: ServiceHealth) => serviceHealth.healthy,

@@ -145,7 +145,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
           <AlertError error={localError} />
           <JobCancelDialog
             job={currentJob}
-            system={system}
+            system={system.name}
             account={accountName ?? ''}
             open={cancelDialogOpen}
             onClose={() => setCancelDialogOpen(false)}
@@ -165,7 +165,7 @@ const JobDetailsView: React.FC<JobDetailsViewProps> = ({
                 <LabelBadge color={LabelColor.BLUE}>{currentJob.user}</LabelBadge>
               </AttributesListItem>
               <AttributesListItem label='Account'>
-                {currentJob?.account !== '' ? (
+                {currentJob.account !== '' ? (
                   <LabelBadge color={LabelColor.BLUE}>{currentJob.account}</LabelBadge>
                 ) : (
                   <LabelBadge color={LabelColor.GRAY}>undefined</LabelBadge>

@@ -36,5 +36,5 @@ jobs:
           CSCS_INFERENCE_API_KEY: ${{ secrets.CSCS_INFERENCE_KEY }}
         with:
           agent: grumpy-reviewer
-          model: cscs/moonshotai/Kimi-K2.7-Code
+          model: cscs/zai-org/GLM-5.3
           share: false

@@ -9,17 +9,11 @@
         "apiKey": "{env:CSCS_INFERENCE_API_KEY}"
       },
       "models": {
-        "zai-org/GLM-5.2": {
-          "name": "GLM-5.2",
+        "zai-org/GLM-5.3": {
+          "name": "GLM-5.3",
           "reasoning": true,
-          "interleaved": { "field": "reasoning_content" },
-          "limit": { "context": 200000, "output": 131072 }
-        },
-        "moonshotai/Kimi-K2.7-Code": {
-          "name": "Kimi K2.7-Code",
-          "reasoning": true,
-          "interleaved": { "field": "reasoning_content" },
-          "limit": { "context": 262144, "output": 131072 }
+          "interleaved": { "field": "reasoning" },
+          "limit": { "context": 1048576, "output": 32768 }
         }
       }
     }
@@ -35,8 +29,8 @@
     "webfetch": "allow"
   },
   "instructions": ["CONTRIBUTING.md", "AGENTS.md"],
-  "model": "cscs/moonshotai/Kimi-K2.7-Code",
-  "small_model": "cscs/moonshotai/Kimi-K2.7-Code",
+  "model": "cscs/zai-org/GLM-5.3",
+  "small_model": "cscs/zai-org/GLM-5.3",
   "share": "disabled",
   "default_agent": "grumpy-reviewer"
 }

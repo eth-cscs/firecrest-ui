@@ -44,21 +44,50 @@ const logger = pino({
 // than logging inside api.ts, is what keeps this out of the client bundle: api.ts and
 // the *-api.ts modules are also imported by browser components, so they can't import a
 // server-only logger, but server.js is a plain Node entrypoint never processed by Vite.
+//
+// Failed calls get a second, structured line carrying the response status (or the network
+// error), so a burst of backend 401s/5xx is queryable by `event.outcome: failure` instead of
+// only surfacing as whatever a route ErrorBoundary happens to print.
 const originalFetch = global.fetch
-global.fetch = (input, init) => {
+global.fetch = async (input, init) => {
   const headers = init?.headers ?? {}
   const requestId = headers['X-Request-ID'] ?? headers['x-request-id']
-  if (requestId) {
-    logger.info({
-      message: 'Outbound backend request',
-      'event.action': 'api.request',
-      'request.id': requestId,
-      'firecrest.correlationId': headers['X-Correlation-ID'] ?? headers['x-correlation-id'],
-      'http.request.method': init?.method ?? 'GET',
-      'url.path': typeof input === 'string' ? input : input?.url,
+  if (!requestId) {
+    return originalFetch(input, init)
+  }
+  const fields = {
+    'request.id': requestId,
+    'firecrest.correlationId': headers['X-Correlation-ID'] ?? headers['x-correlation-id'],
+    'http.request.method': init?.method ?? 'GET',
+    'url.path': typeof input === 'string' ? input : input?.url,
+  }
+  logger.info({ ...fields, message: 'Outbound backend request', 'event.action': 'api.request' })
+  let response
+  try {
+    response = await originalFetch(input, init)
+  } catch (error) {
+    logger.error({
+      ...fields,
+      message: `Outbound backend request failed: ${error?.cause?.code ?? error?.message}`,
+      'event.action': 'api.response',
+      'event.outcome': 'failure',
+      'error.type': error?.name,
+      'error.message': error?.message,
+      'error.code': error?.cause?.code,
+    })
+    throw error
+  }
+  if (!response.ok) {
+    const level = response.status >= 500 ? 'error' : 'warn'
+    logger[level]({
+      ...fields,
+      message: `Outbound backend request returned ${response.status}`,
+      'event.action': 'api.response',
+      'event.outcome': 'failure',
+      'http.response.status_code': response.status,
     })
   }
-  return originalFetch(input, init)
+  return response
 }
 
 const app = express()

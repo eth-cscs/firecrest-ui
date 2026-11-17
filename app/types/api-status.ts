@@ -29,6 +29,8 @@ export enum SystemHealtyStatus {
   healthy = 'healthy',
   degraded = 'degraded',
   unhealthy = 'unhealthy',
+  // No health data yet, e.g. right after a backend restart, before its first health check
+  unknown = 'unknown',
 }
 
 export interface SshTimeout {
@@ -118,7 +120,8 @@ export interface System {
   name: string
   ssh: Ssh
   scheduler: Scheduler
-  servicesHealth: ServiceHealth[]
+  // null until the backend's first health check has completed (e.g. right after it restarts)
+  servicesHealth: ServiceHealth[] | null
   probing: SystemProbing
   fileSystems: FileSystem[]
   datatransferJobsDirectives?: string[]

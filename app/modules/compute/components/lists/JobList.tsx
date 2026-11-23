@@ -299,7 +299,7 @@ const SEARCH_URL_DEBOUNCE_MS = 400
 
 // Shared look of the segmented buttons (status, time range).
 const segmentedButtonClasses = (selected: boolean) =>
-  `relative -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md px-3 py-2 text-sm font-medium ring-1 ring-inset focus:z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+  `relative -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md px-2 py-2 sm:px-3 text-sm font-medium ring-1 ring-inset focus:z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
     selected
       ? 'z-10 bg-blue-600 text-white ring-blue-600'
       : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50'
@@ -672,7 +672,8 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
                   ))}
                 </div>
                 <p id='job-status-hint' className='mt-2 text-xs text-gray-500'>
-                  Finished includes completed, failed, cancelled, timed out and other end states.
+                  Failed: ended with an error (including out of memory and node failure). Finished:
+                  every other end state, such as completed, cancelled or timed out.
                 </p>
               </div>
             </div>

@@ -114,7 +114,10 @@ describe('getJobStatusGroup', () => {
     expect(getJobStatusGroup('RUNNING')).toBe('running')
     expect(getJobStatusGroup('COMPLETING')).toBe('running')
     expect(getJobStatusGroup('SUSPENDED')).toBe('running')
-    for (const state of ['COMPLETED', 'FAILED', 'TIMEOUT', 'PREEMPTED', 'OUT_OF_MEMORY']) {
+    for (const state of ['FAILED', 'OUT_OF_MEMORY', 'NODE_FAIL', 'BOOT_FAIL']) {
+      expect(getJobStatusGroup(state)).toBe('failed')
+    }
+    for (const state of ['COMPLETED', 'TIMEOUT', 'PREEMPTED', 'DEADLINE']) {
       expect(getJobStatusGroup(state)).toBe('finished')
     }
   })
@@ -159,16 +162,18 @@ describe('filterJobs', () => {
     makeJob('2', 'train', 'PENDING'),
     makeJob('3', 'eval', 'COMPLETED'),
     makeJob('4', 'train', 'CANCELLED by 42'),
+    makeJob('5', 'train', 'FAILED'),
   ]
   const ids = (list: Job[]) => list.map((job) => job.jobId)
 
   it('returns every job without filters', () => {
-    expect(ids(filterJobs(jobs, '', null))).toEqual(['1', '2', '3', '4'])
+    expect(ids(filterJobs(jobs, '', null))).toEqual(['1', '2', '3', '4', '5'])
   })
 
   it('filters by status group', () => {
     expect(ids(filterJobs(jobs, '', 'running'))).toEqual(['1'])
     expect(ids(filterJobs(jobs, '', 'pending'))).toEqual(['2'])
+    expect(ids(filterJobs(jobs, '', 'failed'))).toEqual(['5'])
     expect(ids(filterJobs(jobs, '', 'finished'))).toEqual(['3', '4'])
   })
 

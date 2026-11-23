@@ -32,15 +32,16 @@ export const jobMatchesSearch = (job: Job, search: string): boolean => {
   return terms.every((term) => haystack.includes(term))
 }
 
-// Status filter groups. "finished" covers every end state (completed, failed, cancelled,
-// timeout, preempted, out of memory, node failure...), and any state not listed below.
-export const JOB_STATUS_FILTERS = ['running', 'pending', 'finished'] as const
+// Status filter groups. "failed" is for jobs that ended in an error. "finished" covers every
+// other end state (completed, cancelled, timeout, preempted...), and any state not listed below.
+export const JOB_STATUS_FILTERS = ['running', 'pending', 'failed', 'finished'] as const
 
 export type JobStatusFilter = (typeof JOB_STATUS_FILTERS)[number]
 
 export const JOB_STATUS_FILTER_LABELS: Record<JobStatusFilter, string> = {
   running: 'Running',
   pending: 'Pending',
+  failed: 'Failed',
   finished: 'Finished',
 }
 
@@ -74,12 +75,16 @@ const RUNNING_STATES = new Set([
   'U',
   'B',
 ])
+// Slurm end states caused by an error. PBS reports every ended job as "F" (the exit status is a
+// separate field), so PBS jobs never land here.
+const FAILED_STATES = new Set(['FAILED', 'OUT_OF_MEMORY', 'NODE_FAIL', 'BOOT_FAIL'])
 
 // The state can carry extra text (e.g. "CANCELLED by 12345"), so only the first word counts.
 export const getJobStatusGroup = (state: string | null | undefined): JobStatusFilter => {
   const key = (state ?? '').trim().split(/\s+/)[0].toUpperCase()
   if (PENDING_STATES.has(key)) return 'pending'
   if (RUNNING_STATES.has(key)) return 'running'
+  if (FAILED_STATES.has(key)) return 'failed'
   return 'finished'
 }
 

@@ -27,15 +27,18 @@ import { formatDateTimeFromTimestamp } from '~/helpers/date-helper'
 import { jobCanBeCanceled } from '~/modules/compute/helpers/status-helper'
 import {
   sortJobs,
-  normalizeJobNameFilter,
+  filterJobs,
+  normalizeJobSearch,
   normalizeJobTimeWindow,
   getJobTimeWindowStart,
-  JOB_NAME_FILTER_MAX_LENGTH,
+  JOB_SEARCH_MAX_LENGTH,
+  JOB_STATUS_FILTERS,
+  JOB_STATUS_FILTER_LABELS,
   JOB_TIME_WINDOWS,
   JOB_TIME_WINDOW_LABELS,
   DEFAULT_JOB_TIME_WINDOW,
 } from '~/modules/compute/helpers/job-helper'
-import type { JobTimeWindow } from '~/modules/compute/helpers/job-helper'
+import type { JobStatusFilter, JobTimeWindow } from '~/modules/compute/helpers/job-helper'
 // badges
 import LabelBadge, { LabelColor } from '~/components/badges/LabelBadge'
 import JobStateBadge from '~/modules/compute/components/badges/JobStateBadge'
@@ -290,15 +293,24 @@ const isJobsResponse = (value: unknown): value is GetSystemJobsResponse =>
   value !== null &&
   typeof (value as GetSystemJobsResponse).system === 'string' &&
   Array.isArray((value as GetSystemJobsResponse).jobs)
-// Wait for a pause in typing before applying the name filter, so each keystroke doesn't fire a
-// backend request (the filter is exact-match, so partial names would just return nothing anyway).
-const NAME_FILTER_DEBOUNCE_MS = 500
+// The search filters the list on every keystroke, but the URL is only updated once typing
+// pauses: browsers rate-limit history.replaceState (Safari throws after ~100 calls in 10s).
+const SEARCH_URL_DEBOUNCE_MS = 400
+
+// Shared look of the segmented buttons (status, time range).
+const segmentedButtonClasses = (selected: boolean) =>
+  `relative -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md px-3 py-2 text-sm font-medium ring-1 ring-inset focus:z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+    selected
+      ? 'z-10 bg-blue-600 text-white ring-blue-600'
+      : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50'
+  }`
 
 interface SystemJobListProps {
   // Resolved by the page loader: the URL's allUsers param if present, else the remembered cookie.
   initialAllUsers: boolean
-  // From the URL's name param, so a filtered list can be bookmarked/shared.
-  initialName: string
+  // From the URL's q and status params, so a filtered list can be bookmarked/shared.
+  initialSearch: string
+  initialStatus: JobStatusFilter | null
   // From the URL's timeWindow param (the default when missing or invalid).
   initialTimeWindow: JobTimeWindow
 }
@@ -318,17 +330,20 @@ const replaceUrlSearchParam = (key: string, value: string | null) => {
 
 const SystemJobList: React.FC<SystemJobListProps> = ({
   initialAllUsers,
-  initialName,
+  initialSearch,
+  initialStatus,
   initialTimeWindow,
 }) => {
   const [allUsers, setAllUsers] = useState<boolean>(initialAllUsers)
-  // What's typed in the search box vs. the (debounced, normalized) value actually sent to the API.
-  const [nameInput, setNameInput] = useState<string>(initialName)
-  const [name, setName] = useState<string>(initialName)
+  // Search text and status are applied in the browser to the jobs already loaded, so changing
+  // them never triggers a request; only allUsers and timeWindow are sent to the backend.
+  const [searchInput, setSearchInput] = useState<string>(initialSearch)
+  const [status, setStatus] = useState<JobStatusFilter | null>(initialStatus)
   const [timeWindow, setTimeWindow] = useState<JobTimeWindow>(initialTimeWindow)
+  const search = normalizeJobSearch(searchInput)
   // Open on first render when the URL already carries a filter, so it's never applied unseen.
   const [filtersOpen, setFiltersOpen] = useState<boolean>(
-    initialName !== '' || initialTimeWindow !== DEFAULT_JOB_TIME_WINDOW,
+    initialSearch !== '' || initialStatus !== null || initialTimeWindow !== DEFAULT_JOB_TIME_WINDOW,
   )
   // Taken from the route, not the System/Group contexts: on the first render those fall back to
   // the first system/group until an effect applies the URL's, which made the list fetch (and
@@ -352,16 +367,12 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
     systemNameValue: string,
     groupNameValue: string,
     allUsersValue: boolean,
-    nameValue: string,
     timeWindowValue: JobTimeWindow,
   ) => {
     const query = new URLSearchParams({
       allUsers: String(allUsersValue),
       timeWindow: timeWindowValue,
     })
-    if (nameValue) {
-      query.set('name', nameValue)
-    }
     return `/api/compute/systems/${systemNameValue}/accounts/${groupNameValue}/jobs?${query.toString()}`
   }
 
@@ -379,25 +390,30 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
   const { pathname } = useLocation()
   useEffect(() => {
     replaceUrlSearchParam('allUsers', String(allUsers))
-    replaceUrlSearchParam('name', name || null)
+    replaceUrlSearchParam('q', search || null)
+    replaceUrlSearchParam('status', status)
     replaceUrlSearchParam('timeWindow', timeWindow)
+    // Old exact-name filter param: the page loader already turned it into search text.
+    replaceUrlSearchParam('name', null)
   }, [pathname])
 
-  // Apply the typed name once typing pauses; the polling effect below re-fetches on `name` change.
+  // Mirror the search text into the URL once typing pauses.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const normalized = normalizeJobNameFilter(nameInput)
-      setName(normalized)
-      replaceUrlSearchParam('name', normalized || null)
-    }, NAME_FILTER_DEBOUNCE_MS)
+      replaceUrlSearchParam('q', search || null)
+    }, SEARCH_URL_DEBOUNCE_MS)
     return () => clearTimeout(timeoutId)
-  }, [nameInput])
+  }, [search])
 
-  const clearNameFilter = () => {
-    // Clearing is an explicit action - apply it right away rather than waiting for the debounce.
-    setNameInput('')
-    setName('')
-    replaceUrlSearchParam('name', null)
+  const clearSearch = () => {
+    setSearchInput('')
+    // The debounced effect above would do it too, but clearing is explicit: update the URL now.
+    replaceUrlSearchParam('q', null)
+  }
+
+  const changeStatus = (value: JobStatusFilter | null) => {
+    setStatus(value)
+    replaceUrlSearchParam('status', value)
   }
 
   const changeTimeWindow = (value: JobTimeWindow) => {
@@ -415,7 +431,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
   // so an old response can never land after, and clobber, a newer one.
   useEffect(() => {
     if (!systemName || !accountName) return
-    const url = buildUrl(systemName, accountName, allUsers, name, timeWindow)
+    const url = buildUrl(systemName, accountName, allUsers, timeWindow)
     let controller: AbortController | null = null
     let cancelled = false
 
@@ -472,7 +488,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
       clearInterval(intervalId)
       controller?.abort()
     }
-  }, [systemName, accountName, allUsers, name, timeWindow])
+  }, [systemName, accountName, allUsers, timeWindow])
 
   useEffect(() => {
     setRefreshing(loading, 'Refreshing jobs...')
@@ -502,25 +518,28 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
   }
 
   // Never show a response for a different query than the one currently selected (e.g. one that
-  // was still in flight when the system, account, toggle or filter changed) - wait for the
+  // was still in flight when the system, account, toggle or time range changed) - wait for the
   // matching one instead of briefly, or permanently, showing the wrong list. The controls stay
-  // rendered meanwhile, so the search field keeps focus while a new filter loads.
+  // rendered meanwhile.
   const isCurrentQuery =
     jobsData.system === systemName &&
     jobsData.account === accountName &&
     (jobsData.allUsers ?? false) === allUsers &&
-    (jobsData.name ?? '') === name &&
     normalizeJobTimeWindow(jobsData.timeWindow) === timeWindow
-  const currentJobs = sortJobs(jobsData?.jobs ?? [])
-  const localError = jobsData?.error ?? null
+  const loadedJobs = jobsData.jobs ?? []
+  const currentJobs = sortJobs(filterJobs(loadedJobs, search, status))
+  const isFiltered = search !== '' || status !== null
+  const localError = jobsData.error ?? null
   const shownTimeWindowLabel =
-    JOB_TIME_WINDOW_LABELS[normalizeJobTimeWindow(jobsData?.timeWindow)].toLowerCase()
-  const emptyMessage = jobsData?.name
-    ? `No jobs named "${jobsData.name}" found in the ${shownTimeWindowLabel}. The search matches the full job name exactly.`
-    : `No jobs found in the ${shownTimeWindowLabel}.`
-  // Counts applied filters (not what's still being typed), shown on the toggle when collapsed.
-  // The default time range doesn't count: it's what the list shows without any filter.
-  const activeFilterCount = (name ? 1 : 0) + (timeWindow !== DEFAULT_JOB_TIME_WINDOW ? 1 : 0)
+    JOB_TIME_WINDOW_LABELS[normalizeJobTimeWindow(jobsData.timeWindow)].toLowerCase()
+  const emptyMessage =
+    loadedJobs.length > 0 && isFiltered
+      ? `None of the ${loadedJobs.length} jobs loaded for the ${shownTimeWindowLabel} match the search or status filter.`
+      : `No jobs found in the ${shownTimeWindowLabel}.`
+  // Counts applied filters, shown on the toggle when collapsed. The default time range doesn't
+  // count: it's what the list shows without any filter.
+  const activeFilterCount =
+    (search ? 1 : 0) + (status ? 1 : 0) + (timeWindow !== DEFAULT_JOB_TIME_WINDOW ? 1 : 0)
 
   return (
     <>
@@ -579,43 +598,82 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
       </div>
       {filtersOpen && (
         <div id='job-filters' className='mb-4 rounded-md border border-gray-200 bg-gray-50 p-4'>
-          {/* Server-side filters: changing them reloads the list from the scheduler. Future
-              local (in-browser) filters should be labelled differently so the two aren't confused.
-              One label + field row per filter (like the job details view), with a fixed-width
-              label column so the field sits close and future rows (e.g. a date range) line up. */}
+          {/* One label + field row per filter (like the job details view), with a fixed-width
+              label column so the fields line up. Search and status filter the jobs already
+              loaded, in the browser; the time range (and All users) reload the list from the
+              scheduler. */}
           <div className='divide-y divide-gray-200'>
-            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-center sm:gap-4'>
-              <label htmlFor='job-name-filter' className='block text-sm font-medium text-gray-900'>
-                Job name
+            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-start sm:gap-4'>
+              <label
+                htmlFor='job-search'
+                className='block text-sm font-medium text-gray-900 sm:pt-2'
+              >
+                Search
               </label>
-              <div className='relative mt-1 w-full sm:mt-0'>
-                <MagnifyingGlassIcon
-                  aria-hidden='true'
-                  className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
-                />
-                <input
-                  id='job-name-filter'
-                  type='search'
-                  value={nameInput}
-                  maxLength={JOB_NAME_FILTER_MAX_LENGTH}
-                  placeholder='Load jobs by exact name'
-                  title='Asks the scheduler only for jobs whose name matches exactly'
-                  onChange={(event) => setNameInput(event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') clearNameFilter()
-                  }}
-                  className='block w-full rounded-md border bg-white py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
-                />
-                {nameInput !== '' && (
-                  <button
-                    type='button'
-                    onClick={clearNameFilter}
-                    className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
-                  >
-                    <span className='sr-only'>Clear job name filter</span>
-                    <XMarkIcon aria-hidden='true' className='h-4 w-4' />
-                  </button>
-                )}
+              <div className='mt-1 sm:mt-0'>
+                <div className='relative w-full'>
+                  <MagnifyingGlassIcon
+                    aria-hidden='true'
+                    className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400'
+                  />
+                  <input
+                    id='job-search'
+                    type='search'
+                    value={searchInput}
+                    maxLength={JOB_SEARCH_MAX_LENGTH}
+                    placeholder='Job name or ID'
+                    aria-describedby='job-search-hint'
+                    onChange={(event) => setSearchInput(event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') clearSearch()
+                    }}
+                    className='block w-full rounded-md border bg-white py-2 pl-10 pr-9 shadow-sm sm:text-sm focus:outline-none border-gray-300 focus:border-blue-300 focus:ring-blue-300 [&::-webkit-search-cancel-button]:hidden'
+                  />
+                  {searchInput !== '' && (
+                    <button
+                      type='button'
+                      onClick={clearSearch}
+                      className='absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-400 hover:text-gray-600'
+                    >
+                      <span className='sr-only'>Clear search</span>
+                      <XMarkIcon aria-hidden='true' className='h-4 w-4' />
+                    </button>
+                  )}
+                </div>
+                <p id='job-search-hint' className='mt-2 text-xs text-gray-500'>
+                  Matches part of the job name or ID, ignoring case. Separate words must all match.
+                </p>
+              </div>
+            </div>
+            <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-start sm:gap-4'>
+              <span
+                id='job-status-label'
+                className='block text-sm font-medium text-gray-900 sm:pt-2'
+              >
+                Status
+              </span>
+              <div className='mt-1 sm:mt-0'>
+                <div
+                  role='group'
+                  aria-labelledby='job-status-label'
+                  aria-describedby='job-status-hint'
+                  className='isolate inline-flex rounded-md shadow-sm'
+                >
+                  {[null, ...JOB_STATUS_FILTERS].map((value) => (
+                    <button
+                      key={value ?? 'all'}
+                      type='button'
+                      aria-pressed={value === status}
+                      onClick={() => changeStatus(value)}
+                      className={segmentedButtonClasses(value === status)}
+                    >
+                      {value ? JOB_STATUS_FILTER_LABELS[value] : 'All'}
+                    </button>
+                  ))}
+                </div>
+                <p id='job-status-hint' className='mt-2 text-xs text-gray-500'>
+                  Finished includes completed, failed, cancelled, timed out and other end states.
+                </p>
               </div>
             </div>
             <div className='py-2 sm:grid sm:grid-cols-[8rem_minmax(0,28rem)] sm:items-start sm:gap-4'>
@@ -641,11 +699,7 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
                         aria-pressed={selected}
                         title={JOB_TIME_WINDOW_LABELS[value]}
                         onClick={() => changeTimeWindow(value)}
-                        className={`relative -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md px-3 py-2 text-sm font-medium ring-1 ring-inset focus:z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
-                          selected
-                            ? 'z-10 bg-blue-600 text-white ring-blue-600'
-                            : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50'
-                        }`}
+                        className={segmentedButtonClasses(selected)}
                       >
                         <span className='sr-only'>{JOB_TIME_WINDOW_LABELS[value]}</span>
                         <span aria-hidden='true'>{value}</span>
@@ -670,7 +724,14 @@ const SystemJobList: React.FC<SystemJobListProps> = ({
         </div>
       )}
       {isCurrentQuery ? (
-        <JobsTable jobs={currentJobs} systemName={systemName ?? ''} emptyMessage={emptyMessage} />
+        <>
+          {isFiltered && currentJobs.length > 0 && (
+            <p className='mb-2 text-xs text-gray-500' aria-live='polite'>
+              Showing {currentJobs.length} of {loadedJobs.length} jobs loaded.
+            </p>
+          )}
+          <JobsTable jobs={currentJobs} systemName={systemName ?? ''} emptyMessage={emptyMessage} />
+        </>
       ) : (
         <LoadingSpinner title='Loading jobs...' className='py-10' />
       )}

@@ -11,7 +11,8 @@ import type { LoaderFunctionArgs } from 'react-router'
 import { logInfoHttp } from '~/helpers/log-helper'
 import { logPageLabel } from '~/helpers/log-labels'
 import {
-  normalizeJobNameFilter,
+  normalizeJobSearch,
+  normalizeJobStatusFilter,
   normalizeJobTimeWindow,
 } from '~/modules/compute/helpers/job-helper'
 // utils
@@ -39,20 +40,28 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const allUsers = searchParams.has('allUsers')
     ? searchParams.get('allUsers') === 'true'
     : (await jobsAllUsersCookie.parse(request.headers.get('Cookie'))) === true
-  const name = normalizeJobNameFilter(searchParams.get('name'))
+  // `name` is the old exact-name filter param: links shared before the search existed open with
+  // that name as search text, which still finds the same jobs.
+  const search = normalizeJobSearch(searchParams.get('q') ?? searchParams.get('name'))
+  const status = normalizeJobStatusFilter(searchParams.get('status'))
   const timeWindow = normalizeJobTimeWindow(searchParams.get('timeWindow'))
   logInfoHttp({
     eventAction: logPageLabel.computeAccountIndex(systemName, accountName),
     request: request,
     extraInfo: { username: auth.user.username, system: systemName, account: accountName },
   })
-  return { allUsers, name, timeWindow }
+  return { allUsers, search, status, timeWindow }
 }
 
 export default function AppComputeIandexRoute() {
-  const { allUsers, name, timeWindow } = useLoaderData<typeof loader>()
+  const { allUsers, search, status, timeWindow } = useLoaderData<typeof loader>()
   return (
-    <JobListView initialAllUsers={allUsers} initialName={name} initialTimeWindow={timeWindow} />
+    <JobListView
+      initialAllUsers={allUsers}
+      initialSearch={search}
+      initialStatus={status}
+      initialTimeWindow={timeWindow}
+    />
   )
 }
 

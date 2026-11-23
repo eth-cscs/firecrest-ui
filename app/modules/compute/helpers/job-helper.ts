@@ -9,12 +9,96 @@ import { Job } from '~/types/api-job'
 
 export const sortJobs = (jobs: Job[]) => [...jobs].sort((a, b) => Number(b.jobId) - Number(a.jobId))
 
-// Backend limit for the jobs `name` filter (based on OpenPBS); longer values get a 422.
-export const JOB_NAME_FILTER_MAX_LENGTH = 235
+// Longest search text kept from the URL or the search box, so a hand-edited link can't make the
+// list match against an absurdly long string on every poll.
+export const JOB_SEARCH_MAX_LENGTH = 256
 
-// Trims and caps a job name filter so the backend never sees a value it would reject.
-export const normalizeJobNameFilter = (value: string | null | undefined): string =>
-  (value ?? '').trim().slice(0, JOB_NAME_FILTER_MAX_LENGTH)
+// Trims and caps the search text.
+export const normalizeJobSearch = (value: string | null | undefined): string =>
+  (value ?? '').trim().slice(0, JOB_SEARCH_MAX_LENGTH)
+
+// Splits the search text into lowercase terms. Every term must match (AND), so "train 1234"
+// narrows the list instead of widening it.
+const getJobSearchTerms = (search: string): string[] =>
+  normalizeJobSearch(search).toLowerCase().split(/\s+/).filter(Boolean)
+
+// Case-insensitive substring search on the job name and ID. It runs in the browser over the jobs
+// already loaded: the backend only supports an exact name filter, and the scheduler has no
+// full-text search.
+export const jobMatchesSearch = (job: Job, search: string): boolean => {
+  const terms = getJobSearchTerms(search)
+  if (terms.length === 0) return true
+  const haystack = `${job.name ?? ''}\n${job.jobId ?? ''}`.toLowerCase()
+  return terms.every((term) => haystack.includes(term))
+}
+
+// Status filter groups. "finished" covers every end state (completed, failed, cancelled,
+// timeout, preempted, out of memory, node failure...), and any state not listed below.
+export const JOB_STATUS_FILTERS = ['running', 'pending', 'finished'] as const
+
+export type JobStatusFilter = (typeof JOB_STATUS_FILTERS)[number]
+
+export const JOB_STATUS_FILTER_LABELS: Record<JobStatusFilter, string> = {
+  running: 'Running',
+  pending: 'Pending',
+  finished: 'Finished',
+}
+
+// Slurm state names, plus the single-letter PBS codes the backend passes through unchanged.
+const PENDING_STATES = new Set([
+  'PENDING',
+  'REQUEUED',
+  'REQUEUE_HOLD',
+  'REQUEUE_FED',
+  'RESV_DEL_HOLD',
+  // PBS: queued, held, waiting, in transit, moved
+  'Q',
+  'H',
+  'W',
+  'T',
+  'M',
+])
+const RUNNING_STATES = new Set([
+  'RUNNING',
+  'CONFIGURING',
+  'COMPLETING',
+  'SUSPENDED',
+  'STOPPED',
+  'SIGNALING',
+  'STAGE_OUT',
+  'RESIZING',
+  // PBS: running, exiting, suspended, array begun
+  'R',
+  'E',
+  'S',
+  'U',
+  'B',
+])
+
+// The state can carry extra text (e.g. "CANCELLED by 12345"), so only the first word counts.
+export const getJobStatusGroup = (state: string | null | undefined): JobStatusFilter => {
+  const key = (state ?? '').trim().split(/\s+/)[0].toUpperCase()
+  if (PENDING_STATES.has(key)) return 'pending'
+  if (RUNNING_STATES.has(key)) return 'running'
+  return 'finished'
+}
+
+// Turns a URL value into a known status filter, or null (no status filter) when missing or
+// unknown, so an outdated link still opens a working list.
+export const normalizeJobStatusFilter = (
+  value: string | null | undefined,
+): JobStatusFilter | null =>
+  (JOB_STATUS_FILTERS as readonly string[]).includes(value ?? '')
+    ? (value as JobStatusFilter)
+    : null
+
+// Applies the in-browser search and status filters.
+export const filterJobs = (jobs: Job[], search: string, status: JobStatusFilter | null): Job[] =>
+  jobs.filter(
+    (job) =>
+      (status === null || getJobStatusGroup(job.status?.state) === status) &&
+      jobMatchesSearch(job, search),
+  )
 
 // History windows accepted by the backend's `time_window` jobs parameter (any other value gets a
 // 422). They only limit finished jobs: pending and running jobs are always returned.

@@ -17,6 +17,7 @@ import type {
   GetTransferMvResponse,
   GetTransferUploadResponse,
   GetOpsTailResponse,
+  GetOpsViewResponse,
   GetTransferDownloadResponse,
 } from '~/types/api-filesystem'
 // apis
@@ -54,6 +55,29 @@ export const getOpsTail = async (
   })
   const apiResponse = await api.get<GetOpsTailResponse>(
     `/filesystem/${system}/ops/tail?${urlSearchParams}`,
+    {
+      headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request, requestId),
+    },
+  )
+  return apiResponse
+}
+
+export const getOpsView = async (
+  accessToken: string,
+  system: string,
+  targetPath: string,
+  size: number,
+  offset: number,
+  request: Request | null = null,
+  requestId?: string,
+): Promise<GetOpsViewResponse> => {
+  const urlSearchParams = new URLSearchParams({
+    path: targetPath,
+    size: size.toString(),
+    offset: offset.toString(),
+  })
+  const apiResponse = await api.get<GetOpsViewResponse>(
+    `/filesystem/${system}/ops/view?${urlSearchParams}`,
     {
       headers: withTracingHeaders({ Authorization: `Bearer ${accessToken}` }, request, requestId),
     },
@@ -383,6 +407,25 @@ export const getLocalOpsTail = async (
   })
   const apiResponse = await api.get<GetOpsTailResponse>(
     `/api/filesystems/${system}/ops/tail?` + urlSearchParams,
+    {},
+    ApiTarget.API_LOCAL,
+  )
+  return apiResponse
+}
+
+export const getLocalOpsView = async (
+  system: string,
+  targetPath: string,
+  size: number,
+  offset: number,
+): Promise<GetOpsViewResponse> => {
+  const urlSearchParams = new URLSearchParams({
+    targetPath: targetPath,
+    size: size.toString(),
+    offset: offset.toString(),
+  })
+  const apiResponse = await api.get<GetOpsViewResponse>(
+    `/api/filesystems/${system}/ops/view?` + urlSearchParams,
     {},
     ApiTarget.API_LOCAL,
   )

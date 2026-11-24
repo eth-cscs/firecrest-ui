@@ -1,0 +1,71 @@
+/*************************************************************************
+ Copyright (c) 2025, ETH Zurich. All rights reserved.
+
+  Please, refer to the LICENSE file in the root directory.
+  SPDX-License-Identifier: BSD-3-Clause
+*************************************************************************/
+
+import type { LoaderFunctionArgs } from 'react-router'
+import { StatusCodes } from 'http-status-codes'
+// errors
+import { HttpError } from '~/errors/HttpError'
+// types
+import { GetOpsViewResponse } from '~/types/api-filesystem'
+// helpers
+import { logInfoHttp } from '~/helpers/log-helper'
+import { LogAction } from '~/helpers/log-labels'
+import { handleApiErrorResponse, handleSuccessResponse } from '~/helpers/response-helper'
+// utils
+import { getAuthAccessToken, getAuthUser } from '~/utils/auth.server'
+// apis
+import { getOpsView } from '~/apis/filesystem-api'
+
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+  // Create a headers object
+  const headers = new Headers()
+  // Authenticate the request and get the accessToken back, this will be the
+  // already saved token or the refreshed one, in that case the headers above
+  // will have the Set-Cookie header appended
+  const accessToken = await getAuthAccessToken(request, headers)
+  const authUser = await getAuthUser(request)
+  try {
+    // Get path params
+    const system: string = params.system || ''
+    // Get query params
+    const url = new URL(request.url)
+    const targetPath = url.searchParams.get('targetPath') || ''
+    const size = Number(url.searchParams.get('size'))
+    // A negative offset is valid: it counts back from the end of the file
+    const offset = Number(url.searchParams.get('offset') ?? '0')
+    if (!system || !targetPath) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'system and targetPath are required')
+    }
+    if (!Number.isInteger(size) || size <= 0) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'size must be a positive integer')
+    }
+    if (!Number.isInteger(offset)) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'offset must be an integer')
+    }
+    // Get data
+    const requestId = crypto.randomUUID()
+    const response: GetOpsViewResponse = await getOpsView(
+      accessToken,
+      system,
+      targetPath,
+      size,
+      offset,
+      request,
+      requestId,
+    )
+    logInfoHttp({
+      eventAction: LogAction.FS_VIEW,
+      request,
+      requestId,
+      extraInfo: { username: authUser?.username, system },
+    })
+    // Return response
+    return handleSuccessResponse(response)
+  } catch (error) {
+    return handleApiErrorResponse(error)
+  }
+}

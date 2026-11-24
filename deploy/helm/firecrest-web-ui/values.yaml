@@ -37,6 +37,12 @@ repoUrl: "https://github.com/eth-cscs/firecrest-ui"
 statusUrl: ""
 uiObservabilityDashboard: ""
 
+# Job log viewer: "View" mode (page through large stdout/stderr files) needs FirecREST >= 2.7.0.
+# Leave disabled on platforms with an older backend; only "Tail" is offered then.
+jobLogViewModeEnabled: "false"
+# Mode the job log opens in when View mode is enabled: "tail" or "view"
+jobLogDefaultMode: "tail"
+
 # Elastic/Observability settings
 elastic:
   dataStream: {}

@@ -80,7 +80,7 @@ const JobSubmitForm: React.FC<any> = ({ formData, formError }: JobSubmitFormData
       })
       if (homeDirs && homeDirs.length > 0) {
         const homeDir: FileSystem = homeDirs[0]
-        const homeDirPath = `${homeDir.path}/${username}/`
+        const homeDirPath = `${homeDir.path}/${username}`
         setFormValues({ ...formValues, workingDirectory: homeDirPath, system: formValues.system })
       } else {
         setFormValues({ ...formValues, system: formValues.system })

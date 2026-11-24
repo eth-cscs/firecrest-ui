@@ -23,16 +23,11 @@ export const getJobs = async (
   system: string = '',
   account: string = '',
   allUsers: boolean = false,
-  name: string = '',
   timeWindow: JobTimeWindow = DEFAULT_JOB_TIME_WINDOW,
   request: Request | null = null,
 ): Promise<GetSystemJobsResponse> => {
   try {
     const query = new URLSearchParams({ account: account, allusers: String(allUsers) })
-    // Backend-side filter: matches the full job name exactly (it's passed to the scheduler as-is).
-    if (name) {
-      query.set('name', name)
-    }
     // Always sent, so the list doesn't depend on the backend's default staying the same.
     query.set('time_window', timeWindow)
     const apiResponse = await api.get<GetJobsResponse>(
@@ -46,7 +41,6 @@ export const getJobs = async (
       jobs: apiResponse.jobs ? apiResponse.jobs : [],
       account: account,
       allUsers: allUsers,
-      name: name,
       timeWindow: timeWindow,
       error: undefined,
     }
@@ -63,7 +57,6 @@ export const getJobs = async (
       jobs: [],
       account: account,
       allUsers: allUsers,
-      name: name,
       timeWindow: timeWindow,
       error: { message },
     }

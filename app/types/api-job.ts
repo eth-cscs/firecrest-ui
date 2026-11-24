@@ -97,6 +97,5 @@ export interface GetSystemJobsResponse {
   error?: any
   account?: string
   allUsers?: boolean
-  name?: string
   timeWindow?: string
 }

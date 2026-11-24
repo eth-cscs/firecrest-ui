@@ -20,17 +20,19 @@ import JobList from '~/modules/compute/components/lists/JobList'
 import { useSystem } from '~/contexts/SystemContext'
 import { useGroup } from '~/contexts/GroupContext'
 // helpers
-import type { JobTimeWindow } from '~/modules/compute/helpers/job-helper'
+import type { JobStatusFilter, JobTimeWindow } from '~/modules/compute/helpers/job-helper'
 
 interface JobListViewProps {
   initialAllUsers: boolean
-  initialName: string
+  initialSearch: string
+  initialStatus: JobStatusFilter | null
   initialTimeWindow: JobTimeWindow
 }
 
 const JobListView: React.FC<JobListViewProps> = ({
   initialAllUsers,
-  initialName,
+  initialSearch,
+  initialStatus,
   initialTimeWindow,
 }) => {
   const { selectedSystem } = useSystem()
@@ -57,7 +59,8 @@ const JobListView: React.FC<JobListViewProps> = ({
       >
         <JobList
           initialAllUsers={initialAllUsers}
-          initialName={initialName}
+          initialSearch={initialSearch}
+          initialStatus={initialStatus}
           initialTimeWindow={initialTimeWindow}
         />
       </SimplePanel>

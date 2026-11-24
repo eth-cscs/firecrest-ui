@@ -5,7 +5,7 @@
   SPDX-License-Identifier: BSD-3-Clause
 *************************************************************************/
 
-import { Link, useSearchParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import React, { useEffect, useLayoutEffect, useRef, useMemo, useState } from 'react'
 import {
   ArrowDownCircleIcon,
@@ -65,7 +65,6 @@ import {
 } from '~/modules/compute/hooks/useWindowedFileView'
 
 // contexts
-import { useGroup } from '~/contexts/GroupContext'
 import { useMaintenance } from '~/contexts/MaintenanceContext'
 
 interface JobDetailsPanelProps {
@@ -86,7 +85,9 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [stdoutDownloadDialogOpen, setStdoutDownloadDialogOpen] = useState(false)
   const [stderrDownloadDialogOpen, setStderrDownloadDialogOpen] = useState(false)
-  const { selectedGroup } = useGroup()
+  // From the URL, not the Group context: on a fresh load (e.g. a job opened in a new tab) the
+  // context briefly falls back to the first group.
+  const { accountName } = useParams()
 
   const handleStdoutDownload = () => {
     setStdoutDownloadDialogOpen(true)
@@ -100,7 +101,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
       <JobCancelDialog
         job={job!}
         system={system?.name!}
-        account={selectedGroup?.name!}
+        account={accountName ?? ''}
         open={cancelDialogOpen}
         onClose={() => setCancelDialogOpen(false)}
       />
@@ -159,7 +160,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 <DownloadDialog
                   system={system?.name || ''}
                   file={stdoutFile}
-                  accountName={selectedGroup?.name || ''}
+                  accountName={accountName || ''}
                   downloadLimit={
                     system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER
                   }
@@ -185,7 +186,7 @@ const JobDetailsPanel: React.FC<JobDetailsPanelProps> = ({
                 <DownloadDialog
                   system={system?.name || ''}
                   file={stderrFile}
-                  accountName={selectedGroup?.name || ''}
+                  accountName={accountName || ''}
                   downloadLimit={
                     system?.dataOperation?.max_ops_file_size || Number.MAX_SAFE_INTEGER
                   }

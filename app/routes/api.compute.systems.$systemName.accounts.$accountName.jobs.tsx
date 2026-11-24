@@ -14,7 +14,7 @@ import { HttpError } from '~/errors/HttpError'
 import { GetSystemJobsResponse } from '~/types/api-job'
 // helpers
 import { promiseWithTimeout, DEFERRED_PROMISE_TIMEOUT_MS } from '~/helpers/promise-helper'
-import { normalizeJobNameFilter } from '~/modules/compute/helpers/job-helper'
+import { normalizeJobTimeWindow } from '~/modules/compute/helpers/job-helper'
 // utils
 import { getAuthAccessToken } from '~/utils/auth.server'
 import { jobsAllUsersCookie } from '~/utils/preferences.server'
@@ -49,9 +49,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
   const systemName = params.systemName!
   const accountName = params.accountName!
-  const [, searchParams] = request.url.split('?')
-  const allUsers = new URLSearchParams(searchParams).get('allUsers') === 'true' ? true : false
-  const name = normalizeJobNameFilter(new URLSearchParams(searchParams).get('name'))
+  const { searchParams } = new URL(request.url)
+  const allUsers = searchParams.get('allUsers') === 'true'
+  const timeWindow = normalizeJobTimeWindow(searchParams.get('timeWindow'))
   // Remember the toggle choice for the next time the jobs page is loaded fresh (e.g. via a nav
   // link, which doesn't carry the query param). Only written when it differs from what the browser
   // already sent, so the 2s poll doesn't re-send the same Set-Cookie on every request.
@@ -61,7 +61,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
   try {
     const response = await promiseWithTimeout(
-      getJobs(accessToken, systemName, accountName, allUsers, name, request),
+      getJobs(accessToken, systemName, accountName, allUsers, timeWindow, request),
       DEFERRED_PROMISE_TIMEOUT_MS,
       `Loading jobs for ${systemName} timed out.`,
     )
@@ -83,7 +83,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         jobs: [],
         account: accountName,
         allUsers,
-        name,
+        timeWindow,
         error: {
           message: error instanceof Error ? error.message : 'Unable to load jobs.',
         },
